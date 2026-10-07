@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { resetPasswordAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
 import { IconCheck } from '@/components/icons'
+import { APP_NAME } from '@/lib/brand'
 
 export default function ResetPasswordPage() {
   return (
@@ -28,7 +29,7 @@ function ResetForm() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
             </svg>
           </span>
-          <span className="font-display text-xl font-semibold tracking-tight text-primary">matab</span>
+          <span className="font-display text-xl font-semibold tracking-tight text-primary">{APP_NAME}</span>
         </Link>
 
         {state?.ok ? (
@@ -36,34 +37,34 @@ function ResetForm() {
             <span className="flex size-9 items-center justify-center rounded-full bg-secondary">
               <IconCheck size={16} className="text-primary" />
             </span>
-            <h1 className="mt-4 font-display text-xl font-semibold tracking-tight">Password updated</h1>
+            <h1 className="mt-4 font-display text-xl font-semibold tracking-tight">Contraseña actualizada</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Your new password is set. Sign in with it to get back to your clinic.
+              Su nueva contraseña quedó guardada. Inicie sesión con ella para volver a su consultorio.
             </p>
             <Link href="/login" className={`${btnPrimary} mt-5 w-full`}>
-              Sign in
+              Iniciar sesión
             </Link>
           </div>
         ) : !token ? (
           <div className="rounded-xl border border-border bg-card p-6">
-            <h1 className="font-display text-xl font-semibold tracking-tight">Invalid reset link</h1>
+            <h1 className="font-display text-xl font-semibold tracking-tight">Enlace no válido</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              This link is missing its token — it may have been truncated by your email client.
+              A este enlace le falta el código de seguridad; puede que su programa de correo lo haya cortado.
             </p>
             <Link href="/forgot-password" className="mt-5 inline-block text-sm font-medium text-primary hover:underline">
-              Request a new link
+              Solicitar un nuevo enlace
             </Link>
           </div>
         ) : (
           <>
-            <h1 className="font-display text-2xl font-semibold tracking-tight">Choose a new password</h1>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Elija una nueva contraseña</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              At least 8 characters. You&rsquo;ll sign in with it right after.
+              Mínimo 8 caracteres. Luego podrá iniciar sesión con ella.
             </p>
 
             <form action={formAction} className="mt-8 flex flex-col gap-4">
               <input type="hidden" name="token" value={token} />
-              <Field label="New password" htmlFor="password">
+              <Field label="Nueva contraseña" htmlFor="password">
                 <input
                   id="password"
                   name="password"
@@ -75,7 +76,7 @@ function ResetForm() {
                   className={inputClass}
                 />
               </Field>
-              <Field label="Confirm password" htmlFor="confirm">
+              <Field label="Confirme la contraseña" htmlFor="confirm">
                 <input
                   id="confirm"
                   name="confirm"
@@ -92,14 +93,14 @@ function ResetForm() {
                 <p className="rounded-lg border border-red/25 bg-red-soft px-3 py-2 text-sm text-red" role="alert">
                   {state.message}{' '}
                   <Link href="/forgot-password" className="font-medium text-primary hover:underline">
-                    Request a new link
+                    Solicitar un nuevo enlace
                   </Link>
                 </p>
               )}
 
               <button type="submit" className={`${btnPrimary} mt-1 w-full`} disabled={pending}>
                 {pending && <Spinner />}
-                {pending ? 'Saving…' : 'Set new password'}
+                {pending ? 'Guardando…' : 'Guardar contraseña'}
               </button>
             </form>
           </>

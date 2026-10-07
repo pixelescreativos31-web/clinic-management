@@ -21,7 +21,9 @@ import {
 import { BarChart } from '@/components/BarChart'
 import { RevenueChart } from '@/components/RevenueChart'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
+import { APP_NAME } from '@/lib/brand'
 import type { Patient, User } from '@/payload-types'
+import { practitionerWhere } from '@/lib/practice'
 
 function greetingFor(tz: string): string {
   const hour = Number(
@@ -29,9 +31,9 @@ function greetingFor(tz: string): string {
       new Date(),
     ),
   )
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
+  if (hour < 12) return 'Buenos días'
+  if (hour < 17) return 'Buenas tardes'
+  return 'Buenas noches'
 }
 
 export default async function DashboardHome({
@@ -51,7 +53,7 @@ export default async function DashboardHome({
     getDashboardData(payload, tenantID, tenant),
     payload.find({
       collection: 'users',
-      where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
+      where: { and: [practitionerWhere(String(tenantID)), { active: { equals: true } }] },
       limit: 20,
       sort: 'name',
       overrideAccess: true,
@@ -86,9 +88,9 @@ export default async function DashboardHome({
     params.welcome === '1' ||
     (tenant?.onboardingSource === 'self-serve' && patientsCount.totalDocs <= 3)
   const checklist = [
-    { done: activeDoctors > 0, title: 'Add your doctors', desc: 'Set their specialties and timings', href: '/dashboard/staff', ownerOnly: true },
-    { done: patientsCount.totalDocs > 0, title: 'Register a patient', desc: 'Name and phone is enough', href: '/dashboard/patients/new', ownerOnly: false },
-    { done: apptsCount.totalDocs > 0, title: 'Book an appointment', desc: 'Or take a walk-in', href: '/dashboard/appointments/new', ownerOnly: false },
+    { done: activeDoctors > 0, title: 'Agregue a sus médicos', desc: 'Defina especialidades y horarios', href: '/dashboard/staff', ownerOnly: true },
+    { done: patientsCount.totalDocs > 0, title: 'Registre un paciente', desc: 'Basta con nombre y teléfono', href: '/dashboard/patients/new', ownerOnly: false },
+    { done: apptsCount.totalDocs > 0, title: 'Agende una cita', desc: 'O registre un paciente sin cita', href: '/dashboard/appointments/new', ownerOnly: false },
   ].filter((s) => !s.ownerOnly || user.role === 'owner')
   const doneCount = checklist.filter((s) => s.done).length
 
@@ -113,24 +115,31 @@ export default async function DashboardHome({
       specialty: (d as { specialty?: string }).specialty,
       note:
         type === 'onCall'
-          ? 'On call'
+          ? 'De guardia'
           : type === 'byAppointment'
-            ? 'By appointment'
+            ? 'Previa cita'
             : onToday
               ? `${win.from} – ${win.to}`
-              : 'Off today',
+              : 'No consulta hoy',
       onToday,
       count: countByDoctor.get(String(d.id)) ?? 0,
     }
   })
-  // "Friday, 12 June" in the clinic's timezone
-  const today = new Date().toLocaleDateString('en-GB', {
+  // "viernes, 12 de junio" in the clinic's timezone
+  const todayRaw = new Date().toLocaleDateString('es-DO', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     timeZone: tz,
   })
-  const firstName = user.name?.split(/\s+/)[0] ?? 'there'
+  const today = todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1)
+  // "Dra. Carmen Rosario" → "Dra. Rosario"; "Carmen Rosario" → "Carmen".
+  const nameParts = (user.name ?? '').trim().split(/\s+/).filter(Boolean)
+  const firstName = /^dra?\.?$/i.test(nameParts[0] ?? '')
+    ? nameParts.length > 1
+      ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
+      : ''
+    : (nameParts[0] ?? '')
 
   return (
     <div className="space-y-5">
@@ -139,15 +148,15 @@ export default async function DashboardHome({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 px-5 py-4">
             <div>
               <h2 className="font-display text-lg font-semibold text-primary">
-                Welcome to matab, {firstName} 👋
+                Bienvenido(a) a {APP_NAME}{firstName ? `, ${firstName}` : ''} 👋
               </h2>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Your clinic is ready — we&rsquo;ve added a little sample data to explore. Make it
-                yours in three steps.
+                Su consultorio está listo: agregamos algunos datos de ejemplo para que explore.
+                Hágalo suyo en tres pasos.
               </p>
             </div>
             <span className="tabular shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              {doneCount}/{checklist.length} done
+              {doneCount}/{checklist.length} completados
             </span>
           </div>
           <ol className="divide-y divide-primary/10">
@@ -187,37 +196,37 @@ export default async function DashboardHome({
         <div>
           <p className="text-[13px] font-medium text-muted-foreground">{today}</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">
-            {greetingFor(tz)}, {firstName}
+            {greetingFor(tz)}{firstName ? `, ${firstName}` : ''}
           </h1>
         </div>
         <Link href="/dashboard/appointments/new" className={btnPrimary}>
           <IconPlus className="size-4" strokeWidth={1.75} />
-          New appointment
+          Nueva cita
         </Link>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <KpiCard
-          label="Today's appointments"
+          label="Citas de hoy"
           value={data.todayCount}
           icon={<IconCalendar size={17} strokeWidth={1.75} />}
           tone="primary"
         />
         <KpiCard
-          label="Completed today"
+          label="Atendidas hoy"
           value={data.completedToday}
           icon={<IconCalendarCheck size={17} strokeWidth={1.75} />}
           tone="green"
         />
         <KpiCard
-          label="No-shows today"
+          label="No asistieron hoy"
           value={data.noShowsToday}
           icon={<IconUserX size={17} strokeWidth={1.75} />}
           tone="amber"
         />
         <KpiCard
-          label="New patients (7d)"
+          label="Pacientes nuevos (7 días)"
           value={data.newPatients7d}
           icon={<IconUserPlus size={17} strokeWidth={1.75} />}
           tone="blue"
@@ -229,21 +238,21 @@ export default async function DashboardHome({
         <>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
             <KpiCard
-              label="Revenue today"
+              label="Ingresos de hoy"
               value={formatMoney(revenue.revenueToday, tenant)}
               icon={<IconWallet size={17} strokeWidth={1.75} />}
               tone="green"
             />
             <KpiCard
-              label="Revenue this month"
+              label="Ingresos del mes"
               value={formatMoney(revenue.revenueMonth, tenant)}
               icon={<IconArrowUpRight size={17} strokeWidth={1.75} />}
               tone="primary"
             />
             <KpiCard
-              label="Outstanding"
+              label="Saldo pendiente"
               value={formatMoney(revenue.outstandingTotal, tenant)}
-              hint="Unpaid + partial balances"
+              hint="Facturas pendientes y parciales"
               icon={<IconReceipt size={17} strokeWidth={1.75} />}
               tone="amber"
             />
@@ -252,9 +261,9 @@ export default async function DashboardHome({
           {revenue.outstanding.length > 0 && (
             <section className="card-flat overflow-hidden">
               <div className="flex items-center justify-between border-b px-5 py-4">
-                <h2 className="font-display text-lg font-semibold">Outstanding balances</h2>
+                <h2 className="font-display text-lg font-semibold">Saldos pendientes</h2>
                 <span className="tabular text-xs text-faint">
-                  {formatMoney(revenue.outstandingTotal, tenant)} total
+                  Total: {formatMoney(revenue.outstandingTotal, tenant)}
                 </span>
               </div>
               <ul className="divide-y divide-border">
@@ -279,8 +288,8 @@ export default async function DashboardHome({
           {/* Revenue per day (owner only) */}
           <section className="card-flat flex flex-col p-5 sm:p-6">
             <div className="mb-5 flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold">Revenue</h2>
-              <span className="text-xs text-faint">Last 14 days</span>
+              <h2 className="font-display text-lg font-semibold">Ingresos</h2>
+              <span className="text-xs text-faint">Últimos 14 días</span>
             </div>
             <div className="my-auto">
               <RevenueChart data={revenue.series} currency={revenue.currency} />
@@ -293,8 +302,8 @@ export default async function DashboardHome({
       <div className="grid items-stretch gap-4 xl:grid-cols-3">
         <section className="card-flat flex flex-col p-5 sm:p-6 xl:col-span-2">
           <div className="mb-5 flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-lg font-semibold">Activity</h2>
-            <span className="text-xs text-faint">Last 14 days</span>
+            <h2 className="font-display text-lg font-semibold">Actividad</h2>
+            <span className="text-xs text-faint">Últimos 14 días</span>
           </div>
           <div className="my-auto">
             <BarChart data={data.series} />
@@ -303,24 +312,24 @@ export default async function DashboardHome({
 
         <section className="card-flat flex flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">Up next today</h2>
+            <h2 className="font-display text-lg font-semibold">Próximas citas de hoy</h2>
             <Link
               href="/dashboard/appointments"
               className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"
             >
-              Day view
+              Agenda del día
               <IconArrowUpRight size={13} strokeWidth={2} />
             </Link>
           </div>
           {data.upcoming.length === 0 ? (
             <EmptyState
-              message="No more appointments today."
+              message="No quedan citas para hoy."
               action={
                 <Link
                   href="/dashboard/appointments/new"
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  Book one
+                  Agendar una
                 </Link>
               }
             />
@@ -335,10 +344,10 @@ export default async function DashboardHome({
                       href="/dashboard/appointments"
                       className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-secondary/40"
                     >
-                      <Avatar name={patient?.name ?? 'Patient'} size="sm" />
+                      <Avatar name={patient?.name ?? 'Paciente'} size="sm" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-semibold">
-                          {patient?.name ?? 'Patient'}
+                          {patient?.name ?? 'Paciente'}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {doctor?.name}
@@ -362,9 +371,9 @@ export default async function DashboardHome({
       <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
         <section className="card-flat overflow-hidden">
           <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">Doctors today</h2>
+            <h2 className="font-display text-lg font-semibold">Médicos hoy</h2>
             <span className="tabular text-xs text-faint">
-              {doctors.filter((d) => d.onToday).length} on duty
+              {doctors.filter((d) => d.onToday).length} en consulta
             </span>
           </div>
           <ul className="divide-y divide-border">
@@ -390,35 +399,35 @@ export default async function DashboardHome({
 
         <section className="card-flat overflow-hidden">
           <div className="border-b px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">Quick actions</h2>
+            <h2 className="font-display text-lg font-semibold">Acciones rápidas</h2>
           </div>
           <ul className="divide-y divide-border">
             {[
               {
                 href: '/dashboard/appointments/new',
                 icon: <IconPlus size={16} strokeWidth={1.75} />,
-                title: 'New appointment',
-                desc: 'Book a slot or take a walk-in',
+                title: 'Nueva cita',
+                desc: 'Agende un horario o registre un paciente sin cita',
               },
               {
                 href: '/dashboard/patients/new',
                 icon: <IconUserPlus size={16} strokeWidth={1.75} />,
-                title: 'Register patient',
-                desc: 'Name and phone is enough',
+                title: 'Registrar paciente',
+                desc: 'Basta con nombre y teléfono',
               },
               {
                 href: '/dashboard/appointments',
                 icon: <IconCalendar size={16} strokeWidth={1.75} />,
-                title: "Open today's queue",
-                desc: 'Check in and complete visits',
+                title: 'Abrir la fila de hoy',
+                desc: 'Registre llegadas y complete consultas',
               },
               ...(user.role === 'owner'
                 ? [
                     {
                       href: '/dashboard/staff',
                       icon: <IconStaff size={16} strokeWidth={1.75} />,
-                      title: 'Manage staff',
-                      desc: 'Doctors, timings and roles',
+                      title: 'Gestionar equipo',
+                      desc: 'Médicos, horarios y roles',
                     },
                   ]
                 : []),
@@ -449,24 +458,24 @@ export default async function DashboardHome({
 
         <section className="card-flat overflow-hidden md:col-span-2 xl:col-span-1">
           <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-display text-lg font-semibold">Recent patients</h2>
+            <h2 className="font-display text-lg font-semibold">Pacientes recientes</h2>
             <Link
               href="/dashboard/patients"
               className="inline-flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"
             >
-              All patients
+              Todos los pacientes
               <IconArrowUpRight size={13} strokeWidth={2} />
             </Link>
           </div>
           {recentPatients.length === 0 ? (
             <EmptyState
-              message="No patients registered yet."
+              message="Aún no hay pacientes registrados."
               action={
                 <Link
                   href="/dashboard/patients/new"
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  Register the first one
+                  Registrar el primero
                 </Link>
               }
             />

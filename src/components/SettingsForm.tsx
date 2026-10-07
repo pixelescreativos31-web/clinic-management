@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { btnPrimary, inputClass, textareaClass, Field, Spinner } from './primitives'
 import { AppSelect } from './AppSelect'
 import { TimePicker } from './TimePicker'
-import { updateClinicSettings } from '@/app/(frontend)/dashboard/settings/actions'
-import { CURRENCIES, TIMEZONES } from '@/lib/constants'
-import { IconCheck, IconBuilding, IconClock } from './icons'
+import { updateClinicSettings, updateMyPractitionerProfile } from '@/app/(frontend)/dashboard/settings/actions'
+import { CURRENCIES, TIMEZONES, PRACTICE_TYPES, WEEKDAYS } from '@/lib/constants'
+import { IconCheck, IconBuilding, IconClock, IconStethoscope } from './icons'
 
 export type SettingsInitial = {
   name: string
@@ -20,6 +20,18 @@ export type SettingsInitial = {
   closeTime: string
   currency: string
   timezone: string
+  taxId: string
+  practiceType: 'individual' | 'clinic'
+}
+
+export type ProfileInitial = {
+  practitioner: boolean
+  specialty: string
+  licenseNumber: string
+  consultationFee: string
+  availableDays: string[]
+  availableFrom: string
+  availableTo: string
 }
 
 /** Stripe-style settings row: description rail on the left, fields card on the right. */
@@ -52,7 +64,7 @@ function Section({
   )
 }
 
-export function SettingsForm({ initial }: { initial: SettingsInitial }) {
+export function SettingsForm({ initial, profile: initialProfile }: { initial: SettingsInitial; profile: ProfileInitial }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +74,13 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     setSaved(false)
     setForm((f) => ({ ...f, [k]: v }))
   }
+  const [profile, setProfile] = useState(initialProfile)
+  const setP = <K extends keyof ProfileInitial>(k: K, v: ProfileInitial[K]) => {
+    setSaved(false)
+    setProfile((p) => ({ ...p, [k]: v }))
+  }
+  const toggleDay = (d: string) =>
+    setP('availableDays', profile.availableDays.includes(d) ? profile.availableDays.filter((x) => x !== d) : [...profile.availableDays, d])
 
   const save = () => {
     setError(null)
@@ -72,16 +91,27 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         address: form.address || undefined,
         city: form.city || undefined,
         country: form.country || undefined,
-        appointmentDurationMins: Number(form.appointmentDurationMins) || 15,
+        taxId: form.taxId || undefined,
+        practiceType: form.practiceType,
+        appointmentDurationMins: Number(form.appointmentDurationMins) || 20,
         openTime: form.openTime,
         closeTime: form.closeTime,
         currency: form.currency,
         timezone: form.timezone,
       })
-      if (res.ok) {
-        setSaved(true)
-        router.refresh()
-      } else setError(res.message)
+      if (!res.ok) return setError(res.message)
+      const prof = await updateMyPractitionerProfile({
+        practitioner: profile.practitioner,
+        specialty: profile.specialty || undefined,
+        licenseNumber: profile.licenseNumber || undefined,
+        consultationFee: profile.consultationFee === '' ? undefined : Number(profile.consultationFee),
+        availableDays: profile.availableDays,
+        availableFrom: profile.availableFrom,
+        availableTo: profile.availableTo,
+      })
+      if (!prof.ok) return setError(prof.message)
+      setSaved(true)
+      router.refresh()
     })
   }
 
@@ -89,37 +119,47 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     <div className="flex flex-col gap-8">
       <Section
         icon={<IconBuilding size={15} strokeWidth={1.75} />}
-        title="Clinic profile"
-        description="These details appear across the dashboard and (later) on printed documents like tokens and receipts."
+        title="Consultorio"
+        description="Estos datos aparecen en el panel y en los documentos impresos: recetas, recibos y recordatorios."
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Clinic name">
+          <Field label="Nombre del consultorio">
             <input className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} />
           </Field>
-          <Field label="Phone">
+          <Field label="Teléfono">
             <input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} inputMode="tel" />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Address">
+            <Field label="Dirección">
               <textarea className={textareaClass} rows={2} value={form.address} onChange={(e) => set('address', e.target.value)} />
             </Field>
           </div>
-          <Field label="City">
+          <Field label="Ciudad">
             <input className={inputClass} value={form.city} onChange={(e) => set('city', e.target.value)} />
           </Field>
-          <Field label="Country">
+          <Field label="País">
             <input className={inputClass} value={form.country} onChange={(e) => set('country', e.target.value)} />
+          </Field>
+          <Field label="RNC (opcional)" hint="Se imprime en los recibos.">
+            <input className={inputClass} value={form.taxId} onChange={(e) => set('taxId', e.target.value)} />
+          </Field>
+          <Field label="Tipo de práctica" hint="«Médico independiente» simplifica la agenda y el menú.">
+            <AppSelect
+              value={form.practiceType}
+              onChange={(v) => set('practiceType', v)}
+              options={PRACTICE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            />
           </Field>
         </div>
       </Section>
 
       <Section
         icon={<IconClock size={15} strokeWidth={1.75} />}
-        title="Scheduling"
-        description="Working hours and defaults for the day view and new bookings. Currency and timezone are per-clinic."
+        title="Agenda"
+        description="Horario del consultorio y valores por defecto para la agenda y las nuevas citas."
       >
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Field label="Opens at">
+          <Field label="Abre a las">
             <TimePicker
               value={form.openTime}
               onChange={(v) => set('openTime', v)}
@@ -128,7 +168,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
               stepMins={30}
             />
           </Field>
-          <Field label="Closes at">
+          <Field label="Cierra a las">
             <TimePicker
               value={form.closeTime}
               onChange={(v) => set('closeTime', v)}
@@ -137,10 +177,10 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
               stepMins={30}
             />
           </Field>
-          <Field label="Default slot (mins)">
+          <Field label="Duración de cita (min)">
             <input className={inputClass} inputMode="numeric" value={form.appointmentDurationMins} onChange={(e) => set('appointmentDurationMins', e.target.value)} />
           </Field>
-          <Field label="Currency" hint="Existing records keep their stored amounts.">
+          <Field label="Moneda" hint="Los registros existentes conservan sus montos.">
             <AppSelect
               value={form.currency}
               onChange={(v) => set('currency', v)}
@@ -148,7 +188,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Timezone" hint="Changes how times are displayed, not stored data.">
+            <Field label="Zona horaria" hint="Cambia cómo se muestran las horas, no los datos guardados.">
               <AppSelect
                 value={form.timezone}
                 onChange={(v) => set('timezone', v)}
@@ -159,20 +199,77 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         </div>
       </Section>
 
+      <Section
+        icon={<IconStethoscope size={15} strokeWidth={1.75} />}
+        title="Mi perfil médico"
+        description="Si usted atiende pacientes, aparecerá en la agenda y sus datos se imprimirán en las recetas."
+      >
+        <label className="flex items-center gap-2.5 text-sm font-medium">
+          <input
+            type="checkbox"
+            className="size-4 accent-[var(--primary)]"
+            checked={profile.practitioner}
+            onChange={(e) => setP('practitioner', e.target.checked)}
+          />
+          Atiendo pacientes en este consultorio
+        </label>
+        {profile.practitioner && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <Field label="Especialidad">
+              <input className={inputClass} value={profile.specialty} onChange={(e) => setP('specialty', e.target.value)} placeholder="Medicina interna" />
+            </Field>
+            <Field label="Exequátur / registro">
+              <input className={inputClass} value={profile.licenseNumber} onChange={(e) => setP('licenseNumber', e.target.value)} />
+            </Field>
+            <Field label="Tarifa de consulta">
+              <input className={inputClass} inputMode="numeric" value={profile.consultationFee} onChange={(e) => setP('consultationFee', e.target.value)} />
+            </Field>
+            <div className="sm:col-span-2 xl:col-span-3">
+              <Field label="Días de consulta">
+                <div className="flex flex-wrap gap-1.5">
+                  {WEEKDAYS.map((d) => {
+                    const on = profile.availableDays.includes(d.value)
+                    return (
+                      <button
+                        key={d.value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggleDay(d.value)}
+                        className={`h-9 min-w-12 rounded-md border px-2.5 text-[13px] font-medium transition-colors ${
+                          on ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </Field>
+            </div>
+            <Field label="Desde">
+              <TimePicker value={profile.availableFrom} onChange={(v) => setP('availableFrom', v)} openTime="00:00" closeTime="24:00" stepMins={30} />
+            </Field>
+            <Field label="Hasta">
+              <TimePicker value={profile.availableTo} onChange={(v) => setP('availableTo', v)} openTime="00:00" closeTime="24:00" stepMins={30} />
+            </Field>
+          </div>
+        )}
+      </Section>
+
       {/* Save bar */}
       <div className="card-flat flex items-center justify-between gap-3 px-6 py-4 lg:ms-[340px]">
         {error ? (
           <p className="text-sm text-red" role="alert">{error}</p>
         ) : saved ? (
           <p className="inline-flex items-center gap-1.5 text-sm text-primary">
-            <IconCheck size={15} /> Saved
+            <IconCheck size={15} /> Guardado
           </p>
         ) : (
-          <span className="text-xs text-faint">Changes apply immediately for all staff.</span>
+          <span className="text-xs text-faint">Los cambios se aplican de inmediato para todo el equipo.</span>
         )}
         <button className={btnPrimary} disabled={pending || !form.name || !form.phone} onClick={save}>
           {pending && <Spinner />}
-          {pending ? 'Saving…' : 'Save changes'}
+          {pending ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </div>
     </div>

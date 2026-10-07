@@ -9,6 +9,7 @@ import { ACTIVE_STATUSES, DEFAULT_TIMEZONE } from './constants'
 import { startOfDayInTz } from './reports'
 import { formatTime, formatDate } from './format'
 import { sendEmail, type SendEmail } from './email'
+import { APP_NAME } from './brand'
 
 /** Tenant-local hour at which the digest goes out. */
 export const DIGEST_HOUR = 7
@@ -95,7 +96,7 @@ export async function runDailyDigest({
 
       const res = await send({
         to: ownerEmail,
-        subject: `${tenant.name}: ${appts.totalDocs} appointment${appts.totalDocs === 1 ? '' : 's'} today`,
+        subject: `${tenant.name}: ${appts.totalDocs} ${appts.totalDocs === 1 ? 'cita' : 'citas'} hoy`,
         html: digestHtml(tenant, appts.docs as Appointment[], now),
       })
       if (res.ok) summary.sent.push(label)
@@ -118,7 +119,7 @@ function digestHtml(tenant: Tenant, appts: Appointment[], now: Date): string {
   const rows = appts
     .map((a) => {
       // First name only — enough for a schedule, no full record in an inbox.
-      const firstName = ((a.patient as Patient)?.name ?? 'Patient').split(/\s+/)[0]
+      const firstName = ((a.patient as Patient)?.name ?? 'Paciente').split(/\s+/)[0]
       const doctor = (a.doctor as User)?.name ?? '—'
       return `<tr>
         <td style="padding:6px 14px 6px 0;white-space:nowrap;font-variant-numeric:tabular-nums">${formatTime(a.start, tenant)}</td>
@@ -131,11 +132,11 @@ function digestHtml(tenant: Tenant, appts: Appointment[], now: Date): string {
   return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
     <h2 style="margin:0 0 2px;font-size:18px">${tenant.name}</h2>
     <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
-      Today's schedule — ${formatDate(now, tenant)} · ${appts.length} appointment${appts.length === 1 ? '' : 's'}
+      Agenda de hoy — ${formatDate(now, tenant)} · ${appts.length} ${appts.length === 1 ? 'cita' : 'citas'}
     </p>
     <table style="border-collapse:collapse;font-size:14px">${rows}</table>
     <p style="margin:18px 0 0;font-size:12px;color:#8aa19b">
-      Sent by matab at 7:00 your local time. Manage appointments on your dashboard.
+      Enviado por ${APP_NAME} a las 7:00, hora local. Gestione sus citas desde su panel.
     </p>
   </div>`
 }

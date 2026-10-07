@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { Card as ShadCard } from '@/components/ui/card'
-import type { AppointmentStatus } from '@/lib/constants'
+import { ROLE_LABELS, type AppointmentStatus, type Role } from '@/lib/constants'
 
 // App-level primitives, built on shadcn/ui and the Matab tokens. Screens import
 // from here so the design language stays in one place.
@@ -33,11 +33,11 @@ export function RoleBadge({ role }: { role: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize whitespace-nowrap',
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
         ROLE_STYLES[role] ?? 'bg-muted text-muted-foreground',
       )}
     >
-      {role === 'superAdmin' ? 'Super admin' : role}
+      {ROLE_LABELS[role as Role] ?? role}
     </span>
   )
 }

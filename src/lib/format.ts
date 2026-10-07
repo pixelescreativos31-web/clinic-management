@@ -3,6 +3,7 @@
 // hardcoded — they come from the tenant's settings (spec §8.6).
 
 import { DEFAULT_CURRENCY, DEFAULT_TIMEZONE } from './constants'
+import { APP_LOCALE } from './brand'
 
 type TenantLike =
   | {
@@ -14,26 +15,26 @@ type TenantLike =
 const currencyOf = (tenant: TenantLike): string => tenant?.settings?.currency || DEFAULT_CURRENCY
 const timezoneOf = (tenant: TenantLike): string => tenant?.settings?.timezone || DEFAULT_TIMEZONE
 
-/** Format an amount in the tenant's currency, e.g. "Rs 1,500" / "$1,500". */
+/** Format an amount in the tenant's currency, e.g. "RD$1,500" / "US$1,500". */
 export function formatMoney(amount: number, tenant: TenantLike): string {
   const currency = currencyOf(tenant)
   try {
-    return new Intl.NumberFormat('en', {
+    return new Intl.NumberFormat(APP_LOCALE, {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
     }).format(amount)
   } catch {
-    return `${currency} ${amount.toLocaleString('en')}`
+    return `${currency} ${amount.toLocaleString(APP_LOCALE)}`
   }
 }
 
 const toDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value))
 
-/** "5:30 pm" in the tenant's timezone (lowercase, no leading zero). */
+/** "5:30 p. m." in the tenant's timezone (lowercase, no leading zero). */
 export function formatTime(value: Date | string, tenant: TenantLike): string {
   return toDate(value)
-    .toLocaleTimeString('en-US', {
+    .toLocaleTimeString(APP_LOCALE, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -42,9 +43,9 @@ export function formatTime(value: Date | string, tenant: TenantLike): string {
     .toLowerCase()
 }
 
-/** "Tue, 10 Jun" in the tenant's timezone. */
+/** "mar, 10 jun" in the tenant's timezone. */
 export function formatDate(value: Date | string, tenant: TenantLike): string {
-  return toDate(value).toLocaleDateString('en-GB', {
+  return toDate(value).toLocaleDateString(APP_LOCALE, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -52,7 +53,7 @@ export function formatDate(value: Date | string, tenant: TenantLike): string {
   })
 }
 
-/** "Tue, 10 Jun · 5:30 pm" */
+/** "mar, 10 jun · 5:30 p. m." */
 export function formatDateTime(value: Date | string, tenant: TenantLike): string {
   return `${formatDate(value, tenant)} · ${formatTime(value, tenant)}`
 }
@@ -60,6 +61,16 @@ export function formatDateTime(value: Date | string, tenant: TenantLike): string
 /** YYYY-MM-DD for a Date as seen in the tenant's timezone (for grouping by day). */
 export function tenantDayKey(value: Date | string, tenant: TenantLike): string {
   return toDate(value).toLocaleDateString('en-CA', { timeZone: timezoneOf(tenant) })
+}
+
+/** "10 de junio de 2026" — long date for printed documents. */
+export function formatLongDate(value: Date | string, tenant: TenantLike): string {
+  return toDate(value).toLocaleDateString(APP_LOCALE, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: timezoneOf(tenant),
+  })
 }
 
 /** Compute age in whole years from a date of birth. */

@@ -13,14 +13,18 @@ import type { CollectionBeforeChangeHook, Where } from 'payload'
 import { APIError } from 'payload'
 import { getTenantID } from '@/access'
 import { ERROR_CODES } from '@/lib/constants'
-import { asPlan, limitFor, planLabel, type LimitedResource } from '@/lib/plans'
+import { asPlan, limitFor, planLabel, resourceLabel, type LimitedResource } from '@/lib/plans'
+import { practitionerWhere } from '@/lib/practice'
 
 export function enforcePlanLimit(resource: LimitedResource): CollectionBeforeChangeHook {
   return async ({ data, req, operation }) => {
     if (operation !== 'create' || !data) return data
 
-    // Doctors are the only capped user role; other roles (and updates) pass through.
-    if (resource === 'doctors' && data.role !== 'doctor') return data
+    // Practitioners are the only capped users: doctors, plus an owner who also
+    // practises (the independent-doctor setup). Other roles pass through.
+    if (resource === 'doctors' && !(data.role === 'doctor' || (data.role === 'owner' && data.practitioner))) {
+      return data
+    }
 
     const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
     if (!tenantID) return data // tenant-less paths (e.g. superAdmin) aren't plan-scoped
@@ -37,14 +41,14 @@ export function enforcePlanLimit(resource: LimitedResource): CollectionBeforeCha
 
     const where: Where =
       resource === 'doctors'
-        ? { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { not_equals: false } }
+        ? { and: [practitionerWhere(tenantID), { active: { not_equals: false } }] }
         : { tenant: { equals: tenantID } }
     const collection = resource === 'doctors' ? 'users' : 'patients'
 
     const { totalDocs } = await req.payload.count({ collection, where, req })
     if (totalDocs >= limit) {
       throw new APIError(
-        `Your ${planLabel(plan)} plan allows ${limit} ${resource}. Request an upgrade to add more.`,
+        `Su plan ${planLabel(plan)} permite ${limit} ${resourceLabel(resource, limit)}. Solicite una mejora de plan para agregar más.`,
         403,
         { code: ERROR_CODES.PLAN_LIMIT },
       )

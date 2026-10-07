@@ -6,22 +6,25 @@
 
 function fmt(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat('en', {
+    return new Intl.NumberFormat('es-DO', {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
     }).format(amount)
   } catch {
-    return `${currency} ${amount.toLocaleString('en')}`
+    return `${currency} ${amount.toLocaleString('es-DO')}`
   }
 }
 
 export function RevenueChart({
   data,
   currency,
+  period = 'en los últimos 14 días',
 }: {
   data: { label: string; amount: number }[]
   currency: string
+  /** Trailing caption phrase, e.g. "en los últimos 14 días". */
+  period?: string
 }) {
   const max = Math.max(1, ...data.map((d) => d.amount))
   const total = data.reduce((s, d) => s + d.amount, 0)
@@ -95,7 +98,7 @@ export function RevenueChart({
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-faint">{fmt(total, currency)} collected in the last 14 days</p>
+      <p className="mt-3 text-xs text-faint">{fmt(total, currency)} cobrados {period}</p>
     </div>
   )
 }

@@ -135,25 +135,27 @@ export interface Tenant {
   id: string;
   name: string;
   /**
-   * Auto-generated from the name; used for public URLs later.
+   * Se genera a partir del nombre; para URLs públicas en el futuro.
    */
   slug?: string | null;
   phone: string;
   address?: string | null;
   city?: string | null;
   country?: string | null;
+  taxId?: string | null;
+  practiceType: 'individual' | 'clinic';
   status: 'pending' | 'active' | 'suspended';
   /**
-   * Subscription tier; limits enforced in code (src/lib/plans.ts).
+   * Nivel de suscripción; límites definidos en código (src/lib/plans.ts).
    */
-  plan: 'free' | 'clinic' | 'plus';
+  plan: 'free' | 'pro' | 'clinic' | 'plus';
   upgradeRequest?: {
-    requestedPlan?: ('free' | 'clinic' | 'plus') | null;
+    requestedPlan?: ('free' | 'pro' | 'clinic' | 'plus') | null;
     requestedAt?: string | null;
     note?: string | null;
   };
   /**
-   * How this clinic was created — for analytics.
+   * Cómo se creó este consultorio (analítica).
    */
   onboardingSource: 'self-serve' | 'manual';
   settings: {
@@ -161,13 +163,24 @@ export interface Tenant {
     openTime: string;
     closeTime: string;
     /**
-     * Market-agnostic core — all amounts are formatted from this.
+     * Todos los montos se muestran en esta moneda.
      */
-    currency: 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR' | 'INR';
+    currency: 'DOP' | 'USD' | 'EUR' | 'MXN' | 'COP' | 'PEN' | 'CLP' | 'GTQ' | 'CRC' | 'PAB';
     /**
-     * All times are displayed in this timezone.
+     * Todas las horas se muestran en esta zona horaria.
      */
-    timezone: 'Asia/Karachi' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Asia/Kolkata' | 'Europe/London' | 'America/New_York';
+    timezone:
+      | 'America/Santo_Domingo'
+      | 'America/Puerto_Rico'
+      | 'America/New_York'
+      | 'America/Mexico_City'
+      | 'America/Bogota'
+      | 'America/Lima'
+      | 'America/Santiago'
+      | 'America/Guatemala'
+      | 'America/Costa_Rica'
+      | 'America/Panama'
+      | 'Europe/Madrid';
   };
   updatedAt: string;
   createdAt: string;
@@ -181,7 +194,7 @@ export interface User {
   name: string;
   role: 'superAdmin' | 'owner' | 'doctor' | 'receptionist';
   /**
-   * Required for all roles except super admin.
+   * Obligatorio para todos los roles excepto superadministrador.
    */
   tenant?: (string | null) | Tenant;
   phone?: string | null;
@@ -189,15 +202,14 @@ export interface User {
   emailVerified?: boolean | null;
   verifyTokenHash?: string | null;
   verifyTokenExp?: string | null;
+  practitioner?: boolean | null;
   specialty?: string | null;
+  licenseNumber?: string | null;
   /**
-   * In the clinic currency. Used by billing (v2).
+   * En la moneda del consultorio. Se usa al facturar.
    */
   consultationFee?: number | null;
   availabilityType?: ('regular' | 'onCall' | 'byAppointment') | null;
-  /**
-   * Days this doctor sees patients (daily = all; alternate = e.g. Mon/Wed/Fri; weekly = one).
-   */
   availableDays?: ('sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')[] | null;
   availableFrom?: string | null;
   availableTo?: string | null;
@@ -228,19 +240,44 @@ export interface Patient {
   id: string;
   tenant: string | Tenant;
   /**
-   * Auto-assigned per clinic.
+   * Se asigna automáticamente por consultorio.
    */
   mrn?: string | null;
   name: string;
+  documentType?: ('cedula' | 'passport' | 'other') | null;
+  documentNumber?: string | null;
   phone: string;
+  email?: string | null;
   gender: 'male' | 'female' | 'other';
   dateOfBirth?: string | null;
   ageYears?: number | null;
   bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
+  address?: string | null;
+  occupation?: string | null;
+  insurance?: {
+    provider?: string | null;
+    affiliateNumber?: string | null;
+    plan?: string | null;
+  };
+  emergencyContact?: {
+    name?: string | null;
+    relationship?: string | null;
+    phone?: string | null;
+  };
   /**
-   * Shown prominently on the patient profile (safety).
+   * Se muestra de forma destacada en el expediente (seguridad).
    */
   allergies?: string | null;
+  history?: {
+    personal?: string | null;
+    chronicConditions?: string | null;
+    surgical?: string | null;
+    family?: string | null;
+    medications?: string | null;
+    habits?: string | null;
+    gynecoObstetric?: string | null;
+    vaccines?: string | null;
+  };
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -261,7 +298,7 @@ export interface Appointment {
   status: 'scheduled' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
   isWalkIn?: boolean | null;
   /**
-   * Auto-assigned per clinic per day for walk-ins.
+   * Se asigna automáticamente por día a pacientes sin cita.
    */
   tokenNumber?: string | null;
   cancellationReason?: string | null;
@@ -280,18 +317,32 @@ export interface Visit {
   patient: string | Patient;
   doctor: string | User;
   visitDate: string;
+  chiefComplaint?: string | null;
   symptoms?: string | null;
+  physicalExam?: string | null;
   diagnosis?: string | null;
   /**
-   * Visible to all clinic staff.
+   * Se imprime en la receta como indicaciones generales.
+   */
+  treatmentPlan?: string | null;
+  /**
+   * Laboratorios, imágenes u otros estudios. Se imprime en la receta.
+   */
+  labOrders?: string | null;
+  /**
+   * Solo visibles para el personal clínico.
    */
   notes?: string | null;
   vitals?: {
     bpSystolic?: number | null;
     bpDiastolic?: number | null;
-    temperatureC?: number | null;
-    weightKg?: number | null;
     pulse?: number | null;
+    respiratoryRate?: number | null;
+    temperatureC?: number | null;
+    oxygenSaturation?: number | null;
+    weightKg?: number | null;
+    heightCm?: number | null;
+    glucoseMgDl?: number | null;
   };
   prescription?:
     | {
@@ -300,6 +351,7 @@ export interface Visit {
         frequency?: ('od' | 'bd' | 'tds' | 'qid' | 'sos' | 'other') | null;
         frequencyNote?: string | null;
         durationDays?: number | null;
+        quantity?: string | null;
         instructions?: string | null;
         id?: string | null;
       }[]
@@ -317,13 +369,13 @@ export interface Invoice {
   id: string;
   tenant: string | Tenant;
   /**
-   * Auto-assigned per clinic (INV-0001).
+   * Asignado automáticamente por consultorio (FAC-0001).
    */
   invoiceNumber?: string | null;
   visit?: (string | null) | Visit;
   patient: string | Patient;
   /**
-   * Snapshotted from the clinic at create time.
+   * Tomada de la configuración del consultorio al crear la factura.
    */
   currency?: string | null;
   lineItems: {
@@ -331,7 +383,7 @@ export interface Invoice {
     quantity: number;
     unitAmount: number;
     /**
-     * quantity × unit amount.
+     * Cantidad × precio unitario.
      */
     amount?: number | null;
     id?: string | null;
@@ -340,7 +392,7 @@ export interface Invoice {
   payments?:
     | {
         amount: number;
-        method: 'cash' | 'card' | 'bank-transfer' | 'other';
+        method: 'cash' | 'card' | 'bank-transfer' | 'insurance' | 'other';
         receivedAt?: string | null;
         receivedBy?: (string | null) | User;
         id?: string | null;
@@ -378,15 +430,19 @@ export interface AuditLog {
     | 'plan.upgrade-requested'
     | 'plan.upgrade-rejected'
     | 'plan.changed'
-    | 'export.generated';
+    | 'export.generated'
+    | 'patient.created'
+    | 'patient.updated'
+    | 'visit.created'
+    | 'visit.updated';
   targetCollection: string;
   targetId: string;
   /**
-   * Human-readable, e.g. "Cancelled Bilal Ahmed's 5:30 pm appointment".
+   * Texto legible, p. ej., "Canceló la cita de Ana Pérez de las 5:30 p. m.".
    */
   summary: string;
   /**
-   * Small structured context (old/new role, amount…). Never a full doc snapshot.
+   * Contexto estructurado breve (rol anterior/nuevo, monto…). Nunca una copia completa del documento.
    */
   meta?:
     | {
@@ -505,6 +561,8 @@ export interface TenantsSelect<T extends boolean = true> {
   address?: T;
   city?: T;
   country?: T;
+  taxId?: T;
+  practiceType?: T;
   status?: T;
   plan?: T;
   upgradeRequest?:
@@ -540,7 +598,9 @@ export interface UsersSelect<T extends boolean = true> {
   emailVerified?: T;
   verifyTokenHash?: T;
   verifyTokenExp?: T;
+  practitioner?: T;
   specialty?: T;
+  licenseNumber?: T;
   consultationFee?: T;
   availabilityType?: T;
   availableDays?: T;
@@ -571,12 +631,43 @@ export interface PatientsSelect<T extends boolean = true> {
   tenant?: T;
   mrn?: T;
   name?: T;
+  documentType?: T;
+  documentNumber?: T;
   phone?: T;
+  email?: T;
   gender?: T;
   dateOfBirth?: T;
   ageYears?: T;
   bloodGroup?: T;
+  address?: T;
+  occupation?: T;
+  insurance?:
+    | T
+    | {
+        provider?: T;
+        affiliateNumber?: T;
+        plan?: T;
+      };
+  emergencyContact?:
+    | T
+    | {
+        name?: T;
+        relationship?: T;
+        phone?: T;
+      };
   allergies?: T;
+  history?:
+    | T
+    | {
+        personal?: T;
+        chronicConditions?: T;
+        surgical?: T;
+        family?: T;
+        medications?: T;
+        habits?: T;
+        gynecoObstetric?: T;
+        vaccines?: T;
+      };
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -611,17 +702,25 @@ export interface VisitsSelect<T extends boolean = true> {
   patient?: T;
   doctor?: T;
   visitDate?: T;
+  chiefComplaint?: T;
   symptoms?: T;
+  physicalExam?: T;
   diagnosis?: T;
+  treatmentPlan?: T;
+  labOrders?: T;
   notes?: T;
   vitals?:
     | T
     | {
         bpSystolic?: T;
         bpDiastolic?: T;
-        temperatureC?: T;
-        weightKg?: T;
         pulse?: T;
+        respiratoryRate?: T;
+        temperatureC?: T;
+        oxygenSaturation?: T;
+        weightKg?: T;
+        heightCm?: T;
+        glucoseMgDl?: T;
       };
   prescription?:
     | T
@@ -631,6 +730,7 @@ export interface VisitsSelect<T extends boolean = true> {
         frequency?: T;
         frequencyNote?: T;
         durationDays?: T;
+        quantity?: T;
         instructions?: T;
         id?: T;
       };

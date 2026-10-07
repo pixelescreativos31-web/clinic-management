@@ -44,8 +44,8 @@ export function DatePicker({
         <IconCalendar size={15} className="shrink-0 text-faint" />
         <span className="tabular truncate">
           {selected
-            ? selected.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-            : 'Pick a date'}
+            ? selected.toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+            : 'Elija una fecha'}
         </span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

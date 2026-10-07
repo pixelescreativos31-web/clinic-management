@@ -46,7 +46,7 @@ describe('v3 — plans & upgrade requests', () => {
 
     const logs = await findAudit(f.a.tenant.id, 'plan.upgrade-requested')
     expect(logs.totalDocs).toBe(1)
-    expect(logs.docs[0].summary).toMatch(/upgrade to the Plus plan/i)
+    expect(logs.docs[0].summary).toMatch(/mejorar al plan Plus/i)
   })
 
   it('never lets an owner change their own plan (field is superAdmin-only)', async () => {
@@ -117,7 +117,7 @@ describe('v3 — plans & upgrade requests', () => {
 
     const rejected = await findAudit(f.a.tenant.id, 'plan.upgrade-rejected')
     expect(rejected.totalDocs).toBe(1)
-    expect(rejected.docs[0].summary).toMatch(/Declined/i)
+    expect(rejected.docs[0].summary).toMatch(/Rechazada/i)
     const changed = await findAudit(f.a.tenant.id, 'plan.changed')
     // Only the seed's plus→free switch was overrideAccess (no user) — never audited.
     expect(changed.totalDocs).toBe(0)

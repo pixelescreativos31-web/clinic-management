@@ -61,7 +61,7 @@ export function InvoiceActions({
 
       {balanceDue > 0 && !payOpen && (
         <button className={btnPrimary} onClick={() => { setAmount(String(balanceDue)); setPayOpen(true) }}>
-          Record payment
+          Registrar pago
         </button>
       )}
 
@@ -69,38 +69,38 @@ export function InvoiceActions({
         <div className="rounded-lg border border-border p-3.5">
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Amount</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Monto</label>
               <input className={inputClass} inputMode="decimal" value={amount} autoFocus onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Method</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Método de pago</label>
               <AppSelect value={method} onChange={setMethod} options={METHOD_OPTIONS} />
             </div>
           </div>
           <div className="mt-3 flex gap-2">
             <button className={`${btnPrimary} flex-1`} disabled={pending || !(Number(amount) > 0)} onClick={pay}>
               {pending && <Spinner />}
-              {pending ? 'Saving…' : 'Save payment'}
+              {pending ? 'Guardando…' : 'Guardar pago'}
             </button>
-            <button className={btnGhost} onClick={() => setPayOpen(false)} disabled={pending}>Cancel</button>
+            <button className={btnGhost} onClick={() => setPayOpen(false)} disabled={pending}>Cancelar</button>
           </div>
         </div>
       )}
 
       {canVoid && !voidOpen && (
-        <button className={btnGhost} onClick={() => setVoidOpen(true)}>Void invoice</button>
+        <button className={btnGhost} onClick={() => setVoidOpen(true)}>Anular factura</button>
       )}
 
       {voidOpen && (
         <div className="rounded-lg border border-red/25 p-3.5">
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Reason for voiding (required)</label>
-          <input className={inputClass} value={reason} autoFocus onChange={(e) => setReason(e.target.value)} placeholder="e.g. billed in error" />
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Motivo de la anulación (obligatorio)</label>
+          <input className={inputClass} value={reason} autoFocus onChange={(e) => setReason(e.target.value)} placeholder="p. ej., facturada por error" />
           <div className="mt-3 flex gap-2">
             <button className={`${btnDanger} flex-1`} disabled={pending || !reason.trim()} onClick={doVoid}>
               {pending && <Spinner />}
-              {pending ? 'Voiding…' : 'Confirm void'}
+              {pending ? 'Anulando…' : 'Confirmar anulación'}
             </button>
-            <button className={btnGhost} onClick={() => setVoidOpen(false)} disabled={pending}>Keep</button>
+            <button className={btnGhost} onClick={() => setVoidOpen(false)} disabled={pending}>Conservar</button>
           </div>
         </div>
       )}

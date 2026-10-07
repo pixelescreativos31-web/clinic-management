@@ -5,8 +5,9 @@ import { getTenantID } from '@/access'
 import { getMonthlyReport } from '@/lib/reports'
 import { formatMoney } from '@/lib/format'
 import { PrintButton } from '@/components/PrintButton'
+import { APP_NAME } from '@/lib/brand'
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 /**
  * Printable monthly summary (v4 spec §A.1) — A4 with the clinic letterhead, same
@@ -34,7 +35,7 @@ export default async function ReportPrintPage({
   const report = await getMonthlyReport(payload, tenantID, tenant, y, m)
   const money = (n: number) => formatMoney(n, tenant)
   const pct = (n: number) => `${Math.round(n * 100)}%`
-  const title = `${MONTHS[m - 1]} ${y}`
+  const title = `${MONTHS[m - 1]} de ${y}`
 
   return (
     <main className="mx-auto w-full max-w-[190mm] bg-white px-10 py-10 text-[13px] text-ink print:max-w-none print:p-[14mm]">
@@ -43,7 +44,7 @@ export default async function ReportPrintPage({
       {/* Toolbar — hidden when printing */}
       <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
         <Link href={`/dashboard/reports?y=${y}&m=${m}`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">
-          ‹ Back to reports
+          ‹ Volver a reportes
         </Link>
         <PrintButton />
       </div>
@@ -59,7 +60,7 @@ export default async function ReportPrintPage({
           </p>
         </div>
         <div className="text-end">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Monthly report</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Reporte mensual</div>
           <div className="mt-0.5 text-lg font-semibold">{title}</div>
         </div>
       </header>
@@ -68,20 +69,20 @@ export default async function ReportPrintPage({
       <section className="mt-6 grid grid-cols-4 gap-4">
         {[
           {
-            label: 'Appointments',
+            label: 'Citas',
             value: String(report.appointments.total),
-            hint: `${report.appointments.completed} completed · ${pct(report.appointments.completionRate)}`,
+            hint: `${report.appointments.completed} ${report.appointments.completed === 1 ? 'atendida' : 'atendidas'} · ${pct(report.appointments.completionRate)}`,
           },
           {
-            label: 'No-shows',
+            label: 'No asistieron',
             value: String(report.appointments.noShows),
-            hint: `${report.appointments.cancelled} cancelled`,
+            hint: `${report.appointments.cancelled} ${report.appointments.cancelled === 1 ? 'cancelada' : 'canceladas'}`,
           },
-          { label: 'New patients', value: String(report.newPatients), hint: '' },
+          { label: 'Pacientes nuevos', value: String(report.newPatients), hint: '' },
           {
-            label: 'Revenue collected',
+            label: 'Ingresos cobrados',
             value: money(report.revenueCollected),
-            hint: `${money(report.outstandingAdded)} outstanding added`,
+            hint: `${money(report.outstandingAdded)} de saldo pendiente nuevo`,
           },
         ].map((k) => (
           <div key={k.label} className="rounded-lg border border-border p-3">
@@ -94,18 +95,18 @@ export default async function ReportPrintPage({
 
       {/* Per-doctor table */}
       <section className="mt-8">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">By doctor</h2>
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Por médico</h2>
         {report.doctors.length === 0 ? (
-          <p className="mt-2 text-xs text-muted-foreground">No doctor activity this month.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Sin actividad de médicos este mes.</p>
         ) : (
           <table className="mt-2 w-full border-collapse text-[13px]">
             <thead>
               <tr className="border-y border-border text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-2 text-start font-medium">Doctor</th>
-                <th className="py-2 text-end font-medium">Appointments</th>
-                <th className="py-2 text-end font-medium">Completed</th>
-                <th className="py-2 text-end font-medium">No-show rate</th>
-                <th className="py-2 text-end font-medium">Revenue</th>
+                <th className="py-2 text-start font-medium">Médico</th>
+                <th className="py-2 text-end font-medium">Citas</th>
+                <th className="py-2 text-end font-medium">Atendidas</th>
+                <th className="py-2 text-end font-medium">Tasa de inasistencia</th>
+                <th className="py-2 text-end font-medium">Ingresos</th>
               </tr>
             </thead>
             <tbody>
@@ -124,7 +125,7 @@ export default async function ReportPrintPage({
       </section>
 
       <footer className="mt-10 border-t border-border pt-3 text-center text-[10px] text-faint">
-        Generated by Matab · {tenant?.name} · {title}
+        Generado por {APP_NAME} · {tenant?.name} · {title}
       </footer>
     </main>
   )

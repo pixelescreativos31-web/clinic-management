@@ -26,6 +26,7 @@ export async function searchPatients(query: string): Promise<PatientHit[]> {
         { name: { like: q } },
         { phone: { like: q } },
         { mrn: { like: q } },
+        ...(q.replace(/[^0-9]/g, '').length >= 4 ? [{ documentNumber: { like: q.replace(/[^0-9]/g, '') } }] : []),
       ],
     },
     user: c.user,
@@ -56,7 +57,7 @@ export async function findByPhone(phone: string): Promise<PatientHit[]> {
   return res.docs.map((p) => ({ id: String(p.id), name: p.name, phone: p.phone, mrn: p.mrn ?? '' }))
 }
 
-type PatientInput = {
+export type PatientInput = {
   name: string
   phone: string
   gender: string
@@ -65,16 +66,62 @@ type PatientInput = {
   bloodGroup?: string
   allergies?: string
   notes?: string
+  documentType?: string
+  documentNumber?: string
+  email?: string
+  address?: string
+  occupation?: string
+  insurance?: { provider?: string; affiliateNumber?: string; plan?: string }
+  emergencyContact?: { name?: string; relationship?: string; phone?: string }
+  history?: {
+    personal?: string
+    chronicConditions?: string
+    surgical?: string
+    family?: string
+    medications?: string
+    habits?: string
+    gynecoObstetric?: string
+    vaccines?: string
+  }
 }
+
+/** Empty strings → null so clearing a field in the form really clears it. */
+const clean = <T extends Record<string, unknown>>(obj: T | undefined): Record<string, unknown> | undefined =>
+  obj ? Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, typeof v === 'string' && !v.trim() ? null : v])) : undefined
+
+/** Shared create/update payload (field-level access strips `history` for assistants). */
+function toData(input: PatientInput) {
+  return {
+    name: input.name,
+    phone: input.phone,
+    gender: input.gender,
+    ageYears: input.ageYears ?? null,
+    dateOfBirth: input.dateOfBirth || null,
+    bloodGroup: input.bloodGroup || null,
+    allergies: input.allergies || null,
+    notes: input.notes || null,
+    documentType: input.documentType || 'cedula',
+    documentNumber: input.documentNumber || null,
+    email: input.email || null,
+    address: input.address || null,
+    occupation: input.occupation || null,
+    insurance: clean(input.insurance),
+    emergencyContact: clean(input.emergencyContact),
+    ...(input.history ? { history: clean(input.history) } : {}),
+  }
+}
+
+const REQUIRED_MSG = 'Nombre, teléfono y sexo son obligatorios.'
+const FORBIDDEN = { ok: false as const, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
 
 export async function updatePatient(
   id: string,
   input: PatientInput,
 ): Promise<ActionResult<PatientHit>> {
   const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!c) return FORBIDDEN
   if (!input.name || !input.phone || !input.gender) {
-    return { ok: false, code: 'VALIDATION', message: 'Name, phone and gender are required.' }
+    return { ok: false, code: 'VALIDATION', message: REQUIRED_MSG }
   }
   try {
     const p = await c.payload.update({
@@ -82,16 +129,7 @@ export async function updatePatient(
       id,
       user: c.user,
       overrideAccess: false,
-      data: {
-        name: input.name,
-        phone: input.phone,
-        gender: input.gender,
-        ageYears: input.ageYears ?? null,
-        dateOfBirth: input.dateOfBirth || null,
-        bloodGroup: input.bloodGroup || null,
-        allergies: input.allergies || null,
-        notes: input.notes || null,
-      } as never,
+      data: toData(input) as never,
     })
     revalidatePath('/dashboard/patients')
     revalidatePath(`/dashboard/patients/${id}`)
@@ -103,25 +141,16 @@ export async function updatePatient(
 
 export async function createPatient(input: PatientInput): Promise<ActionResult<PatientHit>> {
   const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!c) return FORBIDDEN
   if (!input.name || !input.phone || !input.gender) {
-    return { ok: false, code: 'VALIDATION', message: 'Name, phone and gender are required.' }
+    return { ok: false, code: 'VALIDATION', message: REQUIRED_MSG }
   }
   try {
     const p = await c.payload.create({
       collection: 'patients',
       user: c.user,
       overrideAccess: false,
-      data: {
-        name: input.name,
-        phone: input.phone,
-        gender: input.gender,
-        ageYears: input.ageYears,
-        dateOfBirth: input.dateOfBirth || undefined,
-        bloodGroup: input.bloodGroup || undefined,
-        allergies: input.allergies || undefined,
-        notes: input.notes || undefined,
-      } as never,
+      data: toData(input) as never,
     })
     revalidatePath('/dashboard/patients')
     return { ok: true, data: { id: String(p.id), name: p.name, phone: p.phone, mrn: p.mrn ?? '' } }

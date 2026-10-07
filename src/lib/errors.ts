@@ -4,33 +4,33 @@
 import { ERROR_CODES } from './constants'
 
 const MESSAGES: Record<string, string> = {
-  [ERROR_CODES.SLOT_TAKEN]: 'That slot was just taken. Pick another time.',
-  [ERROR_CODES.INVALID_TRANSITION]: "That status change isn't allowed.",
-  [ERROR_CODES.TENANT_SUSPENDED]: "This clinic's account is suspended. Contact support.",
+  [ERROR_CODES.SLOT_TAKEN]: 'Ese horario acaba de ocuparse. Elija otra hora.',
+  [ERROR_CODES.INVALID_TRANSITION]: 'Ese cambio de estado no está permitido.',
+  [ERROR_CODES.TENANT_SUSPENDED]: 'La cuenta de este consultorio está suspendida. Contacte a soporte.',
   [ERROR_CODES.TENANT_PENDING]:
-    "Your clinic is awaiting admin approval. You'll be able to sign in once it's approved.",
-  [ERROR_CODES.PLAN_LIMIT]: 'Your plan limit has been reached. Request an upgrade to add more.',
-  [ERROR_CODES.USER_INACTIVE]: 'Your account has been deactivated. Contact your clinic owner.',
-  [ERROR_CODES.FORBIDDEN]: "You don't have permission to do that.",
-  [ERROR_CODES.VALIDATION]: 'Please check the form and try again.',
+    'Su consultorio está pendiente de aprobación. Podrá iniciar sesión cuando sea aprobado.',
+  [ERROR_CODES.PLAN_LIMIT]: 'Alcanzó el límite de su plan. Solicite una mejora de plan para agregar más.',
+  [ERROR_CODES.USER_INACTIVE]: 'Su cuenta fue desactivada. Contacte al titular del consultorio.',
+  [ERROR_CODES.FORBIDDEN]: 'No tiene permiso para realizar esta acción.',
+  [ERROR_CODES.VALIDATION]: 'Revise el formulario e intente de nuevo.',
   // v2 — clinical loop
-  [ERROR_CODES.VISIT_EXISTS]: 'A visit has already been recorded for this appointment.',
-  [ERROR_CODES.INVALID_APPOINTMENT_STATE]: 'Check the patient in before recording a visit.',
-  [ERROR_CODES.PAYMENT_EXCEEDS_BALANCE]: 'Payment exceeds the remaining balance.',
-  [ERROR_CODES.INVOICE_VOIDED]: "This invoice has been voided and can't be changed.",
+  [ERROR_CODES.VISIT_EXISTS]: 'Ya se registró una consulta para esta cita.',
+  [ERROR_CODES.INVALID_APPOINTMENT_STATE]: 'Registre la llegada del paciente antes de iniciar la consulta.',
+  [ERROR_CODES.PAYMENT_EXCEEDS_BALANCE]: 'El pago excede el saldo pendiente.',
+  [ERROR_CODES.INVOICE_VOIDED]: 'Esta factura fue anulada y no se puede modificar.',
   [ERROR_CODES.INVOICE_LOCKED]:
-    "Line items can't be changed after a payment. Void the invoice and create a new one.",
+    'No se pueden cambiar las partidas después de un pago. Anule la factura y cree una nueva.',
   // v3 — self-serve onboarding
-  [ERROR_CODES.SIGNUP_EMAIL_TAKEN]: 'An account with this email already exists.',
-  [ERROR_CODES.SIGNUP_RATE_LIMITED]: 'Too many signups from this network. Try again later.',
-  [ERROR_CODES.SIGNUP_FAILED]: "We couldn't create your clinic. Please try again.",
+  [ERROR_CODES.SIGNUP_EMAIL_TAKEN]: 'Ya existe una cuenta con este correo.',
+  [ERROR_CODES.SIGNUP_RATE_LIMITED]: 'Demasiados registros desde esta red. Intente más tarde.',
+  [ERROR_CODES.SIGNUP_FAILED]: 'No pudimos crear su consultorio. Intente de nuevo.',
   // backlog — email hardening
   [ERROR_CODES.RESET_TOKEN_INVALID]:
-    'This reset link is invalid or has expired. Request a new one.',
+    'Este enlace de restablecimiento no es válido o expiró. Solicite uno nuevo.',
   [ERROR_CODES.EMAIL_NOT_VERIFIED]:
-    'Verify your email first — check your inbox for the confirmation link.',
+    'Primero verifique su correo: revise su bandeja de entrada.',
   [ERROR_CODES.VERIFY_TOKEN_INVALID]:
-    'This verification link is invalid or has expired. Request a new one below.',
+    'Este enlace de verificación no es válido o expiró. Solicite uno nuevo abajo.',
 }
 
 export type ActionResult<T = unknown> =
@@ -43,14 +43,18 @@ export function toActionError(err: unknown): { code: string; message: string } {
   const code = anyErr?.data?.code || anyErr?.code || 'UNKNOWN'
   // Prefer a catalog message; fall back to the server message for validation,
   // otherwise a generic line.
+  // VALIDATION errors carry a specific, already-localised server message (e.g.
+  // "Indique la fecha de nacimiento o la edad."), which beats the generic line.
+  const serverMessage = typeof anyErr?.message === 'string' ? anyErr.message : null
   const message =
+    (code === ERROR_CODES.VALIDATION && serverMessage) ||
     MESSAGES[code] ||
-    (typeof anyErr?.message === 'string' && code === 'UNKNOWN'
-      ? anyErr.message
-      : 'Something went wrong. Please try again.')
+    (serverMessage && code === 'UNKNOWN'
+      ? serverMessage
+      : 'Algo salió mal. Intente de nuevo.')
   return { code, message }
 }
 
 export function friendly(code: string): string {
-  return MESSAGES[code] || 'Something went wrong. Please try again.'
+  return MESSAGES[code] || 'Algo salió mal. Intente de nuevo.'
 }

@@ -26,7 +26,7 @@ export async function resendVerificationAction(
     .trim()
     .toLowerCase()
   if (!email) {
-    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Enter your email address.' }
+    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Ingrese su correo electrónico.' }
   }
 
   const ip = await clientIp()
@@ -34,7 +34,7 @@ export async function resendVerificationAction(
     return {
       ok: false,
       code: ERROR_CODES.SIGNUP_RATE_LIMITED,
-      message: 'Too many requests from this network. Try again later.',
+      message: 'Demasiadas solicitudes desde esta red. Inténtelo más tarde.',
     }
   }
 

@@ -3,6 +3,7 @@
 // degradation, never a crash. Callers decide what a skip means for them.
 
 import { Resend } from 'resend'
+import { APP_NAME } from './brand'
 
 export function emailEnabled(): boolean {
   return Boolean(process.env.RESEND_API_KEY)
@@ -26,7 +27,7 @@ export const sendEmail: SendEmail = async ({ to, subject, html }) => {
     const { error } = await resend.emails.send({
       // resend.dev sender works out of the box (delivers to the account owner);
       // a verified domain goes in EMAIL_FROM for production.
-      from: process.env.EMAIL_FROM || 'matab <onboarding@resend.dev>',
+      from: process.env.EMAIL_FROM || `${APP_NAME} <onboarding@resend.dev>`,
       to,
       subject,
       html,

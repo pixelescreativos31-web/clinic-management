@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, visitsWriteAccess, getTenantID } from '@/access'
+import { tenantScoped, denyAll, visitsWriteAccess, getTenantID, clinicalReadField } from '@/access'
+import { auditVisits } from '@/hooks/audit'
 import { forceTenant } from '@/hooks/tenant'
 import {
   ERROR_CODES,
@@ -27,6 +28,7 @@ const relID = (value: unknown): string | null => {
  */
 export const Visits: CollectionConfig = {
   slug: 'visits',
+  labels: { singular: 'Consulta', plural: 'Consultas' },
   admin: { useAsTitle: 'diagnosis', defaultColumns: ['visitDate', 'patient', 'doctor', 'diagnosis'] },
   access: {
     read: tenantScoped,
@@ -43,7 +45,7 @@ export const Visits: CollectionConfig = {
 
         const appointmentID = relID(data.appointment)
         if (!appointmentID) {
-          throw new APIError('A visit must be linked to an appointment.', 400, {
+          throw new APIError('La consulta debe estar vinculada a una cita.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -52,7 +54,7 @@ export const Visits: CollectionConfig = {
           .findByID({ collection: 'appointments', id: appointmentID, depth: 0, req, overrideAccess: true })
           .catch(() => null)
         if (!appt) {
-          throw new APIError('The appointment could not be found.', 400, {
+          throw new APIError('No se encontró la cita.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -60,14 +62,14 @@ export const Visits: CollectionConfig = {
         // Same-tenant guard — a visit can never attach to another clinic's appointment.
         const intendedTenant = relID(data.tenant) ?? getTenantID(req.user)
         if (intendedTenant && String(relID(appt.tenant)) !== String(intendedTenant)) {
-          throw new APIError('That appointment belongs to another clinic.', 403, {
+          throw new APIError('Esa cita pertenece a otro consultorio.', 403, {
             code: ERROR_CODES.FORBIDDEN,
           })
         }
 
         // The patient must be checked in (or already completed) before a visit.
         if (!VISIT_ALLOWED_APPOINTMENT_STATUSES.includes(appt.status as AppointmentStatus)) {
-          throw new APIError('Check the patient in before recording a visit.', 400, {
+          throw new APIError('Registre la llegada del paciente antes de iniciar la consulta.', 400, {
             code: ERROR_CODES.INVALID_APPOINTMENT_STATE,
           })
         }
@@ -80,7 +82,7 @@ export const Visits: CollectionConfig = {
           overrideAccess: true,
         })
         if (existing.totalDocs > 0) {
-          throw new APIError('A visit has already been recorded for this appointment.', 409, {
+          throw new APIError('Ya se registró una consulta para esta cita.', 409, {
             code: ERROR_CODES.VISIT_EXISTS,
           })
         }
@@ -122,6 +124,7 @@ export const Visits: CollectionConfig = {
             .catch(() => {})
         }
       },
+      auditVisits,
     ],
   },
   fields: [
@@ -153,44 +156,87 @@ export const Visits: CollectionConfig = {
       name: 'visitDate',
       type: 'date',
       required: true,
+      label: 'Fecha de la consulta',
       admin: { date: { pickerAppearance: 'dayAndTime' } },
     },
-    { name: 'symptoms', type: 'textarea' },
-    { name: 'diagnosis', type: 'text' },
-    { name: 'notes', type: 'textarea', admin: { description: 'Visible to all clinic staff.' } },
+    { name: 'chiefComplaint', type: 'textarea', label: 'Motivo de consulta' },
+    // Clinical narrative. Field-level read is limited to clinical roles (doctor /
+    // owner): an assistant can print the prescription but never reads the history,
+    // exam or private notes.
+    {
+      name: 'symptoms',
+      type: 'textarea',
+      label: 'Historia de la enfermedad actual',
+      access: { read: clinicalReadField },
+    },
+    {
+      name: 'physicalExam',
+      type: 'textarea',
+      label: 'Examen físico',
+      access: { read: clinicalReadField },
+    },
+    { name: 'diagnosis', type: 'text', label: 'Diagnóstico' },
+    {
+      name: 'treatmentPlan',
+      type: 'textarea',
+      label: 'Plan e indicaciones',
+      admin: { description: 'Se imprime en la receta como indicaciones generales.' },
+    },
+    {
+      name: 'labOrders',
+      type: 'textarea',
+      label: 'Estudios indicados',
+      admin: { description: 'Laboratorios, imágenes u otros estudios. Se imprime en la receta.' },
+    },
+    {
+      name: 'notes',
+      type: 'textarea',
+      label: 'Notas privadas',
+      access: { read: clinicalReadField },
+      admin: { description: 'Solo visibles para el personal clínico.' },
+    },
     {
       name: 'vitals',
       type: 'group',
+      label: 'Signos vitales',
       fields: [
-        { name: 'bpSystolic', type: 'number', min: 40, max: 300, label: 'BP systolic' },
-        { name: 'bpDiastolic', type: 'number', min: 40, max: 300, label: 'BP diastolic' },
-        { name: 'temperatureC', type: 'number', min: 30, max: 45, label: 'Temperature (°C)' },
-        { name: 'weightKg', type: 'number', min: 0.5, max: 500, label: 'Weight (kg)' },
-        { name: 'pulse', type: 'number', min: 20, max: 250, label: 'Pulse (bpm)' },
+        { name: 'bpSystolic', type: 'number', min: 40, max: 300, label: 'Presión sistólica (mmHg)' },
+        { name: 'bpDiastolic', type: 'number', min: 20, max: 200, label: 'Presión diastólica (mmHg)' },
+        { name: 'pulse', type: 'number', min: 20, max: 250, label: 'Frecuencia cardíaca (lpm)' },
+        { name: 'respiratoryRate', type: 'number', min: 4, max: 80, label: 'Frecuencia respiratoria (rpm)' },
+        { name: 'temperatureC', type: 'number', min: 30, max: 45, label: 'Temperatura (°C)' },
+        { name: 'oxygenSaturation', type: 'number', min: 50, max: 100, label: 'Saturación O₂ (%)' },
+        { name: 'weightKg', type: 'number', min: 0.5, max: 500, label: 'Peso (kg)' },
+        { name: 'heightCm', type: 'number', min: 20, max: 250, label: 'Talla (cm)' },
+        { name: 'glucoseMgDl', type: 'number', min: 10, max: 1000, label: 'Glucemia (mg/dL)' },
       ],
     },
     {
       name: 'prescription',
       type: 'array',
-      labels: { singular: 'Medicine', plural: 'Medicines' },
+      label: 'Receta',
+      labels: { singular: 'Medicamento', plural: 'Medicamentos' },
       fields: [
-        { name: 'medicine', type: 'text', required: true },
-        { name: 'dosage', type: 'text', admin: { placeholder: 'e.g. 500mg', width: '33%' } },
+        { name: 'medicine', type: 'text', required: true, label: 'Medicamento' },
+        { name: 'dosage', type: 'text', label: 'Dosis', admin: { placeholder: 'p. ej. 500 mg', width: '33%' } },
         {
           name: 'frequency',
           type: 'select',
+          label: 'Frecuencia',
           options: PRESCRIPTION_FREQUENCIES.map((f) => ({ label: f.label, value: f.value })),
         },
         {
           name: 'frequencyNote',
           type: 'text',
+          label: 'Frecuencia (detalle)',
           admin: { condition: (_data, sibling) => sibling?.frequency === 'other' },
         },
-        { name: 'durationDays', type: 'number', min: 0, label: 'Duration (days)' },
-        { name: 'instructions', type: 'text', admin: { placeholder: 'e.g. after meals' } },
+        { name: 'durationDays', type: 'number', min: 0, label: 'Duración (días)' },
+        { name: 'quantity', type: 'text', label: 'Cantidad a dispensar', admin: { placeholder: 'p. ej. 1 caja' } },
+        { name: 'instructions', type: 'text', label: 'Indicaciones', admin: { placeholder: 'p. ej. después de las comidas' } },
       ],
     },
-    { name: 'followUpDate', type: 'date', admin: { date: { pickerAppearance: 'dayOnly' } } },
+    { name: 'followUpDate', type: 'date', label: 'Próxima cita / seguimiento', admin: { date: { pickerAppearance: 'dayOnly' } } },
     {
       name: 'createdBy',
       type: 'relationship',

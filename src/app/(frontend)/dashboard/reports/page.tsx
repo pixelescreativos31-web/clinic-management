@@ -26,7 +26,7 @@ function previousMonth(tz: string): { y: number; m: number } {
   return m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 }
 }
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default async function ReportsPage({
   searchParams,
@@ -64,30 +64,32 @@ export default async function ReportsPage({
   const { start, end } = monthRangeUtc(tz, y, m)
   const range = `from=${start.toISOString()}&to=${end.toISOString()}`
 
+  const EXPORT_LABELS = { appointments: 'Citas', patients: 'Pacientes', invoices: 'Facturas' } as const
+
   const empty = report.appointments.total === 0 && report.revenueCollected === 0 && report.newPatients === 0
 
   return (
     <div className="animate-fade-up">
       <PageTitle
-        subtitle="Appointments, revenue and doctor activity for the month."
+        subtitle="Citas, ingresos y actividad de los médicos del mes."
         action={
           <Link
             href={`/print/report/${y}/${m}`}
             className="flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
           >
             <IconPrinter size={15} />
-            Print summary
+            Imprimir resumen
           </Link>
         }
       >
-        Reports
+        Reportes
       </PageTitle>
 
       {/* Month picker */}
       <div className="mb-5 flex items-center gap-2">
         <Link
           href={`/dashboard/reports?y=${prev.y}&m=${prev.m}`}
-          aria-label="Previous month"
+          aria-label="Mes anterior"
           className="flex size-8 items-center justify-center rounded-lg border border-border bg-surface text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
         >
           <IconChevronLeft size={15} />
@@ -97,7 +99,7 @@ export default async function ReportsPage({
         </div>
         <Link
           href={nextIsFuture ? '#' : `/dashboard/reports?y=${next.y}&m=${next.m}`}
-          aria-label="Next month"
+          aria-label="Mes siguiente"
           aria-disabled={nextIsFuture}
           className={`flex size-8 items-center justify-center rounded-lg border border-border bg-surface transition-colors ${
             nextIsFuture
@@ -111,53 +113,57 @@ export default async function ReportsPage({
 
       {empty ? (
         <Card>
-          <EmptyState message={`Nothing recorded in ${MONTHS[m - 1]} ${y}.`} />
+          <EmptyState message={`No hay registros en ${MONTHS[m - 1].toLowerCase()} de ${y}.`} />
         </Card>
       ) : (
         <>
           {/* Summary KPIs */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <KpiCard
-              label="Appointments"
+              label="Citas"
               value={report.appointments.total}
-              hint={`${report.appointments.completed} completed · ${pct(report.appointments.completionRate)} completion`}
+              hint={`${report.appointments.completed} ${report.appointments.completed === 1 ? 'atendida' : 'atendidas'} · ${pct(report.appointments.completionRate)} de cumplimiento`}
             />
             <KpiCard
-              label="No-shows"
+              label="No asistieron"
               value={report.appointments.noShows}
-              hint={`${report.appointments.cancelled} cancelled`}
+              hint={`${report.appointments.cancelled} ${report.appointments.cancelled === 1 ? 'cancelada' : 'canceladas'}`}
             />
-            <KpiCard label="New patients" value={report.newPatients} />
+            <KpiCard label="Pacientes nuevos" value={report.newPatients} />
             <KpiCard
-              label="Revenue collected"
+              label="Ingresos cobrados"
               value={money(report.revenueCollected)}
-              hint={`${money(report.outstandingAdded)} outstanding added`}
+              hint={`${money(report.outstandingAdded)} de saldo pendiente nuevo`}
             />
           </div>
 
           {/* Daily revenue */}
           <Card className="mt-5 p-5">
-            <h2 className="mb-4 text-sm font-semibold">Daily revenue</h2>
-            <RevenueChart data={report.daily} currency={report.currency} />
+            <h2 className="mb-4 text-sm font-semibold">Ingresos diarios</h2>
+            <RevenueChart
+              data={report.daily}
+              currency={report.currency}
+              period={`en ${MONTHS[m - 1].toLowerCase()} de ${y}`}
+            />
           </Card>
 
           {/* Per-doctor table */}
           <Card className="mt-5 overflow-hidden">
             <div className="border-b border-border px-6 py-4">
-              <h2 className="text-sm font-semibold">By doctor</h2>
+              <h2 className="text-sm font-semibold">Por médico</h2>
             </div>
             {report.doctors.length === 0 ? (
-              <EmptyState message="No doctor activity this month." />
+              <EmptyState message="Sin actividad de médicos este mes." />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <Th className="ps-6">Doctor</Th>
-                      <Th className="text-end">Appointments</Th>
-                      <Th className="text-end">Completed</Th>
-                      <Th className="text-end">No-show rate</Th>
-                      <Th className="pe-6 text-end">Revenue</Th>
+                      <Th className="ps-6">Médico</Th>
+                      <Th className="text-end">Citas</Th>
+                      <Th className="text-end">Atendidas</Th>
+                      <Th className="text-end">Tasa de inasistencia</Th>
+                      <Th className="pe-6 text-end">Ingresos</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -180,19 +186,19 @@ export default async function ReportsPage({
 
       {/* CSV exports — PII leaves the system, so each download is audit-logged. */}
       <Card className="mt-5 p-5">
-        <h2 className="text-sm font-semibold">Export CSV</h2>
+        <h2 className="text-sm font-semibold">Exportar CSV</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Rows for {MONTHS[m - 1]} {y}. Exports are recorded in the activity log.
+          Registros de {MONTHS[m - 1].toLowerCase()} de {y}. Las exportaciones quedan anotadas en el registro de actividad.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {(['appointments', 'patients', 'invoices'] as const).map((t) => (
             <a
               key={t}
               href={`/api/export/${t}?${range}`}
-              className="flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-[13px] font-medium capitalize text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
+              className="flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
             >
               <IconDownload size={14} />
-              {t}
+              {EXPORT_LABELS[t]}
             </a>
           ))}
         </div>

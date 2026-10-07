@@ -4,6 +4,9 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
+import { es } from '@payloadcms/translations/languages/es'
+import { en } from '@payloadcms/translations/languages/en'
+import { APP_NAME } from './lib/brand'
 
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
@@ -23,8 +26,13 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     meta: {
-      titleSuffix: '— Clinic Management',
+      titleSuffix: `— ${APP_NAME}`,
     },
+  },
+  // Admin panel (super admin only) and server-side validation messages in Spanish.
+  i18n: {
+    supportedLanguages: { es, en },
+    fallbackLanguage: 'es',
   },
   collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs],
   editor: lexicalEditor(),

@@ -11,6 +11,8 @@ const TENANTS_PAGE_SIZE = 10
 import { createClinic, setClinicStatus, resolveUpgradeRequest } from '@/app/(frontend)/super/actions'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 import { planLabel, asPlan } from '@/lib/plans'
+import { CURRENCIES, TIMEZONES, DEFAULT_CURRENCY, DEFAULT_TIMEZONE } from '@/lib/constants'
+import { APP_NAME, APP_LOCALE } from '@/lib/brand'
 
 export type TenantRow = {
   id: string
@@ -37,8 +39,21 @@ export type ActivityRow = {
   summary: string
 }
 
-const CURRENCIES = ['PKR', 'USD', 'GBP', 'AED', 'SAR', 'INR']
-const TIMEZONES = ['Asia/Karachi', 'Asia/Dubai', 'Asia/Riyadh', 'Asia/Kolkata', 'Europe/London', 'America/New_York']
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Activo',
+  suspended: 'Suspendido',
+  pending: 'Pendiente',
+}
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(APP_LOCALE, { day: 'numeric', month: 'short' })
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+const EMPTY_FORM = {
+  name: '', phone: '', city: '', currency: DEFAULT_CURRENCY as string, timezone: DEFAULT_TIMEZONE as string,
+  ownerName: '', ownerEmail: '', ownerPassword: '',
+}
 
 export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[]; activity?: ActivityRow[] }) {
   const router = useRouter()
@@ -53,10 +68,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
   const pendingSignups = tenants.filter((t) => t.status === 'pending')
   // Owner "Request upgrade" submissions queue here for a decision (spec §5).
   const upgradeRequests = tenants.filter((t) => t.upgradeRequest)
-  const [form, setForm] = useState({
-    name: '', phone: '', city: '', currency: 'PKR', timezone: 'Asia/Karachi',
-    ownerName: '', ownerEmail: '', ownerPassword: '',
-  })
+  const [form, setForm] = useState(EMPTY_FORM)
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const create = () => {
@@ -65,7 +77,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       const res = await createClinic(form)
       if (res.ok) {
         setShowAdd(false)
-        setForm({ name: '', phone: '', city: '', currency: 'PKR', timezone: 'Asia/Karachi', ownerName: '', ownerEmail: '', ownerPassword: '' })
+        setForm(EMPTY_FORM)
         router.refresh()
       } else setError(res.message)
     })
@@ -104,18 +116,18 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-xl font-semibold tracking-tight text-primary">
-            matab
+            {APP_NAME}
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Platform console · {tenants.length} clinics</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Consola de la plataforma · {plural(tenants.length, 'consultorio', 'consultorios')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <a href="/admin" className={btnGhost}>Admin panel</a>
+          <a href="/admin" className={btnGhost}>Panel de administración</a>
           <button className={btnPrimary} onClick={() => setShowAdd((s) => !s)}>
             <IconPlus size={15} />
-            New clinic
+            Nuevo consultorio
           </button>
           <form action={logoutAction}>
-            <button type="submit" title="Log out" className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted-foreground transition-colors hover:bg-canvas hover:text-ink">
+            <button type="submit" title="Cerrar sesión" aria-label="Cerrar sesión" className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted-foreground transition-colors hover:bg-canvas hover:text-ink">
               <IconLogout size={16} />
             </button>
           </form>
@@ -125,38 +137,38 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       {showAdd && (
         <Card className="mb-5 overflow-hidden">
           <div className="border-b border-border px-6 py-4">
-            <h2 className="text-sm font-semibold">New clinic</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">The clinic and its owner are created together — both or neither.</p>
+            <h2 className="text-sm font-semibold">Nuevo consultorio</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">El consultorio y su titular se crean juntos: ambos o ninguno.</p>
           </div>
           <div className="grid gap-4 p-6 sm:grid-cols-2">
-            <Field label="Clinic name"><input className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} /></Field>
-            <Field label="Clinic phone"><input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-            <Field label="City"><input className={inputClass} value={form.city} onChange={(e) => set('city', e.target.value)} /></Field>
+            <Field label="Nombre del consultorio"><input className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} /></Field>
+            <Field label="Teléfono del consultorio"><input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
+            <Field label="Ciudad"><input className={inputClass} value={form.city} onChange={(e) => set('city', e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Currency">
+              <Field label="Moneda">
                 <AppSelect
                   value={form.currency}
                   onChange={(v) => set('currency', v)}
-                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                  options={CURRENCIES.map((c) => ({ value: c.value, label: c.label }))}
                 />
               </Field>
-              <Field label="Timezone">
+              <Field label="Zona horaria">
                 <AppSelect
                   value={form.timezone}
                   onChange={(v) => set('timezone', v)}
-                  options={TIMEZONES.map((t) => ({ value: t, label: t }))}
+                  options={TIMEZONES.map((t) => ({ value: t.value, label: t.label }))}
                 />
               </Field>
             </div>
-            <Field label="Owner name"><input className={inputClass} value={form.ownerName} onChange={(e) => set('ownerName', e.target.value)} /></Field>
-            <Field label="Owner email"><input className={inputClass} type="email" value={form.ownerEmail} onChange={(e) => set('ownerEmail', e.target.value)} /></Field>
-            <Field label="Temporary password"><input className={inputClass} value={form.ownerPassword} onChange={(e) => set('ownerPassword', e.target.value)} /></Field>
+            <Field label="Nombre del titular"><input className={inputClass} value={form.ownerName} onChange={(e) => set('ownerName', e.target.value)} /></Field>
+            <Field label="Correo del titular"><input className={inputClass} type="email" value={form.ownerEmail} onChange={(e) => set('ownerEmail', e.target.value)} /></Field>
+            <Field label="Contraseña temporal"><input className={inputClass} value={form.ownerPassword} onChange={(e) => set('ownerPassword', e.target.value)} /></Field>
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-border bg-canvas/60 px-6 py-4">
             {error ? <p className="text-sm text-red">{error}</p> : <span />}
             <div className="flex gap-2">
-              <button className={btnGhost} onClick={() => setShowAdd(false)}>Cancel</button>
-              <button className={btnPrimary} disabled={pending} onClick={create}>{pending && <Spinner />}{pending ? 'Creating…' : 'Create clinic'}</button>
+              <button className={btnGhost} onClick={() => setShowAdd(false)}>Cancelar</button>
+              <button className={btnPrimary} disabled={pending} onClick={create}>{pending && <Spinner />}{pending ? 'Creando…' : 'Crear consultorio'}</button>
             </div>
           </div>
         </Card>
@@ -165,8 +177,8 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       {pendingSignups.length > 0 && (
         <Card className="mb-5 overflow-hidden border-amber/30 bg-amber-soft/40">
           <div className="flex items-center justify-between border-b border-amber/20 px-6 py-4">
-            <h2 className="text-sm font-semibold text-amber">Pending approval</h2>
-            <span className="text-xs text-muted-foreground">Self-serve · {pendingSignups.length} awaiting review</span>
+            <h2 className="text-sm font-semibold text-amber">Pendientes de aprobación</h2>
+            <span className="text-xs text-muted-foreground">Registro en línea · {pendingSignups.length} en espera de revisión</span>
           </div>
           <ul className="divide-y divide-amber/15">
             {pendingSignups.map((t) => (
@@ -177,15 +189,15 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-medium">{t.name}</div>
                   <div className="truncate text-xs text-faint">
-                    {t.city || '—'} · {new Date(t.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    {t.city || '—'} · {shortDate(t.createdAt)}
                   </div>
                 </div>
                 {t.ownerUnverified && (
                   <span
                     className="shrink-0 rounded-full border border-amber/30 bg-amber-soft px-2 py-0.5 text-[11px] font-medium text-amber"
-                    title="Approval unlocks once the owner confirms their email."
+                    title="La aprobación se habilita cuando el titular confirme su correo."
                   >
-                    Email unverified
+                    Correo sin verificar
                   </span>
                 )}
                 <div className="flex shrink-0 items-center gap-2">
@@ -194,15 +206,15 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                     disabled={pending}
                     onClick={() => setStatus(t.id, 'suspended')}
                   >
-                    Reject
+                    Rechazar
                   </button>
                   <button
                     className={`${btnPrimary} h-8 px-3 text-xs`}
                     disabled={pending || t.ownerUnverified}
-                    title={t.ownerUnverified ? "The owner hasn't verified their email yet." : undefined}
+                    title={t.ownerUnverified ? 'El titular aún no ha verificado su correo.' : undefined}
                     onClick={() => setStatus(t.id, 'active')}
                   >
-                    Approve
+                    Aprobar
                   </button>
                 </div>
               </li>
@@ -214,8 +226,8 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       {upgradeRequests.length > 0 && (
         <Card className="mb-5 overflow-hidden">
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <h2 className="text-sm font-semibold">Upgrade requests</h2>
-            <span className="text-xs text-muted-foreground">{upgradeRequests.length} awaiting a decision</span>
+            <h2 className="text-sm font-semibold">Solicitudes de mejora de plan</h2>
+            <span className="text-xs text-muted-foreground">{upgradeRequests.length} en espera de decisión</span>
           </div>
           <ul className="divide-y divide-border">
             {upgradeRequests.map((t) => (
@@ -232,8 +244,8 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                   </div>
                   <div className="truncate text-xs text-faint">
                     {t.upgradeRequest!.requestedAt &&
-                      new Date(t.upgradeRequest!.requestedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    {t.upgradeRequest!.note && ` · "${t.upgradeRequest!.note}"`}
+                      shortDate(t.upgradeRequest!.requestedAt)}
+                    {t.upgradeRequest!.note && ` · «${t.upgradeRequest!.note}»`}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -242,14 +254,14 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                     disabled={pending}
                     onClick={() => resolveUpgrade(t.id, 'reject')}
                   >
-                    Decline
+                    Rechazar
                   </button>
                   <button
                     className={`${btnPrimary} h-8 px-3 text-xs`}
                     disabled={pending}
                     onClick={() => resolveUpgrade(t.id, 'approve')}
                   >
-                    Approve
+                    Aprobar
                   </button>
                 </div>
               </li>
@@ -262,13 +274,13 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-canvas/50">
-              <Th>Clinic</Th>
+              <Th>Consultorio</Th>
               <Th>Plan</Th>
-              <Th>Currency</Th>
-              <Th>Status</Th>
-              <Th className="text-end">Doctors</Th>
-              <Th className="text-end">Patients</Th>
-              <Th className="text-end">Appts</Th>
+              <Th>Moneda</Th>
+              <Th>Estado</Th>
+              <Th className="text-end">Médicos</Th>
+              <Th className="text-end">Pacientes</Th>
+              <Th className="text-end">Citas</Th>
               <Th className="text-end" />
             </tr>
           </thead>
@@ -293,7 +305,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                     t.status === 'active' ? 'bg-primary-soft text-primary' : 'bg-amber-soft text-amber'
                   }`}>
                     <span className={`size-1.5 rounded-full ${t.status === 'active' ? 'bg-primary' : 'bg-amber'}`} />
-                    {t.status}
+                    {STATUS_LABELS[t.status] ?? t.status}
                   </span>
                 </Td>
                 <Td className="tabular text-end">{t.doctors}</Td>
@@ -307,7 +319,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                     disabled={pending}
                     onClick={() => (t.status === 'pending' ? setStatus(t.id, 'active') : toggle(t.id, t.status))}
                   >
-                    {t.status === 'active' ? 'Suspend' : t.status === 'pending' ? 'Approve' : 'Reactivate'}
+                    {t.status === 'active' ? 'Suspender' : t.status === 'pending' ? 'Aprobar' : 'Reactivar'}
                   </button>
                 </Td>
               </tr>
@@ -320,8 +332,8 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       {activity.length > 0 && (
         <Card className="mt-5 overflow-hidden">
           <div className="border-b border-border px-6 py-4">
-            <h2 className="text-sm font-semibold">Recent activity</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Latest sensitive actions across all clinics</p>
+            <h2 className="text-sm font-semibold">Actividad reciente</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Últimas acciones importantes en todos los consultorios</p>
           </div>
           <ul className="divide-y divide-border">
             {activity.map((a) => (
@@ -331,7 +343,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
                   <span className="block truncate text-xs text-faint">{a.clinic} · {a.who}</span>
                 </span>
                 <span className="tabular shrink-0 text-xs text-muted-foreground">
-                  {new Date(a.when).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  {shortDate(a.when)}
                 </span>
               </li>
             ))}

@@ -14,12 +14,14 @@ import {
   IconChart,
 } from './icons'
 import { logoutAction } from '@/app/(frontend)/login/actions'
+import { APP_NAME } from '@/lib/brand'
+import { ROLE_LABELS, type Role } from '@/lib/constants'
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }> }
 
 function initialsOf(name: string) {
   return name
-    .replace(/^Dr\.?\s+/i, '')
+    .replace(/^Dr[a]?\.?\s+/i, '')
     .split(/\s+/)
     .map((w) => w[0])
     .filter(Boolean)
@@ -32,26 +34,35 @@ export function Sidebar({
   clinicName,
   userName,
   role,
+  practitioner = false,
+  individual = true,
 }: {
   clinicName: string
   userName: string
   role: string
+  /** The user sees patients (doctor, or an owner who practises). */
+  practitioner?: boolean
+  /** Independent practice: simplified navigation (no multi-doctor tooling). */
+  individual?: boolean
 }) {
   const pathname = usePathname()
 
   const items: NavItem[] = [
-    { href: '/dashboard', label: 'Dashboard', icon: IconDashboard },
-    { href: '/dashboard/appointments', label: 'Appointments', icon: IconCalendar },
-    { href: '/dashboard/patients', label: 'Patients', icon: IconUsers },
+    { href: '/dashboard', label: 'Inicio', icon: IconDashboard },
+    { href: '/dashboard/appointments', label: 'Agenda', icon: IconCalendar },
+    { href: '/dashboard/patients', label: 'Pacientes', icon: IconUsers },
   ]
   const adminItems: NavItem[] = []
   if (role === 'owner') {
-    adminItems.push({ href: '/dashboard/reports', label: 'Reports', icon: IconChart })
-    adminItems.push({ href: '/dashboard/staff', label: 'Staff', icon: IconStaff })
-    adminItems.push({ href: '/dashboard/activity', label: 'Activity', icon: IconClock })
-    adminItems.push({ href: '/dashboard/plan', label: 'Plan', icon: IconCreditCard })
-    adminItems.push({ href: '/dashboard/settings', label: 'Settings', icon: IconSettings })
+    adminItems.push({ href: '/dashboard/reports', label: 'Reportes', icon: IconChart })
+    // An independent doctor manages at most an assistant — "Equipo" reads heavy.
+    adminItems.push({ href: '/dashboard/staff', label: individual ? 'Asistente' : 'Equipo', icon: IconStaff })
+    adminItems.push({ href: '/dashboard/activity', label: 'Auditoría', icon: IconClock })
+    adminItems.push({ href: '/dashboard/plan', label: 'Mi plan', icon: IconCreditCard })
+    adminItems.push({ href: '/dashboard/settings', label: 'Configuración', icon: IconSettings })
   }
+  const roleText =
+    role === 'owner' && practitioner ? 'Médico titular' : ROLE_LABELS[role as Role] ?? role
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname.startsWith(href)
@@ -96,12 +107,12 @@ export function Sidebar({
               </svg>
             </span>
             <span className="font-display text-lg leading-none font-semibold tracking-tight text-sidebar-active-fg">
-              matab
+              {APP_NAME}
             </span>
           </Link>
           <div className="mt-4 rounded-lg border border-sidebar-border bg-sidebar-soft px-3 py-2.5">
             <div className="text-[10px] font-semibold tracking-[0.12em] text-sidebar-foreground/60 uppercase">
-              Clinic
+              Consultorio
             </div>
             <div className="mt-0.5 truncate text-[13px] font-medium text-sidebar-active-fg">
               {clinicName}
@@ -111,13 +122,13 @@ export function Sidebar({
 
         <nav className="flex flex-1 flex-col gap-0.5 px-3">
           <div className="mb-1 px-3 text-[10px] font-semibold tracking-[0.12em] text-sidebar-foreground/50 uppercase">
-            Overview
+            General
           </div>
           {items.map(renderItem)}
           {adminItems.length > 0 && (
             <>
               <div className="mt-5 mb-1 px-3 text-[10px] font-semibold tracking-[0.12em] text-sidebar-foreground/50 uppercase">
-                Manage
+                Administración
               </div>
               {adminItems.map(renderItem)}
             </>
@@ -134,14 +145,14 @@ export function Sidebar({
               <div className="truncate text-[13px] font-medium leading-tight text-sidebar-active-fg">
                 {userName}
               </div>
-              <div className="truncate text-[11px] capitalize text-sidebar-foreground/70">
-                {role === 'superAdmin' ? 'Super admin' : role}
+              <div className="truncate text-[11px] text-sidebar-foreground/70">
+                {roleText}
               </div>
             </div>
             <form action={logoutAction}>
               <button
                 type="submit"
-                title="Log out"
+                title="Cerrar sesión"
                 className="flex size-8 items-center justify-center rounded-md text-sidebar-foreground/60 transition-colors duration-150 hover:bg-white/[0.07] hover:text-sidebar-active-fg"
               >
                 <IconLogout size={15} strokeWidth={1.75} />

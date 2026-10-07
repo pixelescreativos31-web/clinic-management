@@ -10,6 +10,7 @@ import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availab
 import { waReminderLink } from '@/lib/whatsapp'
 import { DEFAULT_TIMEZONE, WEEKDAYS, type AppointmentStatus } from '@/lib/constants'
 import type { Appointment, Patient, User } from '@/payload-types'
+import { practitionerWhere } from '@/lib/practice'
 
 function minutesFromMidnight(date: Date, tz: string): number {
   return minutesInTz(date, tz)
@@ -44,7 +45,7 @@ export default async function AppointmentsPage({
   const [doctorsRes, apptsRes] = await Promise.all([
     payload.find({
       collection: 'users',
-      where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
+      where: { and: [practitionerWhere(String(tenantID)), { active: { equals: true } }] },
       limit: 50,
       overrideAccess: true,
       sort: 'name',
@@ -67,7 +68,7 @@ export default async function AppointmentsPage({
   const viewedWeekday = weekdayInTz(dayStart, tz)
   const nowMinutes = isToday ? minutesFromMidnight(new Date(), tz) : null
 
-  const prettyDate = new Date(dayStart).toLocaleDateString('en-GB', {
+  const prettyDate = new Date(dayStart).toLocaleDateString('es-DO', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -81,9 +82,9 @@ export default async function AppointmentsPage({
     let availabilityNote: string | null = null
 
     if (type === 'onCall') {
-      availabilityNote = 'On call'
+      availabilityNote = 'De guardia'
     } else if (type === 'byAppointment') {
-      availabilityNote = 'By appointment'
+      availabilityNote = 'Previa cita'
     } else {
       const days = (doc.availableDays as string[] | undefined) || []
       const onToday = days.length === 0 || days.includes(viewedWeekday)
@@ -93,7 +94,7 @@ export default async function AppointmentsPage({
         windowTo = hhmmToMinutes(win.to)
       } else {
         const dayList = WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
-        availabilityNote = `Off today · ${dayList || '—'}`
+        availabilityNote = `No consulta hoy · ${dayList || '—'}`
       }
     }
 
@@ -107,7 +108,7 @@ export default async function AppointmentsPage({
         .filter((a) => String((a.doctor as User)?.id ?? a.doctor) === String(doc.id))
         .map((a) => ({
           id: String(a.id),
-          patientName: (a.patient as Patient)?.name ?? 'Patient',
+          patientName: (a.patient as Patient)?.name ?? 'Paciente',
           reason: a.reason ?? '',
           status: a.status as AppointmentStatus,
           timeLabel: formatTime(a.start, tenant),
@@ -120,7 +121,7 @@ export default async function AppointmentsPage({
             phone: (a.patient as Patient)?.phone,
             currency: tenant?.settings?.currency,
             doctorName: doc.name,
-            clinicName: tenant?.name ?? 'the clinic',
+            clinicName: tenant?.name ?? 'el consultorio',
             dateLabel: prettyDate,
             timeLabel: formatTime(a.start, tenant),
           }),
@@ -133,14 +134,14 @@ export default async function AppointmentsPage({
   return (
     <div>
       <PageTitle
-        subtitle={`${prettyDate} · ${totalToday} appointment${totalToday === 1 ? '' : 's'}`}
+        subtitle={`${prettyDate.charAt(0).toUpperCase() + prettyDate.slice(1)} · ${totalToday} ${totalToday === 1 ? 'cita' : 'citas'}`}
         action={
           <>
             <div className="flex items-center rounded-lg border border-border bg-surface">
               <Link
                 href={`/dashboard/appointments?date=${addDays(dateStr, -1)}`}
                 className="flex size-9 items-center justify-center rounded-s-lg text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
-                title="Previous day"
+                title="Día anterior"
               >
                 <IconChevronLeft size={15} />
               </Link>
@@ -150,24 +151,24 @@ export default async function AppointmentsPage({
                   isToday ? 'text-primary' : 'text-ink'
                 }`}
               >
-                {isToday ? 'Today' : dateStr}
+                {isToday ? 'Hoy' : dateStr}
               </Link>
               <Link
                 href={`/dashboard/appointments?date=${addDays(dateStr, 1)}`}
                 className="flex size-9 items-center justify-center rounded-e-lg text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
-                title="Next day"
+                title="Día siguiente"
               >
                 <IconChevronRight size={15} />
               </Link>
             </div>
             <Link href="/dashboard/appointments/new" className={btnPrimary}>
               <IconPlus size={15} />
-              New appointment
+              Nueva cita
             </Link>
           </>
         }
       >
-        Appointments
+        Citas
       </PageTitle>
 
       <DayRail

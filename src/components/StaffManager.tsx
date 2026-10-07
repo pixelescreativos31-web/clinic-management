@@ -124,63 +124,63 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
   }
 
   const money = (n?: number | null) =>
-    n == null ? '—' : new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
+    n == null ? '—' : new Intl.NumberFormat('es-DO', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n)
 
   return (
     <div>
       <PageTitle
-        subtitle={`${staff.length} team member${staff.length === 1 ? '' : 's'}`}
+        subtitle={`${staff.length} ${staff.length === 1 ? 'miembro' : 'miembros'} del equipo`}
         action={
           <button className={btnPrimary} onClick={openAdd}>
             <IconPlus size={15} />
-            Add staff
+            Agregar miembro
           </button>
         }
       >
-        Staff
+        Equipo
       </PageTitle>
 
       {showForm && (
         <Card className="mb-4 overflow-hidden">
           <div className="border-b border-border px-6 py-4">
-            <h2 className="text-sm font-semibold">{editingId ? `Edit ${form.name || 'staff member'}` : 'New staff member'}</h2>
+            <h2 className="text-sm font-semibold">{editingId ? `Editar a ${form.name || 'miembro del equipo'}` : 'Nuevo miembro del equipo'}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {editingId
-                ? 'Changes apply the next time they sign in.'
-                : 'They sign in with this email and the temporary password.'}
+                ? 'Los cambios se aplicarán la próxima vez que inicie sesión.'
+                : 'Iniciará sesión con este correo y la contraseña temporal.'}
             </p>
           </div>
           <div className="grid gap-4 p-6 sm:grid-cols-2">
-            <Field label="Full name"><input className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} /></Field>
-            <Field label="Email"><input className={inputClass} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
+            <Field label="Nombre completo"><input className={inputClass} value={form.name} onChange={(e) => set('name', e.target.value)} /></Field>
+            <Field label="Correo electrónico"><input className={inputClass} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
             <Field
-              label={editingId ? 'New password (leave blank to keep)' : 'Temporary password'}
+              label={editingId ? 'Nueva contraseña (déjela en blanco para conservarla)' : 'Contraseña temporal'}
             >
               <input className={inputClass} value={form.password} onChange={(e) => set('password', e.target.value)} />
             </Field>
-            <Field label="Role">
+            <Field label="Rol">
               <AppSelect
                 value={form.role}
                 onChange={(v) => set('role', v)}
                 options={[
-                  { value: 'receptionist', label: 'Receptionist' },
-                  { value: 'doctor', label: 'Doctor' },
-                  { value: 'owner', label: 'Owner' },
+                  { value: 'receptionist', label: 'Asistente' },
+                  { value: 'doctor', label: 'Médico' },
+                  { value: 'owner', label: 'Administrador(a)' },
                 ]}
               />
             </Field>
-            <Field label="Phone (optional)"><input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
+            <Field label="Teléfono (opcional)"><input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
             {form.role === 'doctor' && (
               <>
-                <Field label="Specialty"><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder="General Physician" /></Field>
-                <Field label={`Consultation fee (${currency})`}><input className={inputClass} inputMode="numeric" value={form.consultationFee} onChange={(e) => set('consultationFee', e.target.value)} /></Field>
+                <Field label="Especialidad"><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder="Medicina general" /></Field>
+                <Field label={`Tarifa de consulta (${currency})`}><input className={inputClass} inputMode="numeric" value={form.consultationFee} onChange={(e) => set('consultationFee', e.target.value)} /></Field>
               </>
             )}
           </div>
 
           {form.role === 'doctor' && (
             <div className="mx-6 mb-6 rounded-lg border border-border bg-canvas/50 p-4">
-              <Field label="Availability">
+              <Field label="Disponibilidad">
                 <AppSelect
                   value={form.availabilityType}
                   onChange={(v) => set('availabilityType', v)}
@@ -214,7 +214,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
                       stepMins={30}
                       className="max-w-36"
                     />
-                    <span className="text-sm text-faint">to</span>
+                    <span className="text-sm text-faint">a</span>
                     <TimePicker
                       value={form.availableTo}
                       onChange={(v) => set('availableTo', v)}
@@ -232,14 +232,14 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
           <div className="flex items-center justify-between gap-3 border-t border-border bg-canvas/60 px-6 py-4">
             {error ? <p className="text-sm text-red">{error}</p> : <span />}
             <div className="flex gap-2">
-              <button className={btnGhost} onClick={close}>Cancel</button>
+              <button className={btnGhost} onClick={close}>Cancelar</button>
               <button
                 className={btnPrimary}
                 disabled={pending || !form.name || !form.email || (!editingId && !form.password)}
                 onClick={save}
               >
                 {pending && <Spinner />}
-                {pending ? 'Saving…' : editingId ? 'Save changes' : 'Add staff'}
+                {pending ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Agregar miembro'}
               </button>
             </div>
           </div>
@@ -250,10 +250,10 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-canvas/50">
-              <Th>Member</Th>
-              <Th>Role</Th>
-              <Th className="hidden md:table-cell">Phone</Th>
-              <Th className="hidden sm:table-cell">Specialty · Fee · Availability</Th>
+              <Th>Miembro</Th>
+              <Th>Rol</Th>
+              <Th className="hidden md:table-cell">Teléfono</Th>
+              <Th className="hidden sm:table-cell">Especialidad · Tarifa · Disponibilidad</Th>
               <Th className="text-end" />
             </tr>
           </thead>
@@ -288,14 +288,14 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
                       disabled={pending}
                       onClick={() => openEdit(s)}
                     >
-                      Edit
+                      Editar
                     </button>
                     <button
                       className={`text-xs font-medium transition-colors ${s.active ? 'text-faint hover:text-red' : 'text-primary hover:underline'}`}
                       disabled={pending}
                       onClick={() => toggle(s.id, !s.active)}
                     >
-                      {s.active ? 'Deactivate' : 'Reactivate'}
+                      {s.active ? 'Desactivar' : 'Reactivar'}
                     </button>
                   </div>
                 </Td>
@@ -306,7 +306,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
         <TablePager page={page} totalPages={totalPages} onChange={setPage} />
       </Card>
       <p className="mt-3 text-xs text-faint">
-        Deactivating keeps a staff member&apos;s history intact — they just can&apos;t sign in.
+        Al desactivar a un miembro se conserva su historial; simplemente no podrá iniciar sesión.
       </p>
     </div>
   )

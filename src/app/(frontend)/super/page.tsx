@@ -2,6 +2,7 @@ import { requireSuperAdmin, getPayloadClient } from '@/lib/auth'
 import { SuperConsole, type TenantRow, type ActivityRow } from '@/components/SuperConsole'
 import { DEFAULT_CURRENCY } from '@/lib/constants'
 import type { Tenant, AuditLog, User } from '@/payload-types'
+import { practitionerWhere } from '@/lib/practice'
 
 export default async function SuperPage() {
   await requireSuperAdmin()
@@ -17,7 +18,7 @@ export default async function SuperPage() {
   const rows: TenantRow[] = await Promise.all(
     (tenantsRes.docs as Tenant[]).map(async (t) => {
       const [doctors, patients, appointments] = await Promise.all([
-        payload.count({ collection: 'users', where: { tenant: { equals: t.id }, role: { equals: 'doctor' } }, overrideAccess: true }),
+        payload.count({ collection: 'users', where: practitionerWhere(String(t.id)), overrideAccess: true }),
         payload.count({ collection: 'patients', where: { tenant: { equals: t.id } }, overrideAccess: true }),
         payload.count({ collection: 'appointments', where: { tenant: { equals: t.id } }, overrideAccess: true }),
       ])

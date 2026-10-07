@@ -110,6 +110,14 @@ export const auditReadAccess: Access = ({ req: { user } }) => {
 export const superAdminOrOwnerField: FieldAccess = ({ req: { user } }) =>
   isSuperAdmin(user) || user?.role === 'owner'
 
+/**
+ * Field-level read for the clinical narrative (history, exam, private notes):
+ * clinical roles only. Receptionists/assistants can still read the visit itself
+ * (date, diagnosis, prescription) so they can print and bill.
+ */
+export const clinicalReadField: FieldAccess = ({ req: { user } }) =>
+  isSuperAdmin(user) || user?.role === 'doctor' || user?.role === 'owner'
+
 /** Field-level: only superAdmin. */
 export const superAdminField: FieldAccess = ({ req: { user } }) => isSuperAdmin(user)
 

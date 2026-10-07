@@ -10,14 +10,21 @@ import {
   usersReadAccess,
   usersUpdateAccess,
 } from '@/access'
-import { ROLES, ERROR_CODES, AVAILABILITY_TYPES, WEEKDAYS, ALL_DAYS } from '@/lib/constants'
+import { ROLES, ROLE_LABELS, ERROR_CODES, AVAILABILITY_TYPES, WEEKDAYS, ALL_DAYS } from '@/lib/constants'
+import { isPractitioner } from '@/lib/practice'
 import { enforcePlanLimit } from '@/hooks/planLimit'
 import { auditUsers } from '@/hooks/audit'
 
 export const Users: CollectionConfig = {
   slug: 'users',
-  labels: { singular: 'User', plural: 'Staff' },
-  auth: true,
+  labels: { singular: 'Usuario', plural: 'Equipo' },
+  // Login hardening: lock an account for 10 min after 5 failed attempts; sessions
+  // expire after 12 h of inactivity (a shared clinic PC must not stay logged in).
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 10 * 60 * 1000,
+    tokenExpiration: 12 * 60 * 60,
+  },
   admin: { useAsTitle: 'email', defaultColumns: ['name', 'email', 'role', 'tenant'] },
   access: {
     // Only superAdmins reach the Payload admin panel; tenant staff live entirely
@@ -35,7 +42,7 @@ export const Users: CollectionConfig = {
       async ({ user, req }) => {
         if (user.active === false) {
           throw new APIError(
-            'Your account has been deactivated. Contact your clinic owner.',
+            'Su cuenta fue desactivada. Contacte al titular del consultorio.',
             403,
             { code: ERROR_CODES.USER_INACTIVE },
           )
@@ -43,7 +50,7 @@ export const Users: CollectionConfig = {
         // Self-serve owners confirm their email before anything else (BACKLOG §1.1).
         if (user.emailVerified === false) {
           throw new APIError(
-            'Verify your email first — check your inbox for the confirmation link.',
+            'Primero verifique su correo: revise su bandeja de entrada.',
             403,
             { code: ERROR_CODES.EMAIL_NOT_VERIFIED },
           )
@@ -58,14 +65,14 @@ export const Users: CollectionConfig = {
           })
           if (tenant?.status === 'suspended') {
             throw new APIError(
-              "This clinic's account is suspended. Contact support.",
+              'La cuenta de este consultorio está suspendida. Contacte a soporte.',
               403,
               { code: ERROR_CODES.TENANT_SUSPENDED },
             )
           }
           if (tenant?.status === 'pending') {
             throw new APIError(
-              "Your clinic is awaiting admin approval. You'll be able to sign in once it's approved.",
+              'Su consultorio está pendiente de aprobación. Podrá iniciar sesión cuando sea aprobado.',
               403,
               { code: ERROR_CODES.TENANT_PENDING },
             )
@@ -86,7 +93,7 @@ export const Users: CollectionConfig = {
 
         // A non-superAdmin may never create or promote a superAdmin.
         if (actor && !isSuperAdmin(actor) && data.role === 'superAdmin') {
-          throw new APIError('You cannot assign the super admin role.', 403, {
+          throw new APIError('No puede asignar el rol de superadministrador.', 403, {
             code: ERROR_CODES.FORBIDDEN,
           })
         }
@@ -98,7 +105,7 @@ export const Users: CollectionConfig = {
             data.tenant = actorTenant // force-set, ignore client value
           }
           if (operation === 'update' && data.tenant && String(data.tenant) !== String(actorTenant)) {
-            throw new APIError('You cannot move staff to another clinic.', 403, {
+            throw new APIError('No puede mover miembros del equipo a otro consultorio.', 403, {
               code: ERROR_CODES.FORBIDDEN,
             })
           }
@@ -109,7 +116,7 @@ export const Users: CollectionConfig = {
     beforeChange: [
       ({ data }) => {
         if (data.role && data.role !== 'superAdmin' && !data.tenant) {
-          throw new APIError('Staff must belong to a clinic.', 400, {
+          throw new APIError('Todo miembro del equipo debe pertenecer a un consultorio.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -121,13 +128,14 @@ export const Users: CollectionConfig = {
     afterChange: [auditUsers],
   },
   fields: [
-    { name: 'name', type: 'text', required: true },
+    { name: 'name', type: 'text', required: true, label: 'Nombre' },
     {
       name: 'role',
       type: 'select',
       required: true,
       defaultValue: 'receptionist',
-      options: ROLES.map((r) => ({ label: r, value: r })),
+      label: 'Rol',
+      options: ROLES.map((r) => ({ label: ROLE_LABELS[r], value: r })),
       access: { update: superAdminOrOwnerField },
     },
     {
@@ -137,25 +145,26 @@ export const Users: CollectionConfig = {
       index: true,
       access: { update: superAdminOrOwnerField },
       admin: {
-        description: 'Required for all roles except super admin.',
+        description: 'Obligatorio para todos los roles excepto superadministrador.',
         condition: (data) => data?.role !== 'superAdmin',
       },
     },
     {
       name: 'phone',
       type: 'text',
+      label: 'Teléfono',
       validate: (value: string | null | undefined) => {
         if (!value) return true
         return /^\+?[0-9]{7,15}$/.test(value.replace(/[\s-]/g, ''))
           ? true
-          : 'Enter a valid phone number (7–15 digits).'
+          : 'Ingrese un teléfono válido (7 a 15 dígitos).'
       },
     },
     {
       name: 'active',
       type: 'checkbox',
       defaultValue: true,
-      label: 'Active',
+      label: 'Activo',
       access: { update: superAdminOrOwnerField },
     },
     // Email verification (BACKLOG §1.1). Everyone defaults to verified — only a
@@ -165,7 +174,7 @@ export const Users: CollectionConfig = {
       name: 'emailVerified',
       type: 'checkbox',
       defaultValue: true,
-      label: 'Email verified',
+      label: 'Correo verificado',
       access: { create: superAdminField, update: superAdminField },
     },
     {
@@ -181,18 +190,38 @@ export const Users: CollectionConfig = {
       hidden: true,
       access: { create: superAdminField, read: superAdminField, update: superAdminField },
     },
+    // An owner who also sees patients (independent doctor). Practitioner-only
+    // fields below show for doctors and for practising owners.
+    {
+      name: 'practitioner',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Atiende pacientes (médico titular)',
+      access: { update: superAdminOrOwnerField },
+      admin: { condition: (data) => data?.role === 'owner' },
+    },
     {
       name: 'specialty',
       type: 'text',
-      admin: { condition: (data) => data?.role === 'doctor' },
+      label: 'Especialidad',
+      admin: { condition: (data) => isPractitioner(data) },
+    },
+    {
+      // DR: exequátur; elsewhere: medical licence / registration number. Printed on
+      // prescriptions.
+      name: 'licenseNumber',
+      type: 'text',
+      label: 'Exequátur / N.º de registro médico',
+      admin: { condition: (data) => isPractitioner(data) },
     },
     {
       name: 'consultationFee',
       type: 'number',
       min: 0,
+      label: 'Tarifa de consulta',
       admin: {
-        condition: (data) => data?.role === 'doctor',
-        description: 'In the clinic currency. Used by billing (v2).',
+        condition: (data) => isPractitioner(data),
+        description: 'En la moneda del consultorio. Se usa al facturar.',
       },
     },
     // Availability pattern. `regular` doctors keep set weekdays + a daily window;
@@ -201,33 +230,34 @@ export const Users: CollectionConfig = {
       name: 'availabilityType',
       type: 'select',
       defaultValue: 'regular',
+      label: 'Disponibilidad',
       options: AVAILABILITY_TYPES.map((t) => ({ label: t.label, value: t.value })),
-      admin: { condition: (data) => data?.role === 'doctor' },
+      admin: { condition: (data) => isPractitioner(data) },
     },
     {
       name: 'availableDays',
       type: 'select',
       hasMany: true,
       defaultValue: ALL_DAYS,
+      label: 'Días de consulta',
       options: WEEKDAYS.map((d) => ({ label: d.label, value: d.value })),
       admin: {
-        description: 'Days this doctor sees patients (daily = all; alternate = e.g. Mon/Wed/Fri; weekly = one).',
-        condition: (data) => data?.role === 'doctor' && (data?.availabilityType ?? 'regular') === 'regular',
+        condition: (data) => isPractitioner(data) && (data?.availabilityType ?? 'regular') === 'regular',
       },
     },
     {
       name: 'availableFrom',
       type: 'text',
       defaultValue: '09:00',
-      label: 'Available from (HH:mm)',
-      admin: { condition: (data) => data?.role === 'doctor' && (data?.availabilityType ?? 'regular') === 'regular' },
+      label: 'Desde (HH:mm)',
+      admin: { condition: (data) => isPractitioner(data) && (data?.availabilityType ?? 'regular') === 'regular' },
     },
     {
       name: 'availableTo',
       type: 'text',
       defaultValue: '17:00',
-      label: 'Available to (HH:mm)',
-      admin: { condition: (data) => data?.role === 'doctor' && (data?.availabilityType ?? 'regular') === 'regular' },
+      label: 'Hasta (HH:mm)',
+      admin: { condition: (data) => isPractitioner(data) && (data?.availabilityType ?? 'regular') === 'regular' },
     },
   ],
 }

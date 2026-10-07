@@ -53,7 +53,7 @@ export function TimePicker({
       value={value}
       onChange={onChange}
       options={options}
-      placeholder="Pick a time"
+      placeholder="Elija una hora"
       className={className}
     />
   )

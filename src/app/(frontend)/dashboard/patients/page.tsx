@@ -14,6 +14,7 @@ import {
 import { IconPlus, IconSearch } from '@/components/icons'
 import { PageSizeSelect } from '@/components/PageSizeSelect'
 import { ageFromDOB } from '@/lib/format'
+import { GENDER_LABELS } from '@/lib/constants'
 import type { Patient } from '@/payload-types'
 import type { Where } from 'payload'
 
@@ -52,7 +53,14 @@ export default async function PatientsPage({
 
   const where: Where = { tenant: { equals: tenantID } }
   if (q) {
-    where.or = [{ name: { like: q } }, { phone: { like: q } }, { mrn: { like: q } }]
+    const digits = q.replace(/[^0-9]/g, '')
+    where.or = [
+      { name: { like: q } },
+      { phone: { like: q } },
+      { mrn: { like: q } },
+      // Cédulas are stored digits-only, so "001-1234567-8" still matches.
+      ...(digits.length >= 4 ? [{ documentNumber: { like: digits } }] : []),
+    ]
   }
 
   const res = await payload.find({
@@ -70,15 +78,15 @@ export default async function PatientsPage({
   return (
     <div>
       <PageTitle
-        subtitle={`${res.totalDocs} registered`}
+        subtitle={`${res.totalDocs} ${res.totalDocs === 1 ? 'paciente registrado' : 'pacientes registrados'}`}
         action={
           <Link href="/dashboard/patients/new" className={btnPrimary}>
             <IconPlus size={15} />
-            New patient
+            Nuevo paciente
           </Link>
         }
       >
-        Patients
+        Pacientes
       </PageTitle>
 
       <form className="mb-4">
@@ -87,7 +95,7 @@ export default async function PatientsPage({
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search by name, phone or MRN…"
+            placeholder="Buscar por nombre, teléfono, cédula o expediente…"
             className={`${inputClass} ps-9`}
           />
         </div>
@@ -96,19 +104,19 @@ export default async function PatientsPage({
       <Card className="overflow-hidden">
         {patients.length === 0 ? (
           <EmptyState
-            message={q ? `No patients match "${q}".` : 'No patients yet.'}
+            message={q ? `Ningún paciente coincide con «${q}».` : 'Todavía no hay pacientes.'}
             actionHref="/dashboard/patients/new"
-            actionLabel="Register new patient"
+            actionLabel="Registrar paciente"
           />
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-canvas/50">
-                <Th>Patient</Th>
-                <Th>MRN</Th>
-                <Th className="hidden sm:table-cell">Phone</Th>
-                <Th className="hidden md:table-cell">Age / Gender</Th>
-                <Th className="hidden lg:table-cell">Allergies</Th>
+                <Th>Paciente</Th>
+                <Th>Expediente</Th>
+                <Th className="hidden sm:table-cell">Teléfono</Th>
+                <Th className="hidden md:table-cell">Edad / sexo</Th>
+                <Th className="hidden lg:table-cell">Alergias</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -126,8 +134,8 @@ export default async function PatientsPage({
                     </span>
                   </Td>
                   <Td className="tabular hidden text-muted-foreground sm:table-cell">{p.phone}</Td>
-                  <Td className="hidden capitalize text-muted-foreground md:table-cell">
-                    {age(p) != null ? `${age(p)}y` : '—'} · {p.gender}
+                  <Td className="hidden text-muted-foreground md:table-cell">
+                    {age(p) != null ? `${age(p)} años` : '—'} · {GENDER_LABELS[p.gender] ?? p.gender}
                   </Td>
                   <Td className="hidden lg:table-cell">
                     {p.allergies ? (
@@ -150,7 +158,7 @@ export default async function PatientsPage({
           <div className="flex items-center gap-4">
             <PageSizeSelect value={limit} basePath="/dashboard/patients" />
             <span className="tabular text-xs">
-              Page {res.page} of {res.totalPages}
+              Página {res.page} de {res.totalPages}
             </span>
           </div>
           {res.totalPages > 1 && (

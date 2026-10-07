@@ -8,8 +8,8 @@ import { PLANS, PLAN_LIMITS, planLabel, usage, type Plan, type LimitedResource }
 import { requestUpgrade } from '@/app/(frontend)/dashboard/plan/actions'
 
 const RESOURCE_LABELS: Record<LimitedResource, string> = {
-  doctors: 'Active doctors',
-  patients: 'Patients',
+  doctors: 'Médicos activos',
+  patients: 'Pacientes',
 }
 
 function UsageBar({ resource, plan, count }: { resource: LimitedResource; plan: Plan; count: number }) {
@@ -19,7 +19,7 @@ function UsageBar({ resource, plan, count }: { resource: LimitedResource; plan: 
       <div className="flex items-baseline justify-between">
         <span className="text-[13px] font-medium text-ink">{RESOURCE_LABELS[resource]}</span>
         <span className="tabular text-[13px] text-muted-foreground">
-          {u.limit === null ? `${u.count} · unlimited` : `${u.count} of ${u.limit}`}
+          {u.limit === null ? `${u.count} · ilimitado` : `${u.count} de ${u.limit}`}
         </span>
       </div>
       {u.limit !== null && (
@@ -31,9 +31,9 @@ function UsageBar({ resource, plan, count }: { resource: LimitedResource; plan: 
             />
           </div>
           {u.atLimit ? (
-            <p className="mt-1.5 text-xs text-red">Limit reached — request an upgrade to add more.</p>
+            <p className="mt-1.5 text-xs text-red">Límite alcanzado: solicite una mejora de plan para agregar más.</p>
           ) : u.near ? (
-            <p className="mt-1.5 text-xs text-amber">Getting close to your plan&apos;s limit.</p>
+            <p className="mt-1.5 text-xs text-amber">Se está acercando al límite de su plan.</p>
           ) : null}
         </>
       )}
@@ -41,8 +41,8 @@ function UsageBar({ resource, plan, count }: { resource: LimitedResource; plan: 
   )
 }
 
-const limitLine = (limit: number | null, noun: string) =>
-  limit === null ? `Unlimited ${noun}` : `${limit} ${limit === 1 ? noun.replace(/s$/, '') : noun}`
+const limitLine = (limit: number | null, singular: string, plural: string) =>
+  limit === null ? `${plural.charAt(0).toUpperCase()}${plural.slice(1)} ilimitados` : `${limit} ${limit === 1 ? singular : plural}`
 
 export function PlanPanel({
   plan,
@@ -80,9 +80,9 @@ export function PlanPanel({
       {/* Current usage against the plan's caps */}
       <Card className="p-6">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Usage</h2>
+          <h2 className="text-sm font-semibold">Uso</h2>
           <span className="inline-flex items-center rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-medium text-primary">
-            {planLabel(plan)} plan
+            Plan {planLabel(plan)}
           </span>
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
@@ -98,12 +98,12 @@ export function PlanPanel({
           </span>
           <div className="min-w-0">
             <p className="text-[13px] font-medium">
-              Upgrade to the {planLabel(pendingRequest.plan)} plan requested
+              Mejora al plan {planLabel(pendingRequest.plan)} solicitada
               {pendingRequest.requestedAt &&
-                ` on ${new Date(pendingRequest.requestedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
+                ` el ${new Date(pendingRequest.requestedAt).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })}`}
             </p>
             <p className="text-xs text-muted-foreground">
-              Our team reviews requests within a business day. Your limits change once it&apos;s approved.
+              Nuestro equipo revisa las solicitudes en un día hábil. Sus límites cambiarán una vez aprobada.
             </p>
           </div>
         </Card>
@@ -127,13 +127,13 @@ export function PlanPanel({
                 <h3 className="text-[15px] font-semibold">{limits.label}</h3>
                 {isCurrent && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">
-                    <IconCheck size={11} /> Current
+                    <IconCheck size={11} /> Actual
                   </span>
                 )}
               </div>
               <ul className="mt-3 flex-1 space-y-1.5 text-[13px] text-muted-foreground">
-                <li>{limitLine(limits.doctors, 'doctors')}</li>
-                <li>{limitLine(limits.patients, 'patients')}</li>
+                <li>{limitLine(limits.doctors, 'médico', 'médicos')}</li>
+                <li>{limitLine(limits.patients, 'paciente', 'pacientes')}</li>
               </ul>
               {isUpgrade && !pendingRequest && (
                 <button
@@ -144,7 +144,7 @@ export function PlanPanel({
                     setRequesting((r) => (r === p ? null : p))
                   }}
                 >
-                  Request upgrade
+                  Solicitar mejora
                 </button>
               )}
             </Card>
@@ -156,26 +156,26 @@ export function PlanPanel({
       {requesting && (
         <Card className="p-5">
           <h3 className="text-sm font-semibold">
-            Request an upgrade to the {planLabel(requesting)} plan
+            Solicitar mejora al plan {planLabel(requesting)}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            No payment is taken now — a super admin reviews and applies the change.
+            No se realiza ningún cobro ahora: un superadministrador revisa y aplica el cambio.
           </p>
-          <label className="mt-4 mb-2 block text-[13px] font-medium text-ink">Note (optional)</label>
+          <label className="mt-4 mb-2 block text-[13px] font-medium text-ink">Nota (opcional)</label>
           <textarea
             className={textareaClass}
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. We're adding two more doctors next month"
+            placeholder="p. ej., El próximo mes se suman dos médicos más"
           />
           <div className="mt-3 flex gap-2">
             <button className={btnPrimary} disabled={pending} onClick={() => submit(requesting)}>
               {pending && <Spinner />}
-              {pending ? 'Sending…' : 'Send request'}
+              {pending ? 'Enviando…' : 'Enviar solicitud'}
             </button>
             <button className={btnGhost} disabled={pending} onClick={() => setRequesting(null)}>
-              Cancel
+              Cancelar
             </button>
           </div>
         </Card>

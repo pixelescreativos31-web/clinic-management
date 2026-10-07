@@ -7,15 +7,16 @@ import Image from 'next/image'
 import { loginAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
 import { IconCheck } from '@/components/icons'
+import { APP_NAME, APP_TAGLINE } from '@/lib/brand'
 
 const DEMO_ACCOUNTS = [
-  { label: 'Owner', email: 'owner@city.app' },
-  { label: 'Receptionist', email: 'reception@city.app' },
-  { label: 'Doctor', email: 'doctor1@city.app' },
-  { label: 'Super admin', email: 'super@clinic.app' },
+  { label: 'Doctora (titular)', email: 'doctora@demo.app' },
+  { label: 'Asistente', email: 'asistente@demo.app' },
+  { label: 'Clínica (varios médicos)', email: 'owner@clinica.app' },
+  { label: 'Superadministrador', email: 'super@clinic.app' },
 ]
 
-const PROMISES = ['Live day view per doctor', 'Walk-in queue tokens', 'Zero double-bookings']
+const PROMISES = ['Agenda del día siempre al día', 'Recetas listas para imprimir', 'Recordatorios por WhatsApp']
 
 export default function LoginPage() {
   return (
@@ -64,12 +65,12 @@ function LoginForm() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
               </svg>
             </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-white">matab</span>
+            <span className="font-display text-xl font-semibold tracking-tight text-white">{APP_NAME}</span>
           </Link>
 
           <div>
             <h2 className="max-w-md font-display text-3xl leading-snug font-semibold text-white xl:text-4xl">
-              The front desk, without the chaos.
+              Su consultorio, sin el caos del papeleo.
             </h2>
             <ul className="mt-7 space-y-3">
               {PROMISES.map((p) => (
@@ -82,7 +83,7 @@ function LoginForm() {
               ))}
             </ul>
             <p className="mt-10 text-xs text-white/50">
-              Multi-tenant clinic platform · Aapka clinic, organized.
+              {APP_TAGLINE}
             </p>
           </div>
         </div>
@@ -97,20 +98,20 @@ function LoginForm() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
               </svg>
             </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-primary">matab</span>
+            <span className="font-display text-xl font-semibold tracking-tight text-primary">{APP_NAME}</span>
           </Link>
 
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Welcome back</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Bienvenido(a) de nuevo</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Sign in to your clinic to start the day. New here?{' '}
+            Inicie sesión en su consultorio para comenzar el día. ¿Es nuevo(a)?{' '}
             <Link href="/signup" className="font-medium text-primary hover:underline">
-              Start free
+              Cree su cuenta
             </Link>
             .
           </p>
 
           <form action={formAction} className="mt-8 flex flex-col gap-4">
-            <Field label="Email" htmlFor="email">
+            <Field label="Correo electrónico" htmlFor="email">
               <input
                 id="email"
                 name="email"
@@ -119,11 +120,11 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@clinic.com"
+                placeholder="usted@consultorio.com"
                 className={inputClass}
               />
             </Field>
-            <Field label="Password" htmlFor="password">
+            <Field label="Contraseña" htmlFor="password">
               <input
                 id="password"
                 name="password"
@@ -138,7 +139,7 @@ function LoginForm() {
             </Field>
             <div className="-mt-2 text-right">
               <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
-                Forgot password?
+                ¿Olvidó su contraseña?
               </Link>
             </div>
 
@@ -150,14 +151,14 @@ function LoginForm() {
 
             <button type="submit" className={`${btnPrimary} mt-1 w-full`} disabled={pending}>
               {pending && <Spinner />}
-              {pending ? 'Signing in…' : 'Sign in'}
+              {pending ? 'Iniciando sesión…' : 'Iniciar sesión'}
             </button>
           </form>
 
           {/* Demo quick-fill */}
           <div className="mt-8 rounded-xl border border-border bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground">
-              Demo — one click fills the form, then sign in:
+              Demostración: un clic completa el formulario; luego inicie sesión.
             </p>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {DEMO_ACCOUNTS.map((d) => (

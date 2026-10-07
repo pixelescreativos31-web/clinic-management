@@ -18,7 +18,7 @@ async function ctx() {
 /** Create an invoice pre-filled from a visit (consultation line = doctor's fee). */
 export async function createInvoiceFromVisit(visitId: string): Promise<ActionResult<{ id: string }>> {
   const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!c) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { user, payload } = c
   try {
     const visit = (await payload.findByID({ collection: 'visits', id: visitId, depth: 1, overrideAccess: false, user })) as Visit
@@ -31,7 +31,7 @@ export async function createInvoiceFromVisit(visitId: string): Promise<ActionRes
       data: {
         visit: visitId,
         patient: relId(visit.patient),
-        lineItems: [{ description: `Consultation — ${doctor?.name ?? 'Doctor'}`, quantity: 1, unitAmount: fee }],
+        lineItems: [{ description: `Consulta — ${doctor?.name ?? 'Médico'}`, quantity: 1, unitAmount: fee }],
       } as never,
     })
     revalidatePath('/dashboard')
@@ -50,10 +50,10 @@ export async function createInvoice(input: {
   lineItems: LineItemInput[]
 }): Promise<ActionResult<{ id: string }>> {
   const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!c) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { user, payload } = c
   if (!input.patientId || !input.lineItems?.length) {
-    return { ok: false, code: 'VALIDATION', message: 'A patient and at least one line item are required.' }
+    return { ok: false, code: 'VALIDATION', message: 'Se requiere un paciente y al menos un concepto.' }
   }
   try {
     const invoice = await payload.create({
@@ -75,9 +75,9 @@ export async function recordPayment(
   method: string,
 ): Promise<ActionResult<{ id: string }>> {
   const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!c) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { user, payload } = c
-  if (!(amount > 0)) return { ok: false, code: 'VALIDATION', message: 'Enter an amount greater than zero.' }
+  if (!(amount > 0)) return { ok: false, code: 'VALIDATION', message: 'Ingrese un monto mayor que cero.' }
   try {
     const inv = (await payload.findByID({ collection: 'invoices', id: invoiceId, depth: 0, overrideAccess: false, user })) as Invoice
     const existing = (inv.payments ?? []).map((p) => ({
@@ -104,10 +104,10 @@ export async function recordPayment(
 /** Void an invoice (owner only). Excluded from revenue; frozen afterwards. */
 export async function voidInvoice(invoiceId: string, reason: string): Promise<ActionResult<{ id: string }>> {
   const c = await ctx()
-  if (!c) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!c) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { user, payload } = c
-  if (user.role !== 'owner') return { ok: false, code: 'FORBIDDEN', message: 'Only the clinic owner can void an invoice.' }
-  if (!reason.trim()) return { ok: false, code: 'VALIDATION', message: 'A reason is required to void an invoice.' }
+  if (user.role !== 'owner') return { ok: false, code: 'FORBIDDEN', message: 'Solo el titular del consultorio puede anular una factura.' }
+  if (!reason.trim()) return { ok: false, code: 'VALIDATION', message: 'Debe indicar un motivo para anular la factura.' }
   try {
     await payload.update({
       collection: 'invoices',

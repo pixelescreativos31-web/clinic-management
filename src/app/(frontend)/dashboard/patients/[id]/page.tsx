@@ -4,19 +4,52 @@ import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { AllergyBanner, Card, StatusBadge, EmptyState, Avatar, btnPrimary, btnGhost } from '@/components/primitives'
 import { IconChevronLeft, IconPhone, IconPlus, IconPrinter } from '@/components/icons'
-import { ageFromDOB, formatDateTime, formatMoney } from '@/lib/format'
+import { StartConsultationButton } from '@/components/StartConsultationButton'
+import { GENDER_LABELS, PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
+import { isClinical } from '@/lib/practice'
+import { vitalsLine } from '@/lib/clinical'
+import { ageFromDOB, formatDate, formatDateTime, formatMoney } from '@/lib/format'
 import { getPatientTimeline } from '@/lib/timeline'
-import type { Appointment, Invoice, Patient, User } from '@/payload-types'
+import type { Appointment, Invoice, Patient, User, Visit } from '@/payload-types'
 import type { AppointmentStatus } from '@/lib/constants'
 
 const HISTORY_PAGE_SIZE = 15
 
-type TabKey = 'timeline' | 'appointments' | 'invoices'
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'timeline', label: 'Timeline' },
-  { key: 'appointments', label: 'Appointments' },
-  { key: 'invoices', label: 'Invoices' },
+const fmtCedula = (d: string) => (d.length === 11 ? `${d.slice(0, 3)}-${d.slice(3, 10)}-${d.slice(10)}` : d)
+
+type TabKey = 'historia' | 'timeline' | 'appointments' | 'invoices'
+const ALL_TABS: { key: TabKey; label: string; clinicalOnly?: boolean }[] = [
+  { key: 'historia', label: 'Historia clínica', clinicalOnly: true },
+  { key: 'timeline', label: 'Resumen' },
+  { key: 'appointments', label: 'Citas' },
+  { key: 'invoices', label: 'Facturas' },
 ]
+
+const FREQ_LABEL: Record<string, string> = Object.fromEntries(
+  PRESCRIPTION_FREQUENCIES.map((f) => [f.value, f.label]),
+)
+
+const BACKGROUND_FIELDS: { key: keyof NonNullable<Patient['history']>; label: string }[] = [
+  { key: 'chronicConditions', label: 'Enfermedades crónicas' },
+  { key: 'personal', label: 'Patológicos personales' },
+  { key: 'surgical', label: 'Quirúrgicos' },
+  { key: 'family', label: 'Familiares' },
+  { key: 'medications', label: 'Medicamentos actuales' },
+  { key: 'habits', label: 'Hábitos' },
+  { key: 'gynecoObstetric', label: 'Gineco-obstétricos' },
+  { key: 'vaccines', label: 'Vacunas' },
+]
+
+/** Labelled free-text block inside a consultation card (skips empty values). */
+function Block({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null
+  return (
+    <div>
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 whitespace-pre-line text-[13px] leading-relaxed">{value}</dd>
+    </div>
+  )
+}
 
 export default async function PatientProfile({
   params,
@@ -31,7 +64,9 @@ export default async function PatientProfile({
   const { id } = await params
   const sp = await searchParams
   const hp = Math.max(1, Number(sp.hp) || 1)
-  const tab: TabKey = TABS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : 'timeline'
+  const clinical = isClinical(user)
+  const TABS = ALL_TABS.filter((t) => clinical || !t.clinicalOnly)
+  const tab: TabKey = TABS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : TABS[0].key
 
   let patient: Patient
   try {
@@ -78,6 +113,22 @@ export default async function PatientProfile({
         })
       : null
   const invoices = (invoicesRes?.docs ?? []) as Invoice[]
+  // Clinical record: consultations read WITH the user's access, so field-level
+  // rules (private notes, exam) apply exactly as they do everywhere else.
+  const visitsRes =
+    tab === 'historia'
+      ? await payload.find({
+          collection: 'visits',
+          where: { tenant: { equals: tenantID }, patient: { equals: id } },
+          sort: '-visitDate',
+          limit: 30,
+          depth: 1,
+          overrideAccess: false,
+          user,
+        })
+      : null
+  const visits = (visitsRes?.docs ?? []) as Visit[]
+  const background = BACKGROUND_FIELDS.filter((f) => patient.history?.[f.key])
   const tabHref = (key: TabKey) => `/dashboard/patients/${id}?tab=${key}`
 
   const age = patient.ageYears ?? (patient.dateOfBirth ? ageFromDOB(patient.dateOfBirth) : null)
@@ -89,7 +140,7 @@ export default async function PatientProfile({
         className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink"
       >
         <IconChevronLeft size={14} />
-        Patients
+        Pacientes
       </Link>
 
       <div className="mt-3 grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -108,7 +159,7 @@ export default async function PatientProfile({
           <dl className="divide-y divide-border text-sm">
             {[
               {
-                label: 'Phone',
+                label: 'Teléfono',
                 value: (
                   <span className="tabular inline-flex items-center gap-1.5">
                     <IconPhone size={12} className="text-faint" />
@@ -116,14 +167,23 @@ export default async function PatientProfile({
                   </span>
                 ),
               },
-              { label: 'Gender', value: <span className="capitalize">{patient.gender}</span> },
-              { label: 'Age', value: age != null ? `${age} years` : '—' },
-              { label: 'Blood group', value: patient.bloodGroup || '—' },
-              { label: 'Visits', value: history.totalDocs },
+              ...(patient.documentNumber
+                ? [{ label: patient.documentType === 'passport' ? 'Pasaporte' : patient.documentType === 'other' ? 'Documento' : 'Cédula', value: <span className="tabular">{patient.documentType === 'cedula' || !patient.documentType ? fmtCedula(patient.documentNumber) : patient.documentNumber}</span> }]
+                : []),
+              { label: 'Sexo', value: GENDER_LABELS[patient.gender] ?? patient.gender },
+              { label: 'Edad', value: age != null ? `${age} ${age === 1 ? 'año' : 'años'}` : '—' },
+              { label: 'Grupo sanguíneo', value: patient.bloodGroup || '—' },
+              ...(patient.insurance?.provider
+                ? [{ label: 'Seguro', value: `${patient.insurance.provider}${patient.insurance.affiliateNumber ? ` · ${patient.insurance.affiliateNumber}` : ''}` }]
+                : []),
+              ...(patient.emergencyContact?.name
+                ? [{ label: 'Emergencia', value: `${patient.emergencyContact.name}${patient.emergencyContact.phone ? ` · ${patient.emergencyContact.phone}` : ''}` }]
+                : []),
+              { label: 'Citas', value: history.totalDocs },
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between gap-3 px-5 py-2.5">
                 <dt className="text-xs font-medium text-muted-foreground">{row.label}</dt>
-                <dd className="text-[13px] font-medium">{row.value}</dd>
+                <dd className="min-w-0 truncate text-end text-[13px] font-medium">{row.value}</dd>
               </div>
             ))}
           </dl>
@@ -139,19 +199,22 @@ export default async function PatientProfile({
             </p>
           )}
 
-          <div className="flex gap-2 border-t p-4">
-            <Link href={`/dashboard/patients/${patient.id}/edit`} className={`${btnGhost} flex-1`}>
-              Edit
-            </Link>
-            <Link href="/dashboard/appointments/new" className={`${btnPrimary} flex-1`}>
-              <IconPlus size={15} />
-              Book
-            </Link>
+          <div className="flex flex-col gap-2 border-t p-4">
+            {clinical && <StartConsultationButton patientId={String(patient.id)} />}
+            <div className="flex gap-2">
+              <Link href={`/dashboard/patients/${patient.id}/edit`} className={`${btnGhost} flex-1`}>
+                Editar
+              </Link>
+              <Link href={`/dashboard/appointments/new?patient=${patient.id}`} className={`${clinical ? btnGhost : btnPrimary} flex-1`}>
+                <IconPlus size={15} />
+                Agendar cita
+              </Link>
+            </div>
           </div>
         </Card>
 
         <div className="flex flex-col gap-4">
-        {/* Tabs: Timeline (default) · Appointments · Invoices */}
+        {/* Tabs: Historia clínica (clinical) · Resumen · Citas · Facturas */}
         <div className="inline-flex w-fit rounded-lg border border-border bg-card p-0.5 text-sm">
           {TABS.map((t) => {
             const active = t.key === tab
@@ -169,16 +232,101 @@ export default async function PatientProfile({
           })}
         </div>
 
+        {/* Historia clínica — background + full consultation notes */}
+        {tab === 'historia' && (
+          <>
+            <Card className="overflow-hidden">
+              <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+                <h2 className="text-sm font-semibold">Antecedentes</h2>
+                <Link href={`/dashboard/patients/${patient.id}/edit`} className="text-xs font-medium text-primary hover:underline">
+                  Editar
+                </Link>
+              </div>
+              {background.length === 0 ? (
+                <p className="px-5 py-4 text-sm text-muted-foreground">Sin antecedentes registrados.</p>
+              ) : (
+                <dl className="grid gap-4 px-5 py-4 sm:grid-cols-2">
+                  {background.map((f) => (
+                    <Block key={f.key} label={f.label} value={patient.history?.[f.key] as string} />
+                  ))}
+                </dl>
+              )}
+            </Card>
+
+            {visits.length === 0 ? (
+              <Card>
+                <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                  Todavía no hay consultas registradas. Use «Atender ahora» para iniciar una.
+                </p>
+              </Card>
+            ) : (
+              visits.map((v) => {
+                const vl = vitalsLine(v.vitals)
+                return (
+                  <Card key={v.id} className="overflow-hidden">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/25 px-5 py-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold">{v.diagnosis || v.chiefComplaint || 'Consulta'}</div>
+                        <div className="tabular text-xs text-muted-foreground">
+                          {formatDateTime(v.visitDate, tenant)}
+                          {(v.doctor as User)?.name ? ` · ${(v.doctor as User).name}` : ''}
+                        </div>
+                      </div>
+                      <div className="flex gap-3 text-xs font-medium">
+                        <Link href={`/dashboard/visits/${v.id}/edit`} className="text-primary hover:underline">
+                          Editar
+                        </Link>
+                        <Link href={`/print/prescription/${v.id}`} target="_blank" className="inline-flex items-center gap-1 text-primary hover:underline">
+                          <IconPrinter size={13} /> Receta
+                        </Link>
+                      </div>
+                    </div>
+                    <dl className="flex flex-col gap-3 px-5 py-4">
+                      <Block label="Motivo de consulta" value={v.chiefComplaint} />
+                      <Block label="Historia de la enfermedad actual" value={v.symptoms} />
+                      {vl && <Block label="Signos vitales" value={vl} />}
+                      <Block label="Examen físico" value={v.physicalExam} />
+                      <Block label="Diagnóstico" value={v.diagnosis} />
+                      {(v.prescription?.length ?? 0) > 0 && (
+                        <div>
+                          <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Receta</dt>
+                          <dd className="mt-1">
+                            <ul className="space-y-0.5 text-[13px]">
+                              {v.prescription!.map((r, i) => (
+                                <li key={i}>
+                                  <span className="font-medium">{r.medicine}</span>
+                                  {[r.dosage, r.frequency ? (r.frequency === 'other' ? r.frequencyNote : FREQ_LABEL[r.frequency]) : null, r.durationDays ? `${r.durationDays} días` : null, r.instructions]
+                                    .filter(Boolean)
+                                    .map((x) => ` · ${x}`)
+                                    .join('')}
+                                </li>
+                              ))}
+                            </ul>
+                          </dd>
+                        </div>
+                      )}
+                      <Block label="Plan e indicaciones" value={v.treatmentPlan} />
+                      <Block label="Estudios indicados" value={v.labOrders} />
+                      <Block label="Notas privadas" value={v.notes} />
+                      {v.followUpDate && <Block label="Próxima cita" value={formatDate(v.followUpDate, tenant)} />}
+                    </dl>
+                  </Card>
+                )
+              })
+            )}
+          </>
+        )}
+
         {/* Timeline tab — merged chronological feed */}
         {tab === 'timeline' && (
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-              <h2 className="text-sm font-semibold">Timeline</h2>
+              <h2 className="text-sm font-semibold">Resumen</h2>
               <span className="tabular text-xs text-faint">{timeline.length}</span>
             </div>
             {timeline.length === 0 ? (
               <p className="px-5 py-6 text-center text-sm text-muted-foreground">
-                Nothing recorded yet.
+                Todavía no hay registros.
               </p>
             ) : (
               <ul className="divide-y divide-border">
@@ -194,23 +342,23 @@ export default async function PatientProfile({
                       <>
                         <span className="min-w-0 flex-1 truncate">
                           <span className="me-1.5 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            Visit
+                            Consulta
                           </span>
-                          <span className="font-medium">{e.diagnosis || 'Consultation'}</span>
+                          <span className="font-medium">{e.diagnosis || 'Consulta'}</span>
                           {e.doctorName && (
                             <span className="text-muted-foreground"> · {e.doctorName}</span>
                           )}
                         </span>
                         {e.rxCount > 0 && (
                           <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-primary">
-                            {e.rxCount} Rx
+                            {e.rxCount} {e.rxCount === 1 ? 'medicamento' : 'medicamentos'}
                           </span>
                         )}
                         <Link
                           href={`/print/prescription/${e.id}`}
                           target="_blank"
                           className="shrink-0 text-faint transition-colors hover:text-primary"
-                          title="Print prescription"
+                          title="Imprimir receta"
                         >
                           <IconPrinter size={14} />
                         </Link>
@@ -223,7 +371,7 @@ export default async function PatientProfile({
                       >
                         <span className="min-w-0 flex-1 truncate">
                           <span className="me-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Invoice
+                            Factura
                           </span>
                           <span className="tabular font-medium">{e.invoiceNumber}</span>
                           <span className="tabular text-muted-foreground">
@@ -238,7 +386,7 @@ export default async function PatientProfile({
                       <>
                         <span className="min-w-0 flex-1 truncate">
                           <span className="me-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Appt
+                            Cita
                           </span>
                           {e.doctorName && <span className="font-medium">{e.doctorName}</span>}
                           {e.reason && <span className="text-muted-foreground"> · {e.reason}</span>}
@@ -257,14 +405,14 @@ export default async function PatientProfile({
         {tab === 'appointments' && (
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-              <h2 className="text-sm font-semibold">Appointment history</h2>
+              <h2 className="text-sm font-semibold">Historial de citas</h2>
               <span className="tabular text-xs text-faint">{history.totalDocs}</span>
             </div>
             {appts.length === 0 ? (
               <EmptyState
-                message="No appointments yet."
-                actionHref="/dashboard/appointments/new"
-                actionLabel="Book one"
+                message="Todavía no hay citas."
+                actionHref={`/dashboard/appointments/new?patient=${id}`}
+                actionLabel="Agendar una"
               />
             ) : (
               <ul className="divide-y divide-border">
@@ -285,17 +433,17 @@ export default async function PatientProfile({
             {history.totalPages > 1 && (
               <div className="flex items-center justify-between border-t bg-muted/40 px-5 py-2.5 text-xs text-muted-foreground">
                 <span className="tabular">
-                  Page {history.page} of {history.totalPages}
+                  Página {history.page} de {history.totalPages}
                 </span>
                 <div className="flex gap-3">
                   {history.hasPrevPage && (
                     <Link href={`/dashboard/patients/${id}?tab=appointments&hp=${hp - 1}`} className="font-medium text-primary hover:underline">
-                      ‹ Newer
+                      ‹ Más recientes
                     </Link>
                   )}
                   {history.hasNextPage && (
                     <Link href={`/dashboard/patients/${id}?tab=appointments&hp=${hp + 1}`} className="font-medium text-primary hover:underline">
-                      Older ›
+                      Anteriores ›
                     </Link>
                   )}
                 </div>
@@ -308,11 +456,11 @@ export default async function PatientProfile({
         {tab === 'invoices' && (
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-              <h2 className="text-sm font-semibold">Invoices</h2>
+              <h2 className="text-sm font-semibold">Facturas</h2>
               <span className="tabular text-xs text-faint">{invoicesRes?.totalDocs ?? 0}</span>
             </div>
             {invoices.length === 0 ? (
-              <p className="px-5 py-6 text-center text-sm text-muted-foreground">No invoices yet.</p>
+              <p className="px-5 py-6 text-center text-sm text-muted-foreground">Todavía no hay facturas.</p>
             ) : (
               <ul className="divide-y divide-border">
                 {invoices.map((inv) => (

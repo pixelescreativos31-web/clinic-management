@@ -8,6 +8,7 @@ import { VisitForm } from '@/components/VisitForm'
 import { PostVisitActions } from '@/components/PostVisitActions'
 import { VISIT_ALLOWED_APPOINTMENT_STATUSES } from '@/lib/constants'
 import type { Appointment, Patient, User } from '@/payload-types'
+import { backgroundLine } from '@/lib/clinical'
 
 const relId = (v: unknown): string =>
   v && typeof v === 'object' && 'id' in (v as Record<string, unknown>) ? String((v as { id: unknown }).id) : String(v)
@@ -36,7 +37,7 @@ export default async function NewVisitPage({
 
   const back = (
     <Link href="/dashboard/appointments" className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink">
-      ‹ Appointments
+      ‹ Agenda
     </Link>
   )
 
@@ -45,9 +46,9 @@ export default async function NewVisitPage({
     return (
       <div className="mx-auto max-w-3xl">
         {back}
-        <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Record visit</h1>
+        <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Consulta</h1>
         <Card>
-          <EmptyState message="Check the patient in before recording a visit." actionHref="/dashboard/appointments" actionLabel="Back to day view" />
+          <EmptyState message="Registre la llegada del paciente antes de iniciar la consulta." actionHref="/dashboard/appointments" actionLabel="Volver a la agenda" />
         </Card>
       </div>
     )
@@ -68,14 +69,14 @@ export default async function NewVisitPage({
     return (
       <div className="mx-auto max-w-3xl">
         {back}
-        <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Record visit</h1>
+        <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Consulta</h1>
         <Card className="p-8 text-center">
           <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
             <IconCheck size={22} />
           </span>
-          <h2 className="mt-4 text-lg font-semibold">Visit recorded</h2>
+          <h2 className="mt-4 text-lg font-semibold">Consulta registrada</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            The consultation for {patient?.name ?? 'the patient'} is saved.
+            La consulta de {patient?.name ?? 'el paciente'} quedó guardada.
           </p>
           <PostVisitActions visitId={String(existing.docs[0].id)} patientId={relId(patient)} />
         </Card>
@@ -86,11 +87,13 @@ export default async function NewVisitPage({
   return (
     <div className="mx-auto max-w-3xl">
       {back}
-      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Record visit</h1>
+      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Consulta</h1>
       <VisitForm
         appointmentId={String(appt.id)}
-        patientName={patient?.name ?? 'Patient'}
-        doctorName={(appt.doctor as User)?.name ?? 'Doctor'}
+        patientName={patient?.name ?? 'Paciente'}
+        doctorName={(appt.doctor as User)?.name ?? 'Médico'}
+        allergies={patient?.allergies}
+        background={backgroundLine(patient)}
       />
     </div>
   )

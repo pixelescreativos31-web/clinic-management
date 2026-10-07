@@ -10,21 +10,21 @@ export function ResendForm() {
   if (state?.ok) {
     return (
       <p className="mt-5 rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted-foreground">
-        If an unverified account exists for that email, a fresh link is on its way.
+        Si existe una cuenta sin verificar con ese correo, le enviamos un nuevo enlace.
       </p>
     )
   }
 
   return (
     <form action={formAction} className="mt-5 flex flex-col gap-3">
-      <Field label="Your account email" htmlFor="email">
+      <Field label="Correo de su cuenta" htmlFor="email">
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          placeholder="you@clinic.com"
+          placeholder="usted@consultorio.com"
           className={inputClass}
         />
       </Field>
@@ -35,7 +35,7 @@ export function ResendForm() {
       )}
       <button type="submit" className={`${btnPrimary} w-full`} disabled={pending}>
         {pending && <Spinner />}
-        {pending ? 'Sending…' : 'Resend verification email'}
+        {pending ? 'Enviando…' : 'Reenviar correo de verificación'}
       </button>
     </form>
   )

@@ -14,7 +14,7 @@ import {
 } from './primitives'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { IconClock, IconStethoscope, IconCheck, IconCalendar, IconWhatsApp } from './icons'
-import { STATUS_TRANSITIONS, type AppointmentStatus } from '@/lib/constants'
+import { STATUS_TRANSITIONS, APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from '@/lib/constants'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
 
 export type Block = {
@@ -67,17 +67,17 @@ const STATUS_DOTS: Record<AppointmentStatus, string> = {
 }
 
 const NEXT_ACTION: Partial<Record<AppointmentStatus, { label: string; style: string }>> = {
-  'checked-in': { label: 'Check in', style: btnPrimary },
-  completed: { label: 'Mark completed', style: btnPrimary },
-  'no-show': { label: 'Mark no-show', style: btnGhost },
+  'checked-in': { label: 'Registrar llegada', style: btnPrimary },
+  completed: { label: 'Marcar como atendida', style: btnPrimary },
+  'no-show': { label: 'Marcar como no asistió', style: btnGhost },
 }
 
 /** The single most useful next step, shown as an inline one-tap button. */
 const QUICK_STEP: Partial<
   Record<AppointmentStatus, { to: AppointmentStatus; label: string; doing: string }>
 > = {
-  scheduled: { to: 'checked-in', label: 'Check in', doing: 'Checking in…' },
-  'checked-in': { to: 'completed', label: 'Complete', doing: 'Completing…' },
+  scheduled: { to: 'checked-in', label: 'Registrar llegada', doing: 'Registrando…' },
+  'checked-in': { to: 'completed', label: 'Atendida', doing: 'Guardando…' },
 }
 
 /** Minutes-from-midnight → "9 am" / "9:30 am". */
@@ -193,7 +193,7 @@ export function DayRail({
   if (columns.length === 0) {
     return (
       <div className="card-flat px-6 py-14 text-center text-sm text-muted-foreground">
-        No active doctors in this clinic yet.
+        Aún no hay médicos activos en este consultorio.
       </div>
     )
   }
@@ -211,8 +211,8 @@ export function DayRail({
         <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
           {(
             [
-              { key: 'list', label: 'List' },
-              { key: 'rail', label: 'Timeline' },
+              { key: 'list', label: 'Lista' },
+              { key: 'rail', label: 'Línea de tiempo' },
             ] as const
           ).map((opt) => (
             <button
@@ -230,8 +230,8 @@ export function DayRail({
         </div>
         <p className="text-xs text-faint">
           {view === 'list'
-            ? 'Today in order — tap Check in / Complete right on the row.'
-            : 'Each column is one doctor’s day. Click any card for actions.'}
+            ? 'Citas en orden: toque «Registrar llegada» o «Atendida» directamente en la fila.'
+            : 'Cada columna es el día de un médico. Haga clic en una cita para ver las acciones.'}
         </p>
       </div>
 
@@ -266,13 +266,13 @@ export function DayRail({
             }`}
           >
             <span className={`size-1.5 rounded-full ${STATUS_DOTS[s]}`} />
-            <span className="capitalize">{s.replace('-', ' ')}</span>
+            <span>{APPOINTMENT_STATUS_LABELS[s] ?? s}</span>
             {statusCounts[s] ? <span className="tabular text-faint">{statusCounts[s]}</span> : null}
           </span>
         ))}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-faint">
           <span className="rounded-sm bg-blue-soft px-1 py-px text-[9px] font-bold text-blue">T-01</span>
-          walk-in token
+          turno sin cita
         </span>
       </div>
 
@@ -292,7 +292,7 @@ export function DayRail({
                   )}
                 </SheetTitle>
                 <SheetDescription>
-                  {selected.durationMins} min{selected.isWalkIn ? ' · walk-in' : ''}
+                  {selected.durationMins} min{selected.isWalkIn ? ' · sin cita' : ''}
                 </SheetDescription>
               </SheetHeader>
 
@@ -326,7 +326,7 @@ export function DayRail({
                     className={`${btnGhost} mt-3 w-full`}
                   >
                     <IconWhatsApp size={15} className="text-primary" />
-                    WhatsApp reminder
+                    Recordatorio por WhatsApp
                   </a>
                 )}
 
@@ -342,7 +342,7 @@ export function DayRail({
                     className={`${selected.status === 'checked-in' ? btnPrimary : btnGhost} mt-6 w-full`}
                   >
                     <IconStethoscope size={15} />
-                    Record visit
+                    Registrar consulta
                   </Link>
                 )}
 
@@ -358,13 +358,13 @@ export function DayRail({
                         onClick={() => act(next)}
                       >
                         {pending && <Spinner />}
-                        {NEXT_ACTION[next]?.label ?? next}
+                        {NEXT_ACTION[next]?.label ?? APPOINTMENT_STATUS_LABELS[next] ?? next}
                       </button>
                     ),
                   )}
                   {STATUS_TRANSITIONS[selected.status].length === 0 && (
                     <p className="rounded-lg bg-muted px-3 py-2.5 text-center text-sm text-muted-foreground">
-                      This appointment is closed.
+                      Esta cita está cerrada.
                     </p>
                   )}
                 </div>
@@ -418,12 +418,13 @@ function QueueList({
 
   return (
     <div>
-      {/* Doctor filter chips */}
+      {/* Doctor filter chips — pointless with a single doctor (independent practice) */}
+      {columns.length > 1 && (
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         <FilterChip
           active={doctorFilter === 'all'}
           onClick={() => setDoctorFilter('all')}
-          label="All doctors"
+          label="Todos los médicos"
           count={columns.reduce((s, c) => s + c.blocks.length, 0)}
         />
         {doctorsWithCounts.map((d) => (
@@ -431,11 +432,12 @@ function QueueList({
             key={d.id}
             active={doctorFilter === d.id}
             onClick={() => setDoctorFilter(d.id)}
-            label={d.name.replace(/^Dr\.?\s+/i, 'Dr ')}
+            label={d.name}
             count={d.count}
           />
         ))}
       </div>
+      )}
 
       <div className="card-flat overflow-hidden">
         {rows.length === 0 ? (
@@ -443,9 +445,9 @@ function QueueList({
             <span className="flex size-11 items-center justify-center rounded-full bg-secondary text-primary">
               <IconCalendar size={18} />
             </span>
-            <p className="text-sm font-medium">No appointments here yet</p>
+            <p className="text-sm font-medium">Aún no hay citas aquí</p>
             <p className="text-xs text-muted-foreground">
-              Book one and it will appear in this list, in time order.
+              Agende una y aparecerá en esta lista, en orden de hora.
             </p>
           </div>
         ) : (
@@ -497,12 +499,12 @@ function QueueList({
                           </span>
                           {b.isWalkIn && (
                             <span className="shrink-0 rounded bg-blue-soft px-1.5 py-px text-[10px] font-bold text-blue">
-                              {b.token || 'Walk-in'}
+                              {b.token || 'Sin cita'}
                             </span>
                           )}
                           {isNext && (
                             <span className="shrink-0 rounded-full bg-primary px-2 py-px text-[10px] font-semibold text-white">
-                              Next
+                              Siguiente
                             </span>
                           )}
                         </span>
@@ -518,7 +520,7 @@ function QueueList({
                       {b.status === 'completed' ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-soft px-2.5 py-1 text-xs font-medium text-green-strong">
                           <IconCheck size={12} strokeWidth={2.5} />
-                          Done
+                          Atendida
                         </span>
                       ) : (
                         <StatusBadge status={b.status} className="hidden sm:inline-flex" />
@@ -660,7 +662,7 @@ function Timeline({
           {/* ---- Doctor columns ---- */}
           {columns.map((col) => {
             const laid = layoutColumn(col.blocks)
-            const offToday = col.windowFrom == null && Boolean(col.availabilityNote?.startsWith('Off'))
+            const offToday = col.windowFrom == null && Boolean(col.availabilityNote?.startsWith('No consulta'))
             const flexible = col.windowFrom == null && !offToday // on call / by appointment
             return (
               <div key={col.id} className="w-[236px] min-w-[208px] flex-1 border-e last:border-e-0">
@@ -737,7 +739,7 @@ function Timeline({
                   {offToday && (
                     <div className="pointer-events-none sticky top-[40%] flex justify-center">
                       <span className="rounded-full bg-card/80 px-3 py-1 text-[11px] font-medium text-faint">
-                        Not available today
+                        No disponible hoy
                       </span>
                     </div>
                   )}
@@ -753,7 +755,7 @@ function Timeline({
                             : '42%',
                       }}
                     >
-                      <span className="text-[11px] text-faint">No appointments</span>
+                      <span className="text-[11px] text-faint">Sin citas</span>
                     </div>
                   )}
 
@@ -794,7 +796,7 @@ function Timeline({
                             </span>
                             {b.isWalkIn && (
                               <span className="ms-auto shrink-0 rounded-sm bg-blue-soft px-1 py-px text-[9px] font-bold text-blue">
-                                {b.token || 'W'}
+                                {b.token || 'SC'}
                               </span>
                             )}
                           </span>
@@ -807,7 +809,7 @@ function Timeline({
                               <span className="font-normal text-faint">· {b.durationMins}m</span>
                               {b.isWalkIn && (
                                 <span className="rounded-sm bg-blue-soft px-1 py-px text-[9px] font-bold text-blue">
-                                  {b.token || 'W'}
+                                  {b.token || 'SC'}
                                 </span>
                               )}
                             </span>
@@ -858,21 +860,21 @@ function CancelButton({
   if (!open) {
     return (
       <button className={btnDanger} onClick={() => setOpen(true)} disabled={pending}>
-        Cancel appointment
+        Cancelar cita
       </button>
     )
   }
   return (
     <div className="rounded-lg border border-border p-3">
       <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-        Cancellation reason (required)
+        Motivo de la cancelación (obligatorio)
       </label>
       <input
         className={inputClass}
         value={reason}
         autoFocus
         onChange={(e) => setReason(e.target.value)}
-        placeholder="e.g. patient called to cancel"
+        placeholder="p. ej., el paciente llamó para cancelar"
       />
       <div className="mt-2.5 flex gap-2">
         <button
@@ -881,10 +883,10 @@ function CancelButton({
           onClick={() => onConfirm(reason.trim())}
         >
           {pending && <Spinner className="size-3.5" />}
-          {pending ? 'Cancelling…' : 'Confirm cancellation'}
+          {pending ? 'Cancelando…' : 'Confirmar cancelación'}
         </button>
         <button className={btnGhost} onClick={() => setOpen(false)}>
-          Keep
+          Mantener cita
         </button>
       </div>
     </div>

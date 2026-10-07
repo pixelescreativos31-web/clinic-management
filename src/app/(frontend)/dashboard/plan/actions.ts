@@ -17,14 +17,14 @@ export async function requestUpgrade(
 ): Promise<ActionResult<null>> {
   const user = await getCurrentUser()
   if (!user || user.role !== 'owner') {
-    return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+    return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   }
   const tenantID = getTenantID(user)
   if (!tenantID) {
-    return { ok: false, code: 'FORBIDDEN', message: 'You are not attached to a clinic.' }
+    return { ok: false, code: 'FORBIDDEN', message: 'Su usuario no está vinculado a ningún consultorio.' }
   }
   if (!(requestedPlan in PLAN_LIMITS)) {
-    return { ok: false, code: 'VALIDATION', message: 'Pick a valid plan.' }
+    return { ok: false, code: 'VALIDATION', message: 'Seleccione un plan válido.' }
   }
 
   try {
@@ -36,13 +36,13 @@ export async function requestUpgrade(
       overrideAccess: true,
     })
     if (tenant.plan === requestedPlan) {
-      return { ok: false, code: 'VALIDATION', message: "You're already on that plan." }
+      return { ok: false, code: 'VALIDATION', message: 'Ya tiene ese plan.' }
     }
     if (tenant.upgradeRequest?.requestedPlan) {
       return {
         ok: false,
         code: 'VALIDATION',
-        message: 'You already have a pending request. Our team will get back to you.',
+        message: 'Ya tiene una solicitud pendiente. Nuestro equipo se comunicará con usted.',
       }
     }
 

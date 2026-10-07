@@ -11,7 +11,9 @@ import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_OPEN_TIME,
   DEFAULT_CLOSE_TIME,
+  DEFAULT_TIMEZONE,
 } from './constants'
+import { wallTimeToUTC } from './reports'
 import { emailEnabled } from './email'
 import { createVerificationToken } from './verification'
 
@@ -25,6 +27,10 @@ export type SignupInput = {
   ownerName: string
   email: string
   password: string
+  /** `individual` (default): the owner is the practice's doctor. */
+  practiceType?: 'individual' | 'clinic'
+  specialty?: string
+  licenseNumber?: string
 }
 
 export type SignupOptions = {
@@ -55,7 +61,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /** First free slug for `name`: `acme`, then `acme-2`, `acme-3`… (spec §3.1.b). */
 async function uniqueSlug(payload: Payload, name: string): Promise<string> {
-  const base = slugify(name) || 'clinic'
+  const base = slugify(name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) || 'consultorio'
   let candidate = base
   let n = 1
   // Bounded loop — a clinic name colliding 50 times is not a real scenario.
@@ -79,11 +85,11 @@ async function uniqueSlug(payload: Payload, name: string): Promise<string> {
 function validate(input: SignupInput): void {
   const fail = (message: string) =>
     new APIError(message, 400, { code: ERROR_CODES.VALIDATION })
-  if (!input.clinicName?.trim()) throw fail('Clinic name is required.')
-  if (!input.phone?.trim()) throw fail('Clinic phone is required.')
-  if (!input.ownerName?.trim()) throw fail('Your name is required.')
-  if (!EMAIL_RE.test(input.email ?? '')) throw fail('Enter a valid email address.')
-  if ((input.password ?? '').length < 8) throw fail('Password must be at least 8 characters.')
+  if (!input.clinicName?.trim()) throw fail('El nombre del consultorio es obligatorio.')
+  if (!input.phone?.trim()) throw fail('El teléfono del consultorio es obligatorio.')
+  if (!input.ownerName?.trim()) throw fail('Su nombre es obligatorio.')
+  if (!EMAIL_RE.test(input.email ?? '')) throw fail('Ingrese un correo electrónico válido.')
+  if ((input.password ?? '').length < 8) throw fail('La contraseña debe tener al menos 8 caracteres.')
 }
 
 /**
@@ -113,12 +119,13 @@ export async function signupClinic(
     overrideAccess: true,
   })
   if (clash.totalDocs > 0) {
-    throw new APIError('An account with this email already exists.', 409, {
+    throw new APIError('Ya existe una cuenta con este correo.', 409, {
       code: ERROR_CODES.SIGNUP_EMAIL_TAKEN,
     })
   }
 
   const slug = await uniqueSlug(payload, input.clinicName)
+  const individual = (input.practiceType ?? 'individual') === 'individual'
 
   // The clinic + its owner are the atomic unit — both or neither (a tenant with no
   // owner is unusable; an owner with no tenant is an orphan). Mirrors createClinic.
@@ -142,6 +149,7 @@ export async function signupClinic(
         // owner can sign in (v3 §3.2, admin-approval onboarding).
         status: 'pending',
         plan: 'free',
+        practiceType: individual ? 'individual' : 'clinic',
         onboardingSource: 'self-serve',
         settings: {
           appointmentDurationMins: DEFAULT_APPOINTMENT_DURATION,
@@ -163,6 +171,19 @@ export async function signupClinic(
         password: input.password,
         role: 'owner',
         tenant: tenant.id,
+        // Independent doctor: the owner is the practitioner — bookable, authors
+        // visits and prescriptions, counts as the plan's one doctor.
+        ...(individual
+          ? {
+              practitioner: true,
+              specialty: input.specialty?.trim() || undefined,
+              licenseNumber: input.licenseNumber?.trim() || undefined,
+              availabilityType: 'regular',
+              availableDays: ['mon', 'tue', 'wed', 'thu', 'fri'],
+              availableFrom: DEFAULT_OPEN_TIME,
+              availableTo: DEFAULT_CLOSE_TIME,
+            }
+          : {}),
         // Only the token's hash is stored; the raw token goes out by email once.
         ...(verification
           ? {
@@ -187,7 +208,7 @@ export async function signupClinic(
   // sink a real signup — worst case the clinic opens a little emptier and the welcome
   // checklist simply shows the steps as still to-do.
   try {
-    await seedSampleData(payload, tenantId)
+    await seedSampleData(payload, tenantId, individual ? ownerId : null, input.timezone)
   } catch (err) {
     payload.logger?.error?.({ err, msg: 'signup: sample data failed (non-fatal)' })
   }
@@ -195,22 +216,28 @@ export async function signupClinic(
   return { tenantId, ownerId, slug, ...(verification ? { verificationToken: verification.token } : {}) }
 }
 
-// A brand-new clinic shouldn't open onto an empty screen (spec §3.1.e). We seed a
-// sample doctor (the free plan's one slot — owner edits it into their real one),
-// three sample patients, and two appointments today. Everything is clearly marked
-// "(sample)" so it's obvious what to delete.
-async function seedSampleData(payload: Payload, tenantId: string): Promise<void> {
-  const doctor = await payload.create({
+// A brand-new clinic shouldn't open onto an empty screen (spec §3.1.e). We seed
+// three sample patients and two appointments today. An independent practice books
+// them with the owner (who is the doctor); a clinic gets a sample doctor (the free
+// plan's one slot — the owner edits it into their real one). Everything is clearly
+// marked "(ejemplo)" so it's obvious what to delete.
+async function seedSampleData(
+  payload: Payload,
+  tenantId: string,
+  practitionerId: string | null,
+  timezone: string,
+): Promise<void> {
+  const doctor = practitionerId ? { id: practitionerId } : await payload.create({
     collection: 'users',
     overrideAccess: true,
     data: {
-      name: 'Dr. Sample (edit me)',
+      name: 'Dr. Ejemplo (edíteme)',
       email: `dr.sample@${tenantId}.example`,
       password: `sample-${tenantId}`,
       role: 'doctor',
       tenant: tenantId,
       active: true,
-      specialty: 'General Physician',
+      specialty: 'Medicina general',
       consultationFee: 1000,
       availabilityType: 'regular',
       availableFrom: '09:00',
@@ -218,7 +245,7 @@ async function seedSampleData(payload: Payload, tenantId: string): Promise<void>
     } as never,
   })
 
-  const patientNames = ['Sample Patient — Ayesha', 'Sample Patient — Bilal', 'Sample Patient — Hina']
+  const patientNames = ['Paciente de ejemplo — María', 'Paciente de ejemplo — José', 'Paciente de ejemplo — Ana']
   const patientIds: string[] = []
   for (let i = 0; i < patientNames.length; i++) {
     const p = await payload.create({
@@ -227,7 +254,7 @@ async function seedSampleData(payload: Payload, tenantId: string): Promise<void>
       data: {
         tenant: tenantId,
         name: patientNames[i],
-        phone: `+9230000000${i + 1}`,
+        phone: `+1809555000${i + 1}`,
         gender: i % 2 === 0 ? 'female' : 'male',
         ageYears: 28 + i * 5,
       } as never,
@@ -236,15 +263,18 @@ async function seedSampleData(payload: Payload, tenantId: string): Promise<void>
   }
 
   // Two appointments today at non-overlapping times so the Day Rail is alive.
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // "Today" and the slot hours are the clinic's wall clock, not the server's.
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: timezone || DEFAULT_TIMEZONE })
   const slots = [
-    { h: 11, m: 0, reason: 'Sample — fever' },
-    { h: 11, m: 30, reason: 'Sample — follow-up' },
+    { h: 11, m: 0, reason: 'Ejemplo — fiebre' },
+    { h: 11, m: 30, reason: 'Ejemplo — seguimiento' },
   ]
   for (let i = 0; i < slots.length; i++) {
-    const start = new Date(today)
-    start.setHours(slots[i].h, slots[i].m, 0, 0)
+    const start = wallTimeToUTC(
+      timezone || DEFAULT_TIMEZONE,
+      today,
+      `${String(slots[i].h).padStart(2, '0')}:${String(slots[i].m).padStart(2, '0')}`,
+    )
     try {
       await payload.create({
         collection: 'appointments',

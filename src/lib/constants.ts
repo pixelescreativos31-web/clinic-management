@@ -1,10 +1,26 @@
 // Shared, market-agnostic option lists. Currency and timezone are tenant-level
-// settings with Pakistan defaults — nothing region-specific is hardcoded.
+// settings with Dominican Republic defaults — nothing region-specific is hardcoded.
+// Labels are user-facing (Spanish); values are stable internal keys.
 
 export const ROLES = ['superAdmin', 'owner', 'doctor', 'receptionist'] as const
 export type Role = (typeof ROLES)[number]
 
 export const TENANT_ROLES = ['owner', 'doctor', 'receptionist'] as const
+
+export const ROLE_LABELS: Record<Role, string> = {
+  superAdmin: 'Superadministrador',
+  owner: 'Titular',
+  doctor: 'Médico',
+  receptionist: 'Asistente',
+}
+
+export const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'Programada',
+  'checked-in': 'En espera',
+  completed: 'Atendida',
+  cancelled: 'Cancelada',
+  'no-show': 'No asistió',
+}
 
 export const APPOINTMENT_STATUSES = [
   'scheduled',
@@ -28,23 +44,44 @@ export const STATUS_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> 
 export const ACTIVE_STATUSES: AppointmentStatus[] = ['scheduled', 'checked-in']
 
 export const GENDERS = ['male', 'female', 'other'] as const
+export const GENDER_LABELS: Record<string, string> = {
+  male: 'Masculino',
+  female: 'Femenino',
+  other: 'Otro',
+}
+
+// Identity documents (DR: cédula; foreigners: pasaporte).
+export const DOCUMENT_TYPES = [
+  { label: 'Cédula', value: 'cedula' },
+  { label: 'Pasaporte', value: 'passport' },
+  { label: 'Otro', value: 'other' },
+] as const
+
+// How the practice is organised. `individual` = one doctor (optionally with an
+// assistant) — the MVP target; the UI hides multi-doctor tooling. `clinic` keeps
+// the full multi-doctor feature set.
+export const PRACTICE_TYPES = [
+  { label: 'Médico independiente', value: 'individual' },
+  { label: 'Clínica / varios médicos', value: 'clinic' },
+] as const
+export type PracticeType = (typeof PRACTICE_TYPES)[number]['value']
 
 // Doctor availability patterns (covers daily / alternate / weekly / on-call / surgeon).
 export const AVAILABILITY_TYPES = [
-  { label: 'Regular (set days & hours)', value: 'regular' },
-  { label: 'On call', value: 'onCall' },
-  { label: 'By appointment (e.g. surgeon)', value: 'byAppointment' },
+  { label: 'Regular (días y horario fijos)', value: 'regular' },
+  { label: 'De guardia (cualquier hora)', value: 'onCall' },
+  { label: 'Solo con cita previa', value: 'byAppointment' },
 ] as const
 export type AvailabilityType = (typeof AVAILABILITY_TYPES)[number]['value']
 
 export const WEEKDAYS = [
-  { label: 'Sun', value: 'sun' },
-  { label: 'Mon', value: 'mon' },
-  { label: 'Tue', value: 'tue' },
-  { label: 'Wed', value: 'wed' },
-  { label: 'Thu', value: 'thu' },
-  { label: 'Fri', value: 'fri' },
-  { label: 'Sat', value: 'sat' },
+  { label: 'Dom', value: 'sun' },
+  { label: 'Lun', value: 'mon' },
+  { label: 'Mar', value: 'tue' },
+  { label: 'Mié', value: 'wed' },
+  { label: 'Jue', value: 'thu' },
+  { label: 'Vie', value: 'fri' },
+  { label: 'Sáb', value: 'sat' },
 ] as const
 export const ALL_DAYS = WEEKDAYS.map((d) => d.value)
 
@@ -57,20 +94,21 @@ export const VISIT_ALLOWED_APPOINTMENT_STATUSES: AppointmentStatus[] = ['checked
 
 // Prescription dosing frequencies (standard medical shorthand). `other` reveals a note.
 export const PRESCRIPTION_FREQUENCIES = [
-  { label: 'OD — once a day', value: 'od' },
-  { label: 'BD — twice a day', value: 'bd' },
-  { label: 'TDS — thrice a day', value: 'tds' },
-  { label: 'QID — four times a day', value: 'qid' },
-  { label: 'SOS — as needed', value: 'sos' },
-  { label: 'Other', value: 'other' },
+  { label: 'Cada 24 horas (1 vez al día)', value: 'od' },
+  { label: 'Cada 12 horas (2 veces al día)', value: 'bd' },
+  { label: 'Cada 8 horas (3 veces al día)', value: 'tds' },
+  { label: 'Cada 6 horas (4 veces al día)', value: 'qid' },
+  { label: 'Si es necesario (SOS)', value: 'sos' },
+  { label: 'Otra', value: 'other' },
 ] as const
 export type PrescriptionFrequency = (typeof PRESCRIPTION_FREQUENCIES)[number]['value']
 
 export const PAYMENT_METHODS = [
-  { label: 'Cash', value: 'cash' },
-  { label: 'Card', value: 'card' },
-  { label: 'Bank transfer', value: 'bank-transfer' },
-  { label: 'Other', value: 'other' },
+  { label: 'Efectivo', value: 'cash' },
+  { label: 'Tarjeta', value: 'card' },
+  { label: 'Transferencia', value: 'bank-transfer' },
+  { label: 'Seguro médico (ARS)', value: 'insurance' },
+  { label: 'Otro', value: 'other' },
 ] as const
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number]['value']
 
@@ -80,62 +118,81 @@ export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
 
 // Curated currency list (a full ISO list is overkill). `code` feeds Intl.NumberFormat.
 export const CURRENCIES = [
-  { label: 'PKR — Pakistani Rupee', value: 'PKR' },
-  { label: 'USD — US Dollar', value: 'USD' },
-  { label: 'GBP — British Pound', value: 'GBP' },
-  { label: 'AED — UAE Dirham', value: 'AED' },
-  { label: 'SAR — Saudi Riyal', value: 'SAR' },
-  { label: 'INR — Indian Rupee', value: 'INR' },
+  { label: 'DOP — Peso dominicano', value: 'DOP' },
+  { label: 'USD — Dólar estadounidense', value: 'USD' },
+  { label: 'EUR — Euro', value: 'EUR' },
+  { label: 'MXN — Peso mexicano', value: 'MXN' },
+  { label: 'COP — Peso colombiano', value: 'COP' },
+  { label: 'PEN — Sol peruano', value: 'PEN' },
+  { label: 'CLP — Peso chileno', value: 'CLP' },
+  { label: 'GTQ — Quetzal guatemalteco', value: 'GTQ' },
+  { label: 'CRC — Colón costarricense', value: 'CRC' },
+  { label: 'PAB — Balboa panameño', value: 'PAB' },
 ] as const
 
 // Curated IANA timezone list (a full dropdown is overkill for the launch markets).
 export const TIMEZONES = [
-  { label: 'Asia/Karachi (PKT)', value: 'Asia/Karachi' },
-  { label: 'Asia/Dubai (GST)', value: 'Asia/Dubai' },
-  { label: 'Asia/Riyadh (AST)', value: 'Asia/Riyadh' },
-  { label: 'Asia/Kolkata (IST)', value: 'Asia/Kolkata' },
-  { label: 'Europe/London (GMT/BST)', value: 'Europe/London' },
-  { label: 'America/New_York (ET)', value: 'America/New_York' },
+  { label: 'Santo Domingo (AST, UTC−4)', value: 'America/Santo_Domingo' },
+  { label: 'Puerto Rico (AST, UTC−4)', value: 'America/Puerto_Rico' },
+  { label: 'Nueva York (ET)', value: 'America/New_York' },
+  { label: 'Ciudad de México (CST)', value: 'America/Mexico_City' },
+  { label: 'Bogotá (COT)', value: 'America/Bogota' },
+  { label: 'Lima (PET)', value: 'America/Lima' },
+  { label: 'Santiago de Chile', value: 'America/Santiago' },
+  { label: 'Guatemala (CST)', value: 'America/Guatemala' },
+  { label: 'Costa Rica (CST)', value: 'America/Costa_Rica' },
+  { label: 'Panamá (EST)', value: 'America/Panama' },
+  { label: 'Madrid (CET)', value: 'Europe/Madrid' },
 ] as const
 
-export const DEFAULT_CURRENCY = 'PKR'
-export const DEFAULT_TIMEZONE = 'Asia/Karachi'
-export const DEFAULT_APPOINTMENT_DURATION = 15
-export const DEFAULT_OPEN_TIME = '09:00'
-export const DEFAULT_CLOSE_TIME = '21:00'
+export const DEFAULT_CURRENCY = 'DOP'
+export const DEFAULT_TIMEZONE = 'America/Santo_Domingo'
+export const DEFAULT_APPOINTMENT_DURATION = 20
+export const DEFAULT_OPEN_TIME = '08:00'
+export const DEFAULT_CLOSE_TIME = '18:00'
 
 // Self-serve signup (v3 spec §3.2): the country select suggests sensible
 // currency/timezone defaults (still editable). Keys are the labels shown in the
 // form; values seed the new tenant's settings.
 export const COUNTRY_DEFAULTS = [
-  { label: 'Pakistan', currency: 'PKR', timezone: 'Asia/Karachi' },
-  { label: 'United Arab Emirates', currency: 'AED', timezone: 'Asia/Dubai' },
-  { label: 'Saudi Arabia', currency: 'SAR', timezone: 'Asia/Riyadh' },
-  { label: 'India', currency: 'INR', timezone: 'Asia/Kolkata' },
-  { label: 'United Kingdom', currency: 'GBP', timezone: 'Europe/London' },
-  { label: 'United States', currency: 'USD', timezone: 'America/New_York' },
+  { label: 'República Dominicana', currency: 'DOP', timezone: 'America/Santo_Domingo' },
+  { label: 'Puerto Rico', currency: 'USD', timezone: 'America/Puerto_Rico' },
+  { label: 'Estados Unidos', currency: 'USD', timezone: 'America/New_York' },
+  { label: 'México', currency: 'MXN', timezone: 'America/Mexico_City' },
+  { label: 'Colombia', currency: 'COP', timezone: 'America/Bogota' },
+  { label: 'Perú', currency: 'PEN', timezone: 'America/Lima' },
+  { label: 'Chile', currency: 'CLP', timezone: 'America/Santiago' },
+  { label: 'Guatemala', currency: 'GTQ', timezone: 'America/Guatemala' },
+  { label: 'Costa Rica', currency: 'CRC', timezone: 'America/Costa_Rica' },
+  { label: 'Panamá', currency: 'PAB', timezone: 'America/Panama' },
+  { label: 'España', currency: 'EUR', timezone: 'Europe/Madrid' },
 ] as const
-export const DEFAULT_COUNTRY = 'Pakistan'
+export const DEFAULT_COUNTRY = 'República Dominicana'
 
 // v3 — audit log actions (spec §2.2). Append-only record of sensitive actions.
 export const AUDIT_ACTIONS = [
-  { value: 'appointment.created', label: 'Appointment booked' },
-  { value: 'appointment.cancelled', label: 'Appointment cancelled' },
-  { value: 'appointment.status-changed', label: 'Appointment status changed' },
-  { value: 'invoice.voided', label: 'Invoice voided' },
-  { value: 'payment.recorded', label: 'Payment recorded' },
-  { value: 'user.created', label: 'Staff added' },
-  { value: 'user.deactivated', label: 'Staff deactivated' },
-  { value: 'user.role-changed', label: 'Role changed' },
-  { value: 'settings.updated', label: 'Settings updated' },
-  { value: 'tenant.suspended', label: 'Clinic suspended' },
-  { value: 'tenant.reactivated', label: 'Clinic reactivated' },
-  { value: 'plan.upgrade-requested', label: 'Upgrade requested' },
-  { value: 'plan.upgrade-rejected', label: 'Upgrade declined' },
-  { value: 'plan.changed', label: 'Plan changed' },
+  { value: 'appointment.created', label: 'Cita agendada' },
+  { value: 'appointment.cancelled', label: 'Cita cancelada' },
+  { value: 'appointment.status-changed', label: 'Estado de cita cambiado' },
+  { value: 'invoice.voided', label: 'Factura anulada' },
+  { value: 'payment.recorded', label: 'Pago registrado' },
+  { value: 'user.created', label: 'Miembro del equipo agregado' },
+  { value: 'user.deactivated', label: 'Miembro del equipo desactivado' },
+  { value: 'user.role-changed', label: 'Rol cambiado' },
+  { value: 'settings.updated', label: 'Configuración actualizada' },
+  { value: 'tenant.suspended', label: 'Consultorio suspendido' },
+  { value: 'tenant.reactivated', label: 'Consultorio reactivado' },
+  { value: 'plan.upgrade-requested', label: 'Mejora de plan solicitada' },
+  { value: 'plan.upgrade-rejected', label: 'Mejora de plan rechazada' },
+  { value: 'plan.changed', label: 'Plan cambiado' },
   // v4 — reports & exports. Patient exports carry PII (phone numbers), so every
   // export is an auditable event.
-  { value: 'export.generated', label: 'Data exported' },
+  { value: 'export.generated', label: 'Datos exportados' },
+  // MVP — clinical record trail (who created/changed a patient file or consultation).
+  { value: 'patient.created', label: 'Paciente registrado' },
+  { value: 'patient.updated', label: 'Expediente de paciente editado' },
+  { value: 'visit.created', label: 'Consulta registrada' },
+  { value: 'visit.updated', label: 'Consulta editada' },
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]['value']
 

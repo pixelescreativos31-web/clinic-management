@@ -28,16 +28,16 @@ export function PostVisitActions({ visitId, patientId }: { visitId: string; pati
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         <button className={btnPrimary} onClick={createInvoice} disabled={busy}>
           {busy && <Spinner />}
-          Create invoice
+          Crear factura
         </button>
         <Link href={`/print/prescription/${visitId}`} target="_blank" className={btnGhost}>
-          Print prescription
+          Imprimir receta
         </Link>
         <Link href={`/dashboard/patients/${patientId}`} className={btnGhost}>
-          Patient profile
+          Perfil del paciente
         </Link>
         <Link href="/dashboard/appointments" className={btnGhost}>
-          Day view
+          Agenda del día
         </Link>
       </div>
       {error && <p className="mt-4 text-sm text-red">{error}</p>}

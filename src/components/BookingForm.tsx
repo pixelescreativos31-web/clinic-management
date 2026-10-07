@@ -16,9 +16,9 @@ export type DoctorOption = { id: string; name: string; tag: string; note: string
 
 function TagChip({ tag }: { tag: string }) {
   if (tag === 'onCall')
-    return <span className="rounded-full bg-blue-soft px-2 py-px text-[10px] font-medium text-blue">On call</span>
+    return <span className="rounded-full bg-blue-soft px-2 py-px text-[10px] font-medium text-blue">De guardia</span>
   if (tag === 'byAppointment')
-    return <span className="rounded-full bg-amber-soft px-2 py-px text-[10px] font-medium text-amber">By appointment</span>
+    return <span className="rounded-full bg-amber-soft px-2 py-px text-[10px] font-medium text-amber">Previa cita</span>
   return null
 }
 
@@ -42,7 +42,10 @@ export function BookingForm({
   defaultDuration,
   openTime = '09:00',
   closeTime = '21:00',
+  initialPatient = null,
 }: {
+  /** Prefill from a patient file ("Agendar cita" on the patient page). */
+  initialPatient?: PatientHit | null
   doctors: DoctorOption[]
   defaultDate: string
   defaultDuration: number
@@ -55,13 +58,13 @@ export function BookingForm({
   const [success, setSuccess] = useState<{ token?: string } | null>(null)
 
   // Patient
-  const [selected, setSelected] = useState<PatientHit | null>(null)
+  const [selected, setSelected] = useState<PatientHit | null>(initialPatient)
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<PatientHit[]>([])
   const [showAdd, setShowAdd] = useState(false)
   const [pName, setPName] = useState('')
   const [pPhone, setPPhone] = useState('')
-  const [pGender, setPGender] = useState('male')
+  const [pGender, setPGender] = useState('female')
   const [pAge, setPAge] = useState('')
   const [dupes, setDupes] = useState<PatientHit[]>([])
 
@@ -100,7 +103,7 @@ export function BookingForm({
   const findDoctors = () => {
     setError(null)
     if (!date || !time) {
-      setError('Pick a date and time first.')
+      setError('Primero elija la fecha y la hora.')
       return
     }
     startTransition(async () => {
@@ -110,8 +113,8 @@ export function BookingForm({
 
   const submit = () => {
     setError(null)
-    if (!selected) return setError('Select or add a patient first.')
-    if (!doctorId) return setError('Pick a doctor.')
+    if (!selected) return setError('Primero seleccione o agregue un paciente.')
+    if (!doctorId) return setError('Elija un médico.')
     const fd = new FormData()
     fd.set('patient', selected.id)
     fd.set('doctor', doctorId)
@@ -138,21 +141,21 @@ export function BookingForm({
         <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
           <IconCheck size={22} />
         </span>
-        <h2 className="mt-4 text-lg font-semibold">Booked</h2>
+        <h2 className="mt-4 text-lg font-semibold">Cita registrada</h2>
         {success.token ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            Walk-in registered — first come, first served.
+            Paciente sin cita registrado: se atiende por orden de llegada.
             <span className="tabular mt-3 block font-display text-4xl font-semibold text-ink">
               {success.token}
             </span>
           </p>
         ) : (
-          <p className="mt-2 text-sm text-muted-foreground">Appointment booked.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Cita agendada.</p>
         )}
         <div className="mt-6 flex justify-center gap-2">
-          <Link href="/dashboard/appointments" className={btnPrimary}>Go to day view</Link>
+          <Link href="/dashboard/appointments" className={btnPrimary}>Ir a la agenda del día</Link>
           <button className={btnGhost} onClick={() => { setSuccess(null); setSelected(null); setTime('') }}>
-            Book another
+            Agendar otra
           </button>
         </div>
       </Card>
@@ -165,7 +168,7 @@ export function BookingForm({
   return (
     <Card className="overflow-hidden">
       {/* 1. Patient */}
-      <Step n={1} title="Patient">
+      <Step n={1} title="Paciente">
         {selected ? (
           <div className="flex items-center gap-3 rounded-lg border border-primary/25 bg-primary-soft/60 px-3 py-2.5">
             <Avatar name={selected.name} size="sm" />
@@ -176,7 +179,7 @@ export function BookingForm({
             <button
               type="button"
               className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-ink"
-              title="Change patient"
+              title="Cambiar paciente"
               onClick={() => setSelected(null)}
             >
               <IconX size={14} />
@@ -188,7 +191,7 @@ export function BookingForm({
               <IconSearch size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 className={`${inputClass} ps-9`}
-                placeholder="Search by name, phone or MRN…"
+                placeholder="Buscar por nombre, teléfono o n.º de expediente…"
                 value={query}
                 onChange={(e) => runSearch(e.target.value)}
               />
@@ -211,15 +214,15 @@ export function BookingForm({
               </ul>
             )}
             <button type="button" className="mt-2.5 text-[13px] font-medium text-primary hover:underline" onClick={() => setShowAdd((s) => !s)}>
-              {showAdd ? '− Hide quick add' : '+ New patient'}
+              {showAdd ? '− Ocultar registro rápido' : '+ Nuevo paciente'}
             </button>
             {showAdd && (
               <div className="mt-2 flex flex-col gap-2.5 rounded-lg border border-border bg-canvas/50 p-3.5">
-                <input className={inputClass} placeholder="Full name" value={pName} onChange={(e) => setPName(e.target.value)} />
-                <input className={inputClass} placeholder="Phone" value={pPhone} onChange={(e) => checkPhone(e.target.value)} />
+                <input className={inputClass} placeholder="Nombre completo" value={pName} onChange={(e) => setPName(e.target.value)} />
+                <input className={inputClass} placeholder="Teléfono" value={pPhone} onChange={(e) => checkPhone(e.target.value)} />
                 {dupes.length > 0 && (
                   <div className="rounded-md border border-amber/25 bg-amber-soft px-3 py-2 text-xs text-amber">
-                    {dupes.length} patient(s) already use this number:{' '}
+                    {dupes.length === 1 ? 'Ya hay 1 paciente con este número:' : `Ya hay ${dupes.length} pacientes con este número:`}{' '}
                     {dupes.map((d, i) => (
                       <button key={d.id} type="button" className="font-medium underline" onClick={() => { setSelected(d); setShowAdd(false) }}>
                         {d.name}{i < dupes.length - 1 ? ', ' : ''}
@@ -232,16 +235,16 @@ export function BookingForm({
                     value={pGender}
                     onChange={setPGender}
                     options={[
-                      { value: 'male', label: 'Male' },
-                      { value: 'female', label: 'Female' },
-                      { value: 'other', label: 'Other' },
+                      { value: 'male', label: 'Masculino' },
+                      { value: 'female', label: 'Femenino' },
+                      { value: 'other', label: 'Otro' },
                     ]}
                   />
-                  <input className={inputClass} placeholder="Age" inputMode="numeric" value={pAge} onChange={(e) => setPAge(e.target.value)} />
+                  <input className={inputClass} placeholder="Edad" inputMode="numeric" value={pAge} onChange={(e) => setPAge(e.target.value)} />
                 </div>
                 <button type="button" className={btnGhost} disabled={pending || !pName || !pPhone} onClick={quickAdd}>
                   {pending && <Spinner />}
-                  {pending ? 'Adding…' : 'Add patient'}
+                  {pending ? 'Agregando…' : 'Agregar paciente'}
                 </button>
               </div>
             )}
@@ -250,33 +253,34 @@ export function BookingForm({
       </Step>
 
       {/* 2. When */}
-      <Step n={2} title="Date & time">
+      <Step n={2} title="Fecha y hora">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[1.4fr_1fr_4.5rem]">
-          <Field label="Date"><DatePicker value={date} onChange={setDate} /></Field>
-          <Field label="Time">
+          <Field label="Fecha"><DatePicker value={date} onChange={setDate} /></Field>
+          <Field label="Hora">
             <TimePicker value={time} onChange={setTime} openTime={openTime} closeTime={closeTime} />
           </Field>
-          <Field label="Mins"><input type="number" min={5} max={120} value={duration} onChange={(e) => setDuration(e.target.value)} className={inputClass} /></Field>
+          <Field label="Min"><input type="number" min={5} max={120} value={duration} onChange={(e) => setDuration(e.target.value)} className={inputClass} /></Field>
         </div>
       </Step>
 
-      {/* 3. Doctor */}
-      <Step n={3} title="Doctor">
+      {/* 3. Doctor — skipped entirely when the practice has a single doctor. */}
+      {doctors.length > 1 && (
+      <Step n={3} title="Médico">
         <div className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-canvas px-3.5 py-2.5">
-          <span className="text-xs text-muted-foreground">Not sure who&apos;s free at this time?</span>
+          <span className="text-xs text-muted-foreground">¿No sabe quién está disponible a esa hora?</span>
           <button
             type="button"
             className="shrink-0 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
             disabled={pending || !time}
             onClick={findDoctors}
           >
-            Check availability
+            Ver disponibilidad
           </button>
         </div>
 
         {finderHits && (
           <div className="mb-3 flex flex-col gap-1.5">
-            {finderHits.length === 0 && <p className="text-sm text-muted-foreground">No doctors to show.</p>}
+            {finderHits.length === 0 && <p className="text-sm text-muted-foreground">No hay médicos para mostrar.</p>}
             {finderHits.map((h) => (
               <button
                 key={h.id}
@@ -297,7 +301,7 @@ export function BookingForm({
                   <TagChip tag={h.tag} />
                 </span>
                 <span className={`shrink-0 text-xs font-medium ${h.free ? 'text-primary' : 'text-faint'}`}>
-                  {h.free ? '● Available' : 'Busy'}
+                  {h.free ? '● Disponible' : 'Ocupado'}
                 </span>
               </button>
             ))}
@@ -307,7 +311,7 @@ export function BookingForm({
         <AppSelect
           value={doctorId}
           onChange={setDoctorId}
-          placeholder="Pick a doctor"
+          placeholder="Elija un médico"
           options={doctors.map((d) => ({
             value: d.id,
             label: d.note ? `${d.name} — ${d.note}` : d.name,
@@ -316,22 +320,23 @@ export function BookingForm({
         {selectedDoctor && (selectedDoctor.tag === 'onCall' || selectedDoctor.tag === 'byAppointment') && (
           <p className="mt-1.5 text-xs text-faint">
             {selectedDoctor.tag === 'onCall'
-              ? 'On-call doctor — bookable at any time.'
-              : 'Visiting / by-appointment doctor — coordinate the time directly.'}
+              ? 'Médico de guardia: puede agendarse a cualquier hora.'
+              : 'Médico visitante / previa cita: coordine la hora directamente.'}
           </p>
         )}
       </Step>
+      )}
 
       {/* 4. Details */}
-      <Step n={4} title="Details">
-        <Field label="Reason (optional)">
-          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="Fever, follow-up…" />
+      <Step n={doctors.length > 1 ? 4 : 3} title="Detalles">
+        <Field label="Motivo (opcional)">
+          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="Fiebre, seguimiento…" />
         </Field>
         <label className="mt-3.5 flex cursor-pointer items-center gap-3 rounded-lg border border-border px-3.5 py-2.5 text-sm transition-colors has-data-checked:border-blue/40 has-data-checked:bg-blue-soft/40">
           <Checkbox checked={isWalkIn} onCheckedChange={(v) => setIsWalkIn(v === true)} />
           <span>
-            <span className="font-medium">Walk-in</span>
-            <span className="block text-xs text-muted-foreground">Checks in now and gets a queue token</span>
+            <span className="font-medium">Sin cita</span>
+            <span className="block text-xs text-muted-foreground">Queda en espera ahora y recibe un turno</span>
           </span>
         </label>
       </Step>
@@ -340,7 +345,7 @@ export function BookingForm({
         {error ? <p className="text-sm text-red" role="alert">{error}</p> : <span />}
         <button type="button" className={btnPrimary} disabled={pending || !canSubmit} onClick={submit}>
           {pending && <Spinner />}
-          {pending ? 'Booking…' : isWalkIn ? 'Register walk-in' : 'Book appointment'}
+          {pending ? 'Agendando…' : isWalkIn ? 'Registrar llegada sin cita' : 'Agendar cita'}
         </button>
       </div>
     </Card>

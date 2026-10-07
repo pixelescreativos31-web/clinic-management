@@ -4,7 +4,6 @@ import { btnPrimary, btnGhost } from '@/components/primitives'
 import {
   IconCalendar,
   IconUsers,
-  IconClock,
   IconArrowRight,
   IconCheck,
   IconStethoscope,
@@ -12,82 +11,95 @@ import {
   IconStaff,
   IconUserPlus,
   IconCalendarCheck,
+  IconPrinter,
+  IconReceipt,
+  IconWhatsApp,
 } from '@/components/icons'
+import { APP_NAME, APP_TAGLINE, BASED_ON } from '@/lib/brand'
 
 const STEPS = [
   {
     n: '01',
     icon: IconUserPlus,
-    title: 'Register the patient',
-    body: 'Name and phone is enough. An MRN is assigned automatically and their history starts building.',
+    title: 'Registre a su paciente',
+    body: 'Con el nombre y el teléfono basta. Se le asigna un número de expediente y su historia clínica empieza a crecer.',
   },
   {
     n: '02',
     icon: IconCalendar,
-    title: 'Book a slot — or take a walk-in',
-    body: 'Pick a doctor who is actually free at that time. Walk-ins get a queue token like T-03 instantly.',
+    title: 'Agende la cita o atiéndalo sin cita',
+    body: 'Su asistente ve los horarios libres al instante. Quien llega sin cita recibe su turno en un toque.',
   },
   {
     n: '03',
     icon: IconCalendarCheck,
-    title: 'Run the day from one screen',
-    body: 'Check in, complete, or mark no-shows with one tap. The whole clinic sees the same live list.',
+    title: 'Consulte, recete y cobre',
+    body: 'Registre la consulta, imprima la receta y emita la factura desde la misma pantalla.',
   },
 ]
 
 const FEATURES = [
   {
     icon: IconCalendar,
-    title: 'Live day view per doctor',
-    body: 'A simple queue list for the front desk, a timeline for the manager — same data, zero training.',
-  },
-  {
-    icon: IconClock,
-    title: 'Double-bookings, impossible',
-    body: 'Overlaps are checked inside a database transaction. Two calls, one slot, one winner.',
+    title: 'Agenda de citas',
+    body: 'Su agenda del día en una sola pantalla: citas programadas, pacientes sin cita y nunca dos citas a la misma hora.',
   },
   {
     icon: IconUsers,
-    title: 'Patient history that stays',
-    body: 'Every patient gets a profile, an MRN, allergies front-and-centre, and a full visit log.',
+    title: 'Expediente e historia clínica',
+    body: 'Cada paciente con su expediente: alergias bien visibles, signos vitales, diagnósticos y todas sus consultas.',
   },
   {
-    icon: IconStethoscope,
-    title: 'Real doctor schedules',
-    body: 'Daily windows, specific weekdays, on-call, or by-appointment — booking respects all of them.',
+    icon: IconPrinter,
+    title: 'Recetas imprimibles',
+    body: 'Escriba la receta durante la consulta e imprímala con los datos de su consultorio, lista para entregar.',
+  },
+  {
+    icon: IconReceipt,
+    title: 'Facturación simple',
+    body: 'Facture la consulta, registre pagos en efectivo, tarjeta o transferencia y vea el saldo pendiente de un vistazo.',
+  },
+  {
+    icon: IconWhatsApp,
+    title: 'Recordatorios por WhatsApp',
+    body: 'Con un clic se abre WhatsApp con el recordatorio de la cita ya escrito. Menos pacientes que no asisten.',
   },
   {
     icon: IconStaff,
-    title: 'Roles that match a clinic',
-    body: 'Owner, receptionist, doctor — each sees exactly what their job needs, nothing more.',
+    title: 'Usted y su asistente',
+    body: 'Usted ve la parte clínica; su asistente maneja la agenda y los cobros. Cada quien ve solo lo que necesita.',
   },
-  {
-    icon: IconBuilding,
-    title: 'Many clinics, one platform',
-    body: 'Each clinic is fully isolated with its own currency, timezone and working hours.',
-  },
+]
+
+const PRICING_POINTS = [
+  'Agenda de citas y pacientes sin cita',
+  'Expediente e historia clínica',
+  'Recetas imprimibles',
+  'Facturación y pagos',
+  'Recordatorios por WhatsApp',
+  'Acceso para su asistente',
 ]
 
 const DEMO_LOGINS = [
   {
-    label: 'Receptionist',
-    clinic: 'City Care Clinic',
-    email: 'reception@city.app',
-    blurb: 'Book, check in, take walk-ins',
+    label: 'Asistente',
+    clinic: 'Consultorio Dra. Carmen Rosario',
+    email: 'asistente@demo.app',
+    blurb: 'Agendar citas, registrar llegadas, atender sin cita',
     icon: IconUsers,
   },
   {
-    label: 'Owner',
-    clinic: 'City Care Clinic',
-    email: 'owner@city.app',
-    blurb: 'Dashboard, staff & settings',
+    label: 'Doctora (titular)',
+    clinic: 'Consultorio Dra. Carmen Rosario',
+    email: 'doctora@demo.app',
+    blurb: 'Agenda, consultas, recetas, cobros y configuración',
     icon: IconBuilding,
   },
   {
-    label: 'Super Admin',
-    clinic: 'Platform',
+    label: 'Superadministrador',
+    clinic: 'Plataforma',
     email: 'super@clinic.app',
-    blurb: "All clinics, bird's-eye view",
+    blurb: 'Todos los consultorios en una vista',
     icon: IconStethoscope,
   },
 ]
@@ -104,23 +116,26 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
               </svg>
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight text-primary">matab</span>
+            <span className="font-display text-lg font-semibold tracking-tight text-primary">{APP_NAME}</span>
           </span>
           <nav className="flex items-center gap-1 sm:gap-2">
             <a href="#how" className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink md:block">
-              How it works
+              Cómo funciona
             </a>
             <a href="#features" className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink md:block">
-              Features
+              Funciones
+            </a>
+            <a href="#precios" className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink md:block">
+              Precios
             </a>
             <a href="#demo" className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink sm:block">
-              Demo
+              Demostración
             </a>
             <Link href="/login" className={btnGhost}>
-              Sign in
+              Iniciar sesión
             </Link>
             <Link href="/signup" className={btnPrimary}>
-              Start free
+              Crear cuenta
             </Link>
           </nav>
         </div>
@@ -144,13 +159,13 @@ export default function HomePage() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
               </span>
-              Built for small clinics — starting with Pakistan
+              {APP_TAGLINE}
             </span>
             <h1 className="mt-6 max-w-xl font-display text-[2.6rem] leading-[1.06] font-semibold sm:text-[3.6rem]">
-              Run your clinic&rsquo;s day,
+              Atienda a sus pacientes,
               <br />
               <span className="relative inline-block text-primary">
-                not its paperwork.
+                no al papeleo.
                 <svg
                   viewBox="0 0 220 10"
                   className="absolute -bottom-2 start-0 w-full text-primary/30"
@@ -162,21 +177,24 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
-              Appointments, walk-in tokens, patient records and staff — one calm screen your
-              front desk understands on day one.
+              Agenda de citas, historia clínica, recetas imprimibles, facturación y recordatorios
+              por WhatsApp. Todo lo que necesita su consultorio, en una pantalla sencilla para
+              usted y su asistente.
             </p>
-            <p className="mt-2 text-sm italic text-faint">Aapka clinic, organized.</p>
+            <p className="mt-2 text-sm text-faint">
+              Desde <strong className="font-semibold text-ink">US$10/mes por médico</strong>.
+            </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className={btnPrimary}>
-                Start free
+                Crear cuenta
                 <IconArrowRight size={15} />
               </Link>
               <a href="#demo" className={btnGhost}>
-                Try the live demo
+                Pruebe la demostración
               </a>
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
-              {['No double-bookings', 'Walk-in queue tokens', 'Multi-clinic & multi-currency'].map((t) => (
+              {['Sin citas duplicadas', 'Recordatorios por WhatsApp', 'Recetas listas para imprimir'].map((t) => (
                 <li key={t} className="inline-flex items-center gap-1.5">
                   <IconCheck size={13} strokeWidth={2.5} className="text-primary" />
                   {t}
@@ -190,7 +208,7 @@ export default function HomePage() {
             <div className="relative mx-auto aspect-[4/4.4] max-w-[440px] overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-[0_30px_70px_-30px_rgb(13_110_96/0.45)]">
               <Image
                 src="/images/hero-doctor2.jpg"
-                alt="Doctor at a small clinic"
+                alt="Médica en su consultorio"
                 fill
                 priority
                 sizes="(min-width: 1024px) 440px, 90vw"
@@ -203,12 +221,12 @@ export default function HomePage() {
             <div className="absolute -start-2 top-8 w-[200px] rounded-xl border border-border bg-card/95 p-3 shadow-[0_14px_36px_-14px_rgb(24_35_32/0.35)] backdrop-blur sm:-start-6">
               <div className="flex items-center gap-2.5">
                 <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-primary">
-                  HS
+                  CR
                 </span>
                 <div className="min-w-0 leading-tight">
-                  <div className="truncate text-[12px] font-semibold">Dr. Hira Saleem</div>
+                  <div className="truncate text-[12px] font-semibold">Dra. Carmen Rosario</div>
                   <div className="tabular mt-0.5 text-[10px] text-muted-foreground">
-                    11 am – 1 pm · 4 booked
+                    9:00 – 12:00 · 4 citas
                   </div>
                 </div>
               </div>
@@ -220,27 +238,27 @@ export default function HomePage() {
             {/* floating: live appointment card */}
             <div className="absolute -end-2 bottom-10 w-[224px] rounded-xl border border-border bg-card/95 p-3 shadow-[0_14px_36px_-14px_rgb(24_35_32/0.35)] backdrop-blur sm:-end-5">
               <div className="flex items-center justify-between gap-2">
-                <span className="tabular text-[12px] font-bold">11:20 am</span>
+                <span className="tabular text-[12px] font-bold">11:20 a. m.</span>
                 <span className="rounded bg-blue-soft px-1.5 py-0.5 text-[10px] font-bold text-blue">T-03</span>
               </div>
               <div className="mt-1.5 flex items-center gap-2">
                 <span className="flex size-7 items-center justify-center rounded-full bg-blue-soft text-[10px] font-semibold text-blue">
-                  BT
+                  MP
                 </span>
                 <div className="min-w-0 leading-tight">
-                  <div className="truncate text-[12px] font-semibold">Bilqis Tariq</div>
-                  <div className="truncate text-[10px] text-muted-foreground">Fever · walk-in</div>
+                  <div className="truncate text-[12px] font-semibold">María Peña</div>
+                  <div className="truncate text-[10px] text-muted-foreground">Fiebre · sin cita</div>
                 </div>
               </div>
               <button className="mt-2.5 w-full cursor-default rounded-lg bg-primary py-1.5 text-[11px] font-semibold text-white">
-                Check in
+                Registrar llegada
               </button>
             </div>
 
             {/* floating: guard chip */}
             <div className="absolute end-6 -top-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-1.5 text-[11px] font-semibold text-green-strong shadow-[0_10px_26px_-12px_rgb(24_35_32/0.3)] backdrop-blur">
               <IconCheck size={12} strokeWidth={3} />
-              Slot conflict blocked
+              Cita duplicada evitada
             </div>
           </div>
         </div>
@@ -250,10 +268,10 @@ export default function HomePage() {
       <section className="border-y border-border/70 bg-card">
         <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-border/70 px-6 sm:grid-cols-4">
           {[
-            { v: '3', l: 'clinics in the demo' },
-            { v: '7', l: 'doctors with real rotas' },
-            { v: '60', l: 'registered patients' },
-            { v: '200+', l: 'appointments seeded' },
+            { v: 'US$10', l: 'al mes por médico' },
+            { v: '1 + 1', l: 'usted y su asistente' },
+            { v: '0', l: 'citas duplicadas' },
+            { v: 'WhatsApp', l: 'recordatorios en un clic' },
           ].map((s) => (
             <div key={s.l} className="px-4 py-6 text-center sm:py-7">
               <div className="tabular font-display text-2xl font-semibold text-primary sm:text-3xl">{s.v}</div>
@@ -266,13 +284,13 @@ export default function HomePage() {
       {/* ---------------- How it works ---------------- */}
       <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20">
         <div className="mx-auto max-w-xl text-center">
-          <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">How it works</span>
+          <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Cómo funciona</span>
           <h2 className="mt-3 font-display text-3xl font-semibold">
-            A patient visit, in three taps
+            Una consulta, en tres pasos
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-            Designed for the busiest seat in the clinic — the front desk. If you can use a phone,
-            you can run matab.
+            Pensado para el día a día de un consultorio: si sabe usar un celular, sabe usar{' '}
+            {APP_NAME}.
           </p>
         </div>
         <div className="relative mt-12 grid gap-5 md:grid-cols-3">
@@ -309,14 +327,14 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-6xl px-6">
           <div className="mx-auto max-w-xl text-center">
             <span className="text-xs font-semibold tracking-[0.14em] text-sidebar-accent uppercase">
-              The day view
+              Agenda del día
             </span>
             <h2 className="mt-3 font-display text-3xl font-semibold text-sidebar-active-fg">
-              Every doctor&rsquo;s day on one screen
+              Todo su día en una sola pantalla
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-sidebar-foreground">
-              A queue list the receptionist reads top-to-bottom, and a timeline that shows gaps,
-              walk-ins and conflicts at a glance.
+              Una lista que su asistente lee de arriba hacia abajo y una línea de tiempo que muestra
+              huecos, pacientes sin cita y conflictos de un vistazo.
             </p>
           </div>
           <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-sidebar-soft shadow-[0_40px_90px_-40px_rgb(0_0_0/0.7)]">
@@ -326,13 +344,13 @@ export default function HomePage() {
               <span className="size-2.5 rounded-full bg-white/15" />
               <span className="size-2.5 rounded-full bg-white/15" />
               <span className="ms-3 hidden rounded-md bg-white/5 px-3 py-1 text-[11px] text-sidebar-foreground sm:block">
-                matab.app/dashboard/appointments
+                /dashboard/appointments
               </span>
             </div>
             {/* product screenshot (captured from the real app) */}
             <Image
               src="/images/product-day-view.png"
-              alt="matab appointments day view"
+              alt={`Agenda del día en ${APP_NAME}`}
               width={1600}
               height={950}
               className="block w-full"
@@ -344,9 +362,9 @@ export default function HomePage() {
       {/* ---------------- Features ---------------- */}
       <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20">
         <div className="mx-auto max-w-xl text-center">
-          <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Features</span>
+          <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Funciones</span>
           <h2 className="mt-3 font-display text-3xl font-semibold">
-            Small clinic. Serious software.
+            Consultorio pequeño. Herramientas serias.
           </h2>
         </div>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -368,20 +386,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ---------------- Pricing ---------------- */}
+      <section id="precios" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
+        <div className="mx-auto max-w-xl text-center">
+          <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Precios</span>
+          <h2 className="mt-3 font-display text-3xl font-semibold">Un precio simple, sin sorpresas</h2>
+          <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+            Pague por médico, no por paciente ni por cita.
+          </p>
+        </div>
+        <div className="card-flat mx-auto mt-10 max-w-md p-8 text-center">
+          <div className="text-sm font-medium text-muted-foreground">Desde</div>
+          <div className="mt-1 font-display text-5xl font-semibold text-primary">
+            US$10<span className="text-lg font-medium text-muted-foreground">/mes</span>
+          </div>
+          <div className="mt-1 text-sm text-muted-foreground">por médico</div>
+          <ul className="mt-6 space-y-2.5 text-start text-sm">
+            {PRICING_POINTS.map((p) => (
+              <li key={p} className="flex items-center gap-2.5">
+                <IconCheck size={14} strokeWidth={2.5} className="shrink-0 text-primary" />
+                {p}
+              </li>
+            ))}
+          </ul>
+          <Link href="/signup" className={`${btnPrimary} mt-7 w-full`}>
+            Crear cuenta
+            <IconArrowRight size={15} />
+          </Link>
+        </div>
+      </section>
+
       {/* ---------------- Demo accounts ---------------- */}
       <section id="demo" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
         <div className="card-flat overflow-hidden">
           <div className="grid items-center gap-8 p-8 sm:p-10 lg:grid-cols-[1fr_1.3fr]">
             <div>
-              <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Live demo</span>
-              <h2 className="mt-3 font-display text-3xl font-semibold">Walk in as any role</h2>
+              <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Demostración</span>
+              <h2 className="mt-3 font-display text-3xl font-semibold">Entre con cualquier rol</h2>
               <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-                Every account uses the password{' '}
+                Todas las cuentas usan la contraseña{' '}
                 <code className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-[13px] font-semibold">
                   password123
                 </code>
-                . Sign in as two different clinics and notice each sees completely different data —
-                that&rsquo;s the tenant wall.
+                . Cada consultorio ve únicamente sus propios datos: la información de sus pacientes
+                nunca se mezcla con la de otro.
               </p>
             </div>
             <div className="grid gap-3">
@@ -425,11 +473,10 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
               </svg>
             </span>
-            <span className="font-display text-sm font-semibold text-primary/80">matab</span>
+            <span className="font-display text-sm font-semibold text-primary/80">{APP_NAME}</span>
           </span>
           <span>
-            Portfolio project · Built with Payload CMS, Next.js &amp; MongoDB · Multi-tenant by
-            design · Photos: Unsplash
+            {APP_TAGLINE} · {BASED_ON} · Fotos: Unsplash
           </span>
         </div>
       </footer>

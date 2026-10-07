@@ -13,7 +13,7 @@ export async function loginAction(
   const password = String(formData.get('password') || '')
 
   if (!email || !password) {
-    return { ok: false, code: 'VALIDATION', message: 'Enter your email and password.' }
+    return { ok: false, code: 'VALIDATION', message: 'Ingrese su correo y su contraseña.' }
   }
 
   try {
@@ -24,7 +24,7 @@ export async function loginAction(
     })
 
     if (!result.token) {
-      return { ok: false, code: 'VALIDATION', message: 'Incorrect email or password.' }
+      return { ok: false, code: 'VALIDATION', message: 'Correo o contraseña incorrectos.' }
     }
 
     const cookieStore = await cookies()
@@ -41,7 +41,7 @@ export async function loginAction(
     const mapped = toActionError(err)
     // Generic auth failures shouldn't reveal which field was wrong.
     if (mapped.code === 'UNKNOWN') {
-      return { ok: false, code: 'AUTH', message: 'Incorrect email or password.' }
+      return { ok: false, code: 'AUTH', message: 'Correo o contraseña incorrectos.' }
     }
     return { ok: false, ...mapped }
   }

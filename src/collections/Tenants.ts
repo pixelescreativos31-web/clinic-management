@@ -8,6 +8,8 @@ import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_OPEN_TIME,
   DEFAULT_CLOSE_TIME,
+  DEFAULT_COUNTRY,
+  PRACTICE_TYPES,
 } from '@/lib/constants'
 import { PLANS, planLabel } from '@/lib/plans'
 import { auditTenants } from '@/hooks/audit'
@@ -21,7 +23,7 @@ const slugify = (value: string): string =>
 
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
-  labels: { singular: 'Clinic', plural: 'Clinics' },
+  labels: { singular: 'Consultorio', plural: 'Consultorios' },
   admin: { useAsTitle: 'name', defaultColumns: ['name', 'city', 'status'] },
   access: {
     read: tenantSelfRead,
@@ -47,7 +49,7 @@ export const Tenants: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
-      label: 'Clinic name',
+      label: 'Nombre del consultorio',
     },
     {
       name: 'slug',
@@ -55,7 +57,7 @@ export const Tenants: CollectionConfig = {
       unique: true,
       index: true,
       access: { update: superAdminField },
-      admin: { description: 'Auto-generated from the name; used for public URLs later.' },
+      admin: { description: 'Se genera a partir del nombre; para URLs públicas en el futuro.' },
       hooks: {
         beforeValidate: [
           ({ value, data }) => value || (data?.name ? slugify(data.name) : value),
@@ -66,17 +68,35 @@ export const Tenants: CollectionConfig = {
       name: 'phone',
       type: 'text',
       required: true,
+      label: 'Teléfono',
       validate: (value: string | null | undefined) => {
-        if (!value) return 'Phone is required.'
+        if (!value) return 'El teléfono es obligatorio.'
         // Generic, market-agnostic validation: digits and +, 7–15 chars.
         return /^\+?[0-9]{7,15}$/.test(value.replace(/[\s-]/g, ''))
           ? true
-          : 'Enter a valid phone number (7–15 digits).'
+          : 'Ingrese un teléfono válido (7 a 15 dígitos).'
       },
     },
-    { name: 'address', type: 'textarea' },
-    { name: 'city', type: 'text' },
-    { name: 'country', type: 'text', defaultValue: 'Pakistan' },
+    { name: 'address', type: 'textarea', label: 'Dirección' },
+    { name: 'city', type: 'text', label: 'Ciudad' },
+    { name: 'country', type: 'text', defaultValue: DEFAULT_COUNTRY, label: 'País' },
+    {
+      // Tax id printed on receipts (DR: RNC). Optional.
+      name: 'taxId',
+      type: 'text',
+      label: 'RNC / identificación fiscal',
+    },
+    {
+      // MVP: `individual` (one doctor, optional assistant) hides multi-doctor tooling
+      // in the UI. Data model is identical either way, so growing into `clinic` is a
+      // settings change, not a migration.
+      name: 'practiceType',
+      type: 'select',
+      required: true,
+      defaultValue: 'individual',
+      label: 'Tipo de práctica',
+      options: PRACTICE_TYPES.map((t) => ({ label: t.label, value: t.value })),
+    },
     {
       name: 'status',
       type: 'select',
@@ -86,9 +106,9 @@ export const Tenants: CollectionConfig = {
       options: [
         // `pending` = a self-serve signup awaiting super-admin approval (v3 §3.2).
         // Manually-created clinics start `active`; self-serve start `pending`.
-        { label: 'Pending approval', value: 'pending' },
-        { label: 'Active', value: 'active' },
-        { label: 'Suspended', value: 'suspended' },
+        { label: 'Pendiente de aprobación', value: 'pending' },
+        { label: 'Activo', value: 'active' },
+        { label: 'Suspendido', value: 'suspended' },
       ],
     },
     {
@@ -98,14 +118,15 @@ export const Tenants: CollectionConfig = {
       defaultValue: 'free',
       access: { update: superAdminField }, // only superAdmin moves a tenant between plans
       options: PLANS.map((p) => ({ label: planLabel(p), value: p })),
-      admin: { description: 'Subscription tier; limits enforced in code (src/lib/plans.ts).' },
+      label: 'Plan',
+      admin: { description: 'Nivel de suscripción; límites definidos en código (src/lib/plans.ts).' },
     },
     {
       // Owner's pending "Request upgrade" (v3 spec §5). Cleared by superAdmin on
       // approve/reject. No real billing — the enforcement & workflow are the product.
       name: 'upgradeRequest',
       type: 'group',
-      label: 'Upgrade request',
+      label: 'Solicitud de mejora de plan',
       fields: [
         {
           name: 'requestedPlan',
@@ -113,7 +134,7 @@ export const Tenants: CollectionConfig = {
           options: PLANS.map((p) => ({ label: planLabel(p), value: p })),
         },
         { name: 'requestedAt', type: 'date' },
-        { name: 'note', type: 'textarea', label: 'Owner note' },
+        { name: 'note', type: 'textarea', label: 'Nota del titular' },
       ],
     },
     {
@@ -123,22 +144,22 @@ export const Tenants: CollectionConfig = {
       defaultValue: 'manual',
       access: { update: superAdminField },
       options: [
-        { label: 'Self-serve', value: 'self-serve' },
+        { label: 'Autoregistro', value: 'self-serve' },
         { label: 'Manual', value: 'manual' },
       ],
-      admin: { description: 'How this clinic was created — for analytics.' },
+      admin: { description: 'Cómo se creó este consultorio (analítica).' },
     },
     {
       name: 'settings',
       type: 'group',
-      label: 'Settings',
+      label: 'Configuración',
       fields: [
         {
           name: 'appointmentDurationMins',
           type: 'number',
           required: true,
           defaultValue: DEFAULT_APPOINTMENT_DURATION,
-          label: 'Default slot length (minutes)',
+          label: 'Duración por defecto de la cita (minutos)',
           min: 5,
           max: 120,
         },
@@ -147,14 +168,14 @@ export const Tenants: CollectionConfig = {
           type: 'text',
           required: true,
           defaultValue: DEFAULT_OPEN_TIME,
-          label: 'Opening time (HH:mm)',
+          label: 'Hora de apertura (HH:mm)',
         },
         {
           name: 'closeTime',
           type: 'text',
           required: true,
           defaultValue: DEFAULT_CLOSE_TIME,
-          label: 'Closing time (HH:mm)',
+          label: 'Hora de cierre (HH:mm)',
         },
         {
           name: 'currency',
@@ -162,7 +183,8 @@ export const Tenants: CollectionConfig = {
           required: true,
           defaultValue: DEFAULT_CURRENCY,
           options: CURRENCIES.map((c) => ({ label: c.label, value: c.value })),
-          admin: { description: 'Market-agnostic core — all amounts are formatted from this.' },
+          label: 'Moneda',
+          admin: { description: 'Todos los montos se muestran en esta moneda.' },
         },
         {
           name: 'timezone',
@@ -170,7 +192,8 @@ export const Tenants: CollectionConfig = {
           required: true,
           defaultValue: DEFAULT_TIMEZONE,
           options: TIMEZONES.map((t) => ({ label: t.label, value: t.value })),
-          admin: { description: 'All times are displayed in this timezone.' },
+          label: 'Zona horaria',
+          admin: { description: 'Todas las horas se muestran en esta zona horaria.' },
         },
       ],
     },

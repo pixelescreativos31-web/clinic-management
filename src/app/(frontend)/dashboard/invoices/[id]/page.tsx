@@ -6,6 +6,7 @@ import { Card, StatusBadge, Avatar, Th, Td, btnGhost } from '@/components/primit
 import { IconChevronLeft, IconPrinter } from '@/components/icons'
 import { InvoiceActions } from '@/components/InvoiceActions'
 import { formatMoney, formatDateTime } from '@/lib/format'
+import { PAYMENT_METHODS } from '@/lib/constants'
 import type { Invoice, Patient, User } from '@/payload-types'
 
 const relId = (v: unknown): string =>
@@ -36,7 +37,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     <div className="mx-auto max-w-3xl">
       <Link href="/dashboard/appointments" className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink">
         <IconChevronLeft size={14} />
-        Dashboard
+        Inicio
       </Link>
 
       <div className="mt-3 mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -49,7 +50,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
       {invoice.voided && (
         <div className="mb-4 rounded-lg border border-destructive/25 bg-red-soft px-4 py-3 text-sm text-destructive">
-          <span className="font-semibold">Voided.</span> {invoice.voidReason}
+          <span className="font-semibold">Anulada.</span> {invoice.voidReason}
         </div>
       )}
 
@@ -57,7 +58,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col gap-4">
           {/* Patient */}
           <Card className="flex items-center gap-3 p-4">
-            <Avatar name={patient?.name ?? 'Patient'} />
+            <Avatar name={patient?.name ?? 'Paciente'} />
             <div className="min-w-0">
               <Link href={`/dashboard/patients/${relId(patient)}`} className="truncate text-sm font-semibold hover:text-primary">
                 {patient?.name}
@@ -71,10 +72,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-canvas/50">
-                  <Th>Description</Th>
-                  <Th className="text-end">Qty</Th>
-                  <Th className="text-end">Unit</Th>
-                  <Th className="text-end">Amount</Th>
+                  <Th>Descripción</Th>
+                  <Th className="text-end">Cant.</Th>
+                  <Th className="text-end">Precio unit.</Th>
+                  <Th className="text-end">Monto</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -94,11 +95,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 <dd className="tabular font-semibold">{m(invoice.totalAmount)}</dd>
               </div>
               <div className="flex items-center justify-between px-3 py-2.5">
-                <dt className="text-muted-foreground">Paid</dt>
+                <dt className="text-muted-foreground">Pagado</dt>
                 <dd className="tabular">{m(invoice.amountPaid)}</dd>
               </div>
               <div className="flex items-center justify-between px-3 py-2.5">
-                <dt className="font-medium">Balance due</dt>
+                <dt className="font-medium">Saldo pendiente</dt>
                 <dd className="tabular font-semibold text-ink">{m(invoice.balanceDue)}</dd>
               </div>
             </dl>
@@ -107,11 +108,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           {/* Payments */}
           {payments.length > 0 && (
             <Card className="overflow-hidden">
-              <div className="border-b border-border px-4 py-3 text-sm font-semibold">Payments</div>
+              <div className="border-b border-border px-4 py-3 text-sm font-semibold">Pagos</div>
               <ul className="divide-y divide-border text-sm">
                 {payments.map((p, i) => (
                   <li key={i} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <span className="capitalize text-muted-foreground">{(p.method ?? '').replace('-', ' ')}</span>
+                    <span className="text-muted-foreground">
+                      {PAYMENT_METHODS.find((pm) => pm.value === p.method)?.label ?? (p.method ?? '').replace('-', ' ')}
+                    </span>
                     <span className="flex items-center gap-3">
                       <span className="tabular text-xs text-faint">{p.receivedAt ? formatDateTime(p.receivedAt, moneyCtx) : ''}</span>
                       <span className="tabular font-medium">{m(p.amount)}</span>
@@ -125,17 +128,17 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
         {/* Actions */}
         <Card className="sticky top-6 p-4">
-          <div className="mb-3 text-sm font-semibold">Billing</div>
+          <div className="mb-3 text-sm font-semibold">Facturación</div>
           <InvoiceActions
             invoiceId={String(invoice.id)}
             balanceDue={invoice.balanceDue ?? 0}
             voided={Boolean(invoice.voided)}
             canVoid={user.role === 'owner'}
           />
-          {invoice.voided && <p className="text-sm text-muted-foreground">This invoice is voided and locked.</p>}
+          {invoice.voided && <p className="text-sm text-muted-foreground">Esta factura está anulada y bloqueada.</p>}
           <Link href={`/print/receipt/${invoice.id}`} target="_blank" className={`${btnGhost} mt-3 w-full`}>
             <IconPrinter size={15} />
-            Print / Download PDF
+            Imprimir / Descargar PDF
           </Link>
         </Card>
       </div>

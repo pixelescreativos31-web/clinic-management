@@ -4,14 +4,15 @@ import { StaffManager, type StaffRow } from '@/components/StaffManager'
 import { DEFAULT_CURRENCY, WEEKDAYS } from '@/lib/constants'
 import { windowOf, formatWindow } from '@/lib/availability'
 import type { User } from '@/payload-types'
+import { isPractitioner } from '@/lib/practice'
 
 function availabilitySummary(u: User): string {
   const type = (u.availabilityType as string) || 'regular'
-  if (type === 'onCall') return 'On call'
-  if (type === 'byAppointment') return 'By appointment'
+  if (type === 'onCall') return 'De guardia'
+  if (type === 'byAppointment') return 'Con cita previa'
   const days = (u.availableDays as string[] | undefined) || []
   const allDays = days.length === 0 || days.length === 7
-  const dayLabel = allDays ? 'Daily' : WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
+  const dayLabel = allDays ? 'Todos los días' : WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
   return `${dayLabel} · ${formatWindow(windowOf(u))}`
 }
 
@@ -38,7 +39,7 @@ export default async function StaffPage() {
     specialty: u.specialty,
     consultationFee: u.consultationFee,
     active: u.active !== false,
-    availability: u.role === 'doctor' ? availabilitySummary(u) : null,
+    availability: isPractitioner(u) ? availabilitySummary(u) : null,
     availabilityType: (u.availabilityType as string) || 'regular',
     availableDays: (u.availableDays as string[] | undefined) || [],
     availableFrom: u.availableFrom || '09:00',

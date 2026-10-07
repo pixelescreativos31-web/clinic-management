@@ -10,6 +10,7 @@ import { APIError } from 'payload'
 import type { Tenant, User } from '@/payload-types'
 import { ERROR_CODES } from './constants'
 import { appBaseUrl, sendEmail, type SendEmail } from './email'
+import { APP_NAME } from './brand'
 
 export const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -36,19 +37,19 @@ export async function sendVerificationEmail(
   const link = `${appBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`
   const res = await send({
     to,
-    subject: `Confirm your email for ${clinicName}`,
+    subject: `Confirme su correo para ${clinicName}`,
     html: `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
-      <h2 style="margin:0 0 2px;font-size:18px">One click to go</h2>
+      <h2 style="margin:0 0 2px;font-size:18px">Solo falta un clic</h2>
       <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
-        Confirm this is your email and ${clinicName} moves into the approval queue.
+        Confirme que este es su correo y ${clinicName} pasará a la fila de aprobación.
       </p>
       <p style="margin:0 0 18px">
         <a href="${link}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px">
-          Confirm my email
+          Confirmar mi correo
         </a>
       </p>
       <p style="margin:0;font-size:12px;color:#8aa19b">
-        The link expires in 24 hours. If you didn't sign up for matab, ignore this email.
+        El enlace vence en 24 horas. Si usted no se registró en ${APP_NAME}, ignore este correo.
       </p>
     </div>`,
   })
@@ -66,7 +67,7 @@ export async function verifyEmailToken(
   now: Date = new Date(),
 ): Promise<{ email: string }> {
   const invalid = () =>
-    new APIError('This verification link is invalid or has expired.', 400, {
+    new APIError('Este enlace de verificación no es válido o ya venció.', 400, {
       code: ERROR_CODES.VERIFY_TOKEN_INVALID,
     })
   if (!token) throw invalid()
@@ -124,7 +125,7 @@ export async function resendVerification(
     data: { verifyTokenHash: fresh.hash, verifyTokenExp: fresh.expiresAt.toISOString() } as never,
   })
 
-  const clinicName = (user.tenant as Tenant | null)?.name ?? 'your clinic'
+  const clinicName = (user.tenant as Tenant | null)?.name ?? 'su consultorio'
   return sendVerificationEmail({ to: user.email, clinicName, token: fresh.token }, send)
 }
 

@@ -5,6 +5,7 @@
 import type { Payload, Where } from 'payload'
 import type { Appointment, Invoice, Patient, Tenant, User, Visit } from '@/payload-types'
 import { DEFAULT_CURRENCY, DEFAULT_TIMEZONE } from './constants'
+import { practitionerWhere } from '@/lib/practice'
 
 /** Offset (tz - UTC) in ms at a given instant. */
 export function tzOffsetMs(date: Date, tz: string): number {
@@ -123,7 +124,7 @@ export async function getDashboardData(
       const c = await count({
         start: { greater_than_equal: dayStart.toISOString(), less_than: dayEnd.toISOString() },
       })
-      const label = dayStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: tz })
+      const label = dayStart.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', timeZone: tz })
       return { label, count: c }
     }),
   )
@@ -205,7 +206,7 @@ export async function getRevenueData(
   }
 
   const series = dayStarts.map((ms, i) => ({
-    label: new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: tz }),
+    label: new Date(ms).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', timeZone: tz }),
     amount: Math.round(seriesAmounts[i]),
   }))
 
@@ -216,7 +217,7 @@ export async function getRevenueData(
     .map((inv) => ({
       id: String(inv.id),
       invoiceNumber: inv.invoiceNumber ?? '',
-      patientName: (inv.patient as Patient)?.name ?? 'Patient',
+      patientName: (inv.patient as Patient)?.name ?? 'Paciente',
       balanceDue: inv.balanceDue ?? 0,
       currency: inv.currency || currency,
     }))
@@ -326,7 +327,7 @@ export async function getMonthlyReport(
     }),
     payload.find({
       collection: 'users',
-      where: { tenant: { equals: tenantID }, role: { equals: 'doctor' } },
+      where: practitionerWhere(String(tenantID)),
       limit: 100,
       depth: 0,
       overrideAccess: true,
@@ -390,8 +391,9 @@ export async function getMonthlyReport(
     if (inMonth(inv.createdAt)) outstandingAdded += inv.balanceDue ?? 0
   }
 
-  const monthLabel = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-GB', {
+  const monthLabel = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('es-DO', {
     month: 'short',
+    timeZone: 'UTC',
   })
   const daily = dailyAmounts.map((amount, i) => ({
     label: `${i + 1} ${monthLabel}`,

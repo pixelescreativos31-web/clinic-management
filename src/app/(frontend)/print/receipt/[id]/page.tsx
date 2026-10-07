@@ -4,6 +4,8 @@ import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { PrintButton } from '@/components/PrintButton'
 import { formatMoney, formatDateTime } from '@/lib/format'
+import { PAYMENT_METHODS } from '@/lib/constants'
+import { APP_NAME } from '@/lib/brand'
 import type { Invoice, Patient } from '@/payload-types'
 
 const relId = (v: unknown): string =>
@@ -33,7 +35,9 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
   const patient = invoice.patient as Patient
   const lines = invoice.lineItems ?? []
   const payments = invoice.payments ?? []
-  const statusLabel = invoice.voided ? 'VOIDED' : (invoice.paymentStatus ?? 'unpaid').toUpperCase()
+  const STATUS_LABELS: Record<string, string> = { paid: 'PAGADA', partial: 'PARCIAL', unpaid: 'PENDIENTE' }
+  const statusLabel = invoice.voided ? 'ANULADA' : (STATUS_LABELS[invoice.paymentStatus ?? 'unpaid'] ?? 'PENDIENTE')
+  const methodLabel = (v?: string | null) => PAYMENT_METHODS.find((pm) => pm.value === v)?.label ?? (v ?? '').replace('-', ' ')
 
   return (
     <main className="mx-auto w-full max-w-[150mm] bg-white px-8 py-10 text-[13px] text-ink print:max-w-none print:p-[12mm]">
@@ -44,7 +48,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       {/* Toolbar — hidden when printing */}
       <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
         <Link href={`/dashboard/invoices/${invoice.id}`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">
-          ‹ Back to invoice
+          ‹ Volver a la factura
         </Link>
         <PrintButton />
       </div>
@@ -60,7 +64,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
           </p>
         </div>
         <div className="text-end">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Receipt</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Recibo</div>
           <div className="tabular mt-0.5 text-lg font-semibold">{invoice.invoiceNumber}</div>
           <div className="tabular mt-1 text-xs text-muted-foreground">{formatDateTime(invoice.createdAt, ctx)}</div>
         </div>
@@ -69,7 +73,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       {/* Bill to */}
       <section className="mt-4 flex items-center justify-between">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Bill to</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Facturar a</div>
           <div className="mt-0.5 font-medium">{patient?.name}</div>
           <div className="tabular text-xs text-muted-foreground">{patient?.mrn}</div>
         </div>
@@ -82,10 +86,10 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       <table className="mt-6 w-full border-collapse text-[13px]">
         <thead>
           <tr className="border-y border-border text-[11px] uppercase tracking-wide text-muted-foreground">
-            <th className="py-2 text-start font-medium">Description</th>
-            <th className="py-2 text-end font-medium">Qty</th>
-            <th className="py-2 text-end font-medium">Unit</th>
-            <th className="py-2 text-end font-medium">Amount</th>
+            <th className="py-2 text-start font-medium">Descripción</th>
+            <th className="py-2 text-end font-medium">Cant.</th>
+            <th className="py-2 text-end font-medium">Precio unit.</th>
+            <th className="py-2 text-end font-medium">Monto</th>
           </tr>
         </thead>
         <tbody>
@@ -103,18 +107,18 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       {/* Totals */}
       <div className="mt-4 ms-auto w-56 text-[13px]">
         <div className="flex justify-between py-1"><span className="text-muted-foreground">Total</span><span className="tabular font-semibold">{m(invoice.totalAmount)}</span></div>
-        <div className="flex justify-between py-1"><span className="text-muted-foreground">Paid</span><span className="tabular">{m(invoice.amountPaid)}</span></div>
-        <div className="flex justify-between border-t border-border py-1.5"><span className="font-semibold">Balance due</span><span className="tabular font-semibold">{m(invoice.balanceDue)}</span></div>
+        <div className="flex justify-between py-1"><span className="text-muted-foreground">Pagado</span><span className="tabular">{m(invoice.amountPaid)}</span></div>
+        <div className="flex justify-between border-t border-border py-1.5"><span className="font-semibold">Saldo pendiente</span><span className="tabular font-semibold">{m(invoice.balanceDue)}</span></div>
       </div>
 
       {/* Payments */}
       {payments.length > 0 && (
         <div className="mt-6">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Payments</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Pagos</div>
           <ul className="mt-1 text-xs">
             {payments.map((p, i) => (
               <li key={i} className="flex justify-between border-b border-border/50 py-1">
-                <span className="capitalize">{(p.method ?? '').replace('-', ' ')}{p.receivedAt ? ` · ${formatDateTime(p.receivedAt, ctx)}` : ''}</span>
+                <span>{methodLabel(p.method)}{p.receivedAt ? ` · ${formatDateTime(p.receivedAt, ctx)}` : ''}</span>
                 <span className="tabular">{m(p.amount)}</span>
               </li>
             ))}
@@ -123,11 +127,11 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       )}
 
       {invoice.voided && invoice.voidReason && (
-        <p className="mt-4 text-xs text-destructive">Voided: {invoice.voidReason}</p>
+        <p className="mt-4 text-xs text-destructive">Anulada: {invoice.voidReason}</p>
       )}
 
       <footer className="mt-10 border-t border-border pt-3 text-center text-[10px] text-faint">
-        Generated by Matab · This is a computer-generated receipt.
+        Generado por {APP_NAME} · Este es un recibo generado electrónicamente.
       </footer>
     </main>
   )

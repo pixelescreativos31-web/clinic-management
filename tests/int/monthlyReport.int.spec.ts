@@ -139,8 +139,8 @@ describe('v4-A — monthly report', () => {
 
     // Daily buckets: 10 May and 20 May PKT, everything else zero.
     expect(r.daily).toHaveLength(31)
-    expect(r.daily[9]).toEqual({ label: '10 May', amount: 1000 })
-    expect(r.daily[19]).toEqual({ label: '20 May', amount: 500 })
+    expect(r.daily[9]).toEqual({ label: '10 may', amount: 1000 })
+    expect(r.daily[19]).toEqual({ label: '20 may', amount: 500 })
     expect(r.daily.reduce((s, d) => s + d.amount, 0)).toBe(1500)
 
     // Per-doctor: doctor1 leads on revenue; the fixture's untouched doctors stay out.

@@ -7,20 +7,25 @@ import { BookingForm, type DoctorOption } from '@/components/BookingForm'
 import { DEFAULT_TIMEZONE, WEEKDAYS } from '@/lib/constants'
 import { EmptyState, Avatar } from '@/components/primitives'
 import type { User } from '@/payload-types'
+import { practitionerWhere } from '@/lib/practice'
 
 function noteFor(d: User): { tag: string; note: string } {
   const type = (d.availabilityType as string) || 'regular'
-  if (type === 'onCall') return { tag: 'onCall', note: 'On call' }
-  if (type === 'byAppointment') return { tag: 'byAppointment', note: 'By appointment' }
+  if (type === 'onCall') return { tag: 'onCall', note: 'De guardia' }
+  if (type === 'byAppointment') return { tag: 'byAppointment', note: 'Previa cita' }
   const days = (d.availableDays as string[] | undefined) || []
   const allDays = days.length === 0 || days.length === 7
   const dayLabel = allDays
-    ? 'Daily'
+    ? 'Todos los días'
     : WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
   return { tag: 'regular', note: `${dayLabel} · ${formatWindow(windowOf(d))}` }
 }
 
-export default async function NewAppointmentPage() {
+export default async function NewAppointmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ patient?: string }>
+}) {
   const { user, tenant } = await requireDashboardSession()
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)!
@@ -28,7 +33,7 @@ export default async function NewAppointmentPage() {
 
   const doctorsRes = await payload.find({
     collection: 'users',
-    where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
+    where: { and: [practitionerWhere(String(tenantID)), { active: { equals: true } }] },
     limit: 50,
     sort: 'name',
     overrideAccess: true,
@@ -38,6 +43,16 @@ export default async function NewAppointmentPage() {
     const { tag, note } = noteFor(d)
     return { id: String(d.id), name: d.name, tag, note }
   })
+  // Optional prefill from a patient file — fetched with the user's access so a
+  // foreign id simply resolves to nothing.
+  const patientParam = (await searchParams).patient
+  const prefill = patientParam
+    ? await payload
+        .findByID({ collection: 'patients', id: patientParam, depth: 0, overrideAccess: false, user })
+        .then((p) => ({ id: String(p.id), name: p.name, phone: p.phone, mrn: p.mrn ?? '' }))
+        .catch(() => null)
+    : null
+  const single = doctors.length === 1
   const todayStr = startOfDayInTz(tz, 0).toLocaleDateString('en-CA', { timeZone: tz })
 
   return (
@@ -46,27 +61,35 @@ export default async function NewAppointmentPage() {
         href="/dashboard/appointments"
         className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink"
       >
-        ‹ Appointments
+        ‹ Citas
       </Link>
-      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">New appointment</h1>
+      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">
+        Nueva cita{single ? <span className="font-normal text-muted-foreground"> · {doctors[0].name}</span> : null}
+      </h1>
 
       {doctors.length === 0 ? (
-        <EmptyState message="Add a doctor before booking appointments." actionHref="/dashboard/staff" actionLabel="Go to staff" />
+        <EmptyState
+          message="Todavía no hay un médico que atienda. Active «Atiendo pacientes» en su perfil médico o agregue un médico."
+          actionHref="/dashboard/settings"
+          actionLabel="Ir a Configuración"
+        />
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className={`grid items-start gap-6 ${single ? 'max-w-3xl' : 'lg:grid-cols-[minmax(0,1fr)_300px]'}`}>
           <BookingForm
+            initialPatient={prefill}
             doctors={doctors}
             defaultDate={todayStr}
-            defaultDuration={tenant?.settings?.appointmentDurationMins ?? 15}
+            defaultDuration={tenant?.settings?.appointmentDurationMins ?? 20}
             openTime={tenant?.settings?.openTime ?? '09:00'}
             closeTime={tenant?.settings?.closeTime ?? '21:00'}
           />
 
-          {/* Availability cheat-sheet — answers "kaun kab baithta hai" while booking */}
+          {/* Availability cheat-sheet — "who sees patients when" while booking (multi-doctor only) */}
+          {!single && (
           <aside className="card-flat sticky top-6 hidden overflow-hidden lg:block">
             <div className="border-b px-4 py-3">
-              <h2 className="text-sm font-semibold">Doctors &amp; timings</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">Quick reference while you book.</p>
+              <h2 className="text-sm font-semibold">Médicos y horarios</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Referencia rápida mientras agenda.</p>
             </div>
             <ul className="divide-y divide-border">
               {doctors.map((d) => (
@@ -80,10 +103,11 @@ export default async function NewAppointmentPage() {
               ))}
             </ul>
             <div className="border-t bg-muted/40 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
-              Walk-ins check in immediately and get a queue token. Overlapping slots are rejected
-              automatically.
+              Los pacientes sin cita quedan en espera de inmediato y reciben un turno. Los horarios
+              que se superponen se rechazan automáticamente.
             </div>
           </aside>
+          )}
         </div>
       )}
     </div>

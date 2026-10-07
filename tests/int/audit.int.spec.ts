@@ -67,7 +67,7 @@ describe('v3 — audit log', () => {
       overrideAccess: true,
     })
     expect(logs.totalDocs).toBeGreaterThanOrEqual(1)
-    expect(logs.docs[0].summary).toMatch(/Cancelled/i)
+    expect(logs.docs[0].summary).toMatch(/Cancelada/i)
     expect(relID(logs.docs[0].user)).toBe(String(f.a.owner.id))
   })
 

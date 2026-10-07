@@ -7,6 +7,7 @@
 import type { Payload } from 'payload'
 import type { Tenant, User } from '@/payload-types'
 import { appBaseUrl, sendEmail, type SendEmail } from './email'
+import { APP_NAME, APP_TAGLINE } from './brand'
 
 export type DecisionSummary = {
   sent: boolean
@@ -35,8 +36,8 @@ export async function notifySignupDecision(
     to: owner.email,
     subject:
       decision === 'approved'
-        ? `${tenant.name} is approved — you can sign in now`
-        : `Update on your ${tenant.name} signup`,
+        ? `${tenant.name} fue aprobado: ya puede iniciar sesión`
+        : `Actualización sobre el registro de ${tenant.name}`,
     html: decision === 'approved' ? approvedHtml(tenant, owner) : rejectedHtml(tenant, owner),
   })
   if (res.ok) return { sent: true }
@@ -46,30 +47,30 @@ export async function notifySignupDecision(
 function approvedHtml(tenant: Pick<Tenant, 'name'>, owner: User): string {
   const link = `${appBaseUrl()}/login?email=${encodeURIComponent(owner.email)}`
   return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
-    <h2 style="margin:0 0 2px;font-size:18px">${tenant.name} is ready</h2>
+    <h2 style="margin:0 0 2px;font-size:18px">${tenant.name} está listo</h2>
     <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
-      Your clinic has been approved. Sign in to set up your doctors and start booking appointments.
+      Su consultorio fue aprobado. Inicie sesión para configurar su agenda y empezar a dar citas.
     </p>
     <p style="margin:0 0 18px">
       <a href="${link}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px">
-        Sign in to your clinic
+        Entrar a mi consultorio
       </a>
     </p>
     <p style="margin:0;font-size:12px;color:#8aa19b">
-      A welcome checklist on your dashboard walks you through the first steps.
+      En su panel encontrará una lista de bienvenida que le guía en los primeros pasos.
     </p>
   </div>`
 }
 
 function rejectedHtml(tenant: Pick<Tenant, 'name'>, _owner: User): string {
   return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
-    <h2 style="margin:0 0 2px;font-size:18px">About your ${tenant.name} signup</h2>
+    <h2 style="margin:0 0 2px;font-size:18px">Sobre el registro de ${tenant.name}</h2>
     <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
-      We couldn't approve your clinic signup at this time. If you believe this is a mistake,
-      just reply to this email and we'll take another look.
+      Por el momento no pudimos aprobar el registro de su consultorio. Si cree que se trata de un
+      error, responda a este correo y lo revisaremos de nuevo.
     </p>
     <p style="margin:0;font-size:12px;color:#8aa19b">
-      Sent by matab — clinic management, simplified.
+      Enviado por ${APP_NAME} — ${APP_TAGLINE.toLowerCase()}.
     </p>
   </div>`
 }

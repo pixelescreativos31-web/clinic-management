@@ -12,6 +12,7 @@ import { getTenantID, isSuperAdmin } from '@/access'
 import { toCsv, type CsvValue } from '@/lib/csv'
 import { logAudit } from '@/lib/audit'
 import { formatDateTime } from '@/lib/format'
+import { APP_NAME } from '@/lib/brand'
 
 const PAGE_SIZE = 500
 const MAX_ROWS = 10_000
@@ -26,6 +27,43 @@ const RANGE_FIELD: Record<ExportType, string> = {
   invoices: 'createdAt',
 }
 
+/** Spanish nouns for each export type — file names and audit summaries. */
+const TYPE_LABELS: Record<ExportType, string> = {
+  appointments: 'citas',
+  patients: 'pacientes',
+  invoices: 'facturas',
+}
+
+const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'Programada',
+  'checked-in': 'En espera',
+  completed: 'Atendida',
+  cancelled: 'Cancelada',
+  'no-show': 'No asistió',
+}
+
+const INVOICE_STATUS_LABELS: Record<string, string> = {
+  paid: 'Pagada',
+  partial: 'Parcial',
+  unpaid: 'Pendiente',
+  voided: 'Anulada',
+}
+
+const GENDER_LABELS: Record<string, string> = {
+  male: 'Masculino',
+  female: 'Femenino',
+  other: 'Otro',
+}
+
+/** Product name as a file-name-safe slug (e.g. "Consultorio" → "consultorio"). */
+const fileSlug = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'export'
+
 const relName = (v: unknown): string =>
   v && typeof v === 'object' && 'name' in (v as Record<string, unknown>)
     ? String((v as { name: unknown }).name)
@@ -35,27 +73,27 @@ const bad = (status: number, message: string) => Response.json({ error: message 
 
 export async function GET(req: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params
-  if (!EXPORT_TYPES.includes(type as ExportType)) return bad(404, 'Unknown export type.')
+  if (!EXPORT_TYPES.includes(type as ExportType)) return bad(404, 'Tipo de exportación desconocido.')
 
   const payload = await getPayload({ config: await config })
   const { user } = await payload.auth({ headers: req.headers as never })
-  if (!user) return bad(401, 'Sign in to export data.')
+  if (!user) return bad(401, 'Inicie sesión para exportar datos.')
 
   // Route-level access (spec §A.3): owner + superAdmin only.
   const actor = user as unknown as User
   if (actor.role !== 'owner' && !isSuperAdmin(actor)) {
-    return bad(403, 'Only the clinic owner can export data.')
+    return bad(403, 'Solo el titular del consultorio puede exportar datos.')
   }
 
   const url = new URL(req.url)
   // Tenant scope is never client-chosen for owners — it comes from the session.
   const tenantID = isSuperAdmin(actor) ? url.searchParams.get('tenant') : getTenantID(actor)
-  if (!tenantID) return bad(400, 'A clinic is required for exports.')
+  if (!tenantID) return bad(400, 'Se requiere un consultorio para exportar.')
 
   const from = new Date(url.searchParams.get('from') ?? '')
   const to = new Date(url.searchParams.get('to') ?? '')
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
-    return bad(400, 'Provide a valid from/to range.')
+    return bad(400, 'Indique un rango de fechas válido (desde/hasta).')
   }
 
   const where: Where = {
@@ -68,13 +106,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
 
   const probe = await payload.count({ collection: type as ExportType, where, overrideAccess: true })
   if (probe.totalDocs > MAX_ROWS) {
-    return bad(400, `Export is capped at ${MAX_ROWS.toLocaleString('en')} rows — narrow the date range.`)
+    return bad(400, `La exportación está limitada a ${MAX_ROWS.toLocaleString('es-DO')} filas; reduzca el rango de fechas.`)
   }
 
   const tenant = (await payload
     .findByID({ collection: 'tenants', id: tenantID, depth: 0, overrideAccess: true })
     .catch(() => null)) as Tenant | null
-  if (!tenant) return bad(400, 'A clinic is required for exports.')
+  if (!tenant) return bad(400, 'Se requiere un consultorio para exportar.')
 
   const { headers, rows } = await collectRows(payload, type as ExportType, where, tenant)
 
@@ -84,12 +122,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
     targetCollection: type,
     targetId: tenantID,
     tenantID,
-    summary: `Exported ${rows.length} ${type} row${rows.length === 1 ? '' : 's'} as CSV`,
+    summary: `Se ${rows.length === 1 ? 'exportó' : 'exportaron'} ${rows.length} ${rows.length === 1 ? 'fila' : 'filas'} de ${TYPE_LABELS[type as ExportType]} en CSV`,
     meta: { from: from.toISOString(), to: to.toISOString() },
   })
 
   const day = (d: Date) => d.toISOString().slice(0, 10)
-  const filename = `matab-${type}-${tenant.slug || tenantID}-${day(from)}-${day(to)}.csv`
+  const filename = `${fileSlug(APP_NAME)}-${TYPE_LABELS[type as ExportType]}-${tenant.slug || tenantID}-${day(from)}-${day(to)}.csv`
   return new Response(toCsv(headers, rows), {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
@@ -124,9 +162,9 @@ async function collectRows(
   }
 
   const headers: Record<ExportType, string[]> = {
-    appointments: ['Date & time', 'Patient', 'Doctor', 'Status', 'Reason', 'Duration (mins)'],
-    patients: ['MRN', 'Name', 'Phone', 'Gender', 'Age', 'Registered'],
-    invoices: ['Invoice #', 'Patient', 'Total', 'Paid', 'Balance due', 'Status', 'Currency', 'Created'],
+    appointments: ['Fecha y hora', 'Paciente', 'Médico', 'Estado', 'Motivo', 'Duración (min)'],
+    patients: ['N.º de expediente', 'Nombre', 'Teléfono', 'Sexo', 'Edad', 'Registrado'],
+    invoices: ['N.º de factura', 'Paciente', 'Total', 'Pagado', 'Saldo pendiente', 'Estado', 'Moneda', 'Creada'],
   }
   return { headers: headers[type], rows }
 }
@@ -138,7 +176,7 @@ function rowFor(type: ExportType, doc: Appointment | Patient | Invoice, tenant: 
       formatDateTime(a.start, tenant),
       relName(a.patient),
       relName(a.doctor),
-      a.status,
+      APPOINTMENT_STATUS_LABELS[a.status ?? ''] ?? a.status ?? '',
       a.reason ?? '',
       a.durationMins ?? '',
     ]
@@ -149,7 +187,7 @@ function rowFor(type: ExportType, doc: Appointment | Patient | Invoice, tenant: 
       p.mrn ?? '',
       p.name,
       p.phone ?? '',
-      p.gender ?? '',
+      p.gender ? (GENDER_LABELS[p.gender] ?? p.gender) : '',
       p.ageYears ?? '',
       formatDateTime(p.createdAt, tenant),
     ]
@@ -161,7 +199,7 @@ function rowFor(type: ExportType, doc: Appointment | Patient | Invoice, tenant: 
     inv.totalAmount ?? 0,
     inv.amountPaid ?? 0,
     inv.balanceDue ?? 0,
-    inv.voided ? 'voided' : (inv.paymentStatus ?? 'unpaid'),
+    INVOICE_STATUS_LABELS[inv.voided ? 'voided' : (inv.paymentStatus ?? 'unpaid')],
     inv.currency ?? '',
     formatDateTime(inv.createdAt, tenant),
   ]

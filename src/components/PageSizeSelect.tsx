@@ -19,7 +19,7 @@ export function PageSizeSelect({ value, basePath }: { value: number; basePath: s
 
   return (
     <label className="flex items-center gap-2 text-xs text-muted-foreground">
-      Rows per page
+      Filas por página
       <AppSelect
         value={String(value)}
         onChange={change}

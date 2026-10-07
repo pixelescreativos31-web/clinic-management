@@ -76,7 +76,7 @@ export function BarChart({ data }: { data: { label: string; count: number }[] })
       </div>
 
       <p className="mt-3 text-xs text-faint">
-        {total} appointment{total === 1 ? '' : 's'} in the last 14 days
+        {total} {total === 1 ? 'cita' : 'citas'} en los últimos 14 días
       </p>
     </div>
   )

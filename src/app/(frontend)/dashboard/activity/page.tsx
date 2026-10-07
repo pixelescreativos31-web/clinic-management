@@ -18,9 +18,9 @@ export default async function ActivityPage({
   if (user.role !== 'owner') {
     return (
       <div>
-        <PageTitle subtitle="Audit trail">Activity</PageTitle>
+        <PageTitle subtitle="Registro de auditoría">Actividad</PageTitle>
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">Only the clinic owner can view the activity log.</p>
+          <p className="text-sm text-muted-foreground">Solo el titular del consultorio puede ver el registro de actividad.</p>
         </Card>
       </div>
     )
@@ -47,7 +47,7 @@ export default async function ActivityPage({
 
   const fmt = (iso?: string | null) =>
     iso
-      ? new Date(iso).toLocaleString('en-GB', {
+      ? new Date(iso).toLocaleString('es-DO', {
           day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: tz,
         })
       : '—'
@@ -71,24 +71,24 @@ export default async function ActivityPage({
 
   return (
     <div>
-      <PageTitle subtitle="A read-only record of sensitive actions in your clinic.">Activity</PageTitle>
+      <PageTitle subtitle="Registro de solo lectura de las acciones sensibles en su consultorio.">Actividad</PageTitle>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
-        {chip('All')}
+        {chip('Todas')}
         {AUDIT_ACTIONS.map((a) => chip(a.label, a.value))}
       </div>
 
       <Card className="overflow-hidden">
         {logs.length === 0 ? (
-          <EmptyState message={activeAction ? 'No activity for this filter yet.' : 'No activity recorded yet.'} />
+          <EmptyState message={activeAction ? 'Aún no hay actividad para este filtro.' : 'Aún no se ha registrado actividad.'} />
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-canvas/50">
-                <Th>When</Th>
-                <Th>Who</Th>
-                <Th>Action</Th>
-                <Th>Summary</Th>
+                <Th>Fecha</Th>
+                <Th>Usuario</Th>
+                <Th>Acción</Th>
+                <Th>Resumen</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

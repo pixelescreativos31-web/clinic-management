@@ -19,7 +19,7 @@ export function AppSelect({
   value,
   onChange,
   options,
-  placeholder = 'Select…',
+  placeholder = 'Seleccione…',
   className,
   disabled,
 }: {

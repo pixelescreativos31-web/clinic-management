@@ -40,8 +40,8 @@ describe('backlog — email verification at signup', () => {
       {
         clinicName: `Verify Test Clinic ${n}`,
         phone: '+92512345678',
-        currency: 'PKR',
-        timezone: 'Asia/Karachi',
+        currency: 'DOP',
+        timezone: 'America/Santo_Domingo',
         ownerName: 'Sara Ahmed',
         email: over.email ?? `owner-${n}@verify.test`,
         password: 'password123',

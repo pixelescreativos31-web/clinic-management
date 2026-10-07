@@ -34,10 +34,10 @@ export async function signupAction(
 ): Promise<ActionResult<{ slug: string; verifyEmail: boolean }>> {
   // Bot traps — fail silently as a generic validation error (don't teach the bot).
   if (input.company) {
-    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Something went wrong. Please try again.' }
+    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Algo salió mal. Intente de nuevo.' }
   }
   if (input.startedAt && Date.now() - input.startedAt < MIN_FILL_MS) {
-    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Something went wrong. Please try again.' }
+    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Algo salió mal. Intente de nuevo.' }
   }
 
   const ip = await clientIp()
@@ -45,7 +45,7 @@ export async function signupAction(
     return {
       ok: false,
       code: ERROR_CODES.SIGNUP_RATE_LIMITED,
-      message: 'Too many signups from this network. Try again later.',
+      message: 'Demasiados registros desde esta red. Intente más tarde.',
     }
   }
 
@@ -61,6 +61,9 @@ export async function signupAction(
       ownerName: input.ownerName,
       email: input.email,
       password: input.password,
+      practiceType: input.practiceType === 'clinic' ? 'clinic' : 'individual',
+      specialty: input.specialty,
+      licenseNumber: input.licenseNumber,
     })
 
     // Confirmation link goes out best-effort — a mail hiccup must not undo the
@@ -88,6 +91,6 @@ export async function signupAction(
       ERROR_CODES.PLAN_LIMIT,
     ] as string[]
     if (known.includes(mapped.code)) return { ok: false, ...mapped }
-    return { ok: false, code: ERROR_CODES.SIGNUP_FAILED, message: 'We couldn’t create your clinic. Please try again.' }
+    return { ok: false, code: ERROR_CODES.SIGNUP_FAILED, message: 'No pudimos crear su consultorio. Intente de nuevo.' }
   }
 }

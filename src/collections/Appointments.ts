@@ -1,11 +1,12 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, getTenantID } from '@/access'
+import { tenantScoped, denyAll, getTenantID, isSuperAdmin } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { findConflict, computeEnd } from '@/lib/booking'
 import { auditAppointments } from '@/hooks/audit'
 import { startOfDayInTz } from '@/lib/reports'
-import { DEFAULT_TIMEZONE } from '@/lib/constants'
+import { DEFAULT_TIMEZONE, APPOINTMENT_STATUS_LABELS } from '@/lib/constants'
+import { isPractitioner } from '@/lib/practice'
 import {
   APPOINTMENT_STATUSES,
   STATUS_TRANSITIONS,
@@ -24,6 +25,7 @@ const relID = (value: unknown): string | null => {
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
+  labels: { singular: 'Cita', plural: 'Citas' },
   admin: { useAsTitle: 'reason', defaultColumns: ['start', 'patient', 'doctor', 'status'] },
   access: {
     read: tenantScoped,
@@ -52,14 +54,46 @@ export const Appointments: CollectionConfig = {
           const to = data.status as AppointmentStatus
           const legal = STATUS_TRANSITIONS[from] ?? []
           if (!legal.includes(to)) {
-            throw new APIError(`Can't change ${from} to ${to}.`, 400, {
+            throw new APIError(`No se puede cambiar de «${APPOINTMENT_STATUS_LABELS[from] ?? from}» a «${APPOINTMENT_STATUS_LABELS[to] ?? to}».`, 400, {
               code: ERROR_CODES.INVALID_TRANSITION,
             })
           }
           if (to === 'cancelled' && !data.cancellationReason && !originalDoc.cancellationReason) {
-            throw new APIError('A cancellation reason is required.', 400, {
+            throw new APIError('Indique el motivo de la cancelación.', 400, {
               code: ERROR_CODES.VALIDATION,
             })
+          }
+        }
+
+        // --- same-clinic guard for patient & doctor ---
+        // forceTenant pins the appointment to the actor's clinic, but the related
+        // patient/doctor ids come from the client. Without this check a crafted
+        // request could attach another clinic's patient or doctor (and leak their
+        // name back through the UI/audit trail).
+        // A non-superAdmin's appointment always lands in their own clinic
+        // (forceTenant runs later), so validate against that, not the payload.
+        const apptTenant =
+          req.user && !isSuperAdmin(req.user)
+            ? getTenantID(req.user)
+            : (relID(data.tenant) ?? relID(originalDoc?.tenant))
+        const patientRef = relID(data.patient)
+        const doctorRef = relID(data.doctor)
+        if (apptTenant && (operation === 'create' || patientRef || doctorRef)) {
+          if (patientRef && patientRef !== relID(originalDoc?.patient)) {
+            const p = await req.payload
+              .findByID({ collection: 'patients', id: patientRef, depth: 0, req, overrideAccess: true })
+              .catch(() => null)
+            if (!p || relID(p.tenant) !== String(apptTenant)) {
+              throw new APIError('Paciente no encontrado.', 400, { code: ERROR_CODES.VALIDATION })
+            }
+          }
+          if (doctorRef && doctorRef !== relID(originalDoc?.doctor)) {
+            const d = await req.payload
+              .findByID({ collection: 'users', id: doctorRef, depth: 0, req, overrideAccess: true })
+              .catch(() => null)
+            if (!d || relID(d.tenant) !== String(apptTenant) || !isPractitioner(d)) {
+              throw new APIError('Médico no encontrado.', 400, { code: ERROR_CODES.VALIDATION })
+            }
           }
         }
 
@@ -88,7 +122,7 @@ export const Appointments: CollectionConfig = {
           if (conflict) {
             const time = new Date(conflict.start).toISOString()
             throw new APIError(
-              `That doctor already has an appointment overlapping this time (${time}). Pick another slot.`,
+              `El médico ya tiene una cita que se cruza con ese horario (${time}). Elija otra hora.`,
               409,
               { code: ERROR_CODES.SLOT_TAKEN },
             )
@@ -161,7 +195,10 @@ export const Appointments: CollectionConfig = {
       required: true,
       filterOptions: ({ user }) => {
         const tenantID = getTenantID(user as any)
-        const base: Record<string, unknown> = { role: { equals: 'doctor' }, active: { equals: true } }
+        const base: Record<string, unknown> = {
+          active: { equals: true },
+          or: [{ role: { equals: 'doctor' } }, { and: [{ role: { equals: 'owner' } }, { practitioner: { equals: true } }] }],
+        }
         if (tenantID) base.tenant = { equals: tenantID }
         return base as any
       },
@@ -178,32 +215,34 @@ export const Appointments: CollectionConfig = {
       required: true,
       min: 5,
       max: 120,
-      label: 'Duration (minutes)',
+      label: 'Duración (minutos)',
     },
     {
       name: 'end',
       type: 'date',
       admin: { readOnly: true, hidden: true },
     },
-    { name: 'reason', type: 'text' },
+    { name: 'reason', type: 'text', label: 'Motivo' },
     {
       name: 'status',
       type: 'select',
       required: true,
       defaultValue: 'scheduled',
-      options: APPOINTMENT_STATUSES.map((s) => ({ label: s, value: s })),
+      label: 'Estado',
+      options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s] ?? s, value: s })),
     },
-    { name: 'isWalkIn', type: 'checkbox', defaultValue: false, label: 'Walk-in' },
+    { name: 'isWalkIn', type: 'checkbox', defaultValue: false, label: 'Sin cita' },
     {
       name: 'tokenNumber',
       type: 'text',
-      label: 'Walk-in token',
+      label: 'Turno',
       access: { update: () => false },
-      admin: { readOnly: true, description: 'Auto-assigned per clinic per day for walk-ins.' },
+      admin: { readOnly: true, description: 'Se asigna automáticamente por día a pacientes sin cita.' },
     },
     {
       name: 'cancellationReason',
       type: 'text',
+      label: 'Motivo de cancelación',
       admin: { condition: (data) => data?.status === 'cancelled' },
     },
     {

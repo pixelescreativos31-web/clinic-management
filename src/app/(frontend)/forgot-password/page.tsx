@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { forgotPasswordAction } from './actions'
 import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
 import { IconCheck } from '@/components/icons'
+import { APP_NAME } from '@/lib/brand'
 
 export default function ForgotPasswordPage() {
   const [state, formAction, pending] = useActionState(forgotPasswordAction, null)
@@ -18,7 +19,7 @@ export default function ForgotPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
             </svg>
           </span>
-          <span className="font-display text-xl font-semibold tracking-tight text-primary">matab</span>
+          <span className="font-display text-xl font-semibold tracking-tight text-primary">{APP_NAME}</span>
         </Link>
 
         {state?.ok ? (
@@ -26,31 +27,31 @@ export default function ForgotPasswordPage() {
             <span className="flex size-9 items-center justify-center rounded-full bg-secondary">
               <IconCheck size={16} className="text-primary" />
             </span>
-            <h1 className="mt-4 font-display text-xl font-semibold tracking-tight">Check your inbox</h1>
+            <h1 className="mt-4 font-display text-xl font-semibold tracking-tight">Revise su correo</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              If an account exists for that email, a reset link is on its way. It works once and
-              expires in 1 hour.
+              Si existe una cuenta con ese correo, le enviamos un enlace para restablecer su
+              contraseña. Solo funciona una vez y vence en 1 hora.
             </p>
             <Link href="/login" className="mt-5 inline-block text-sm font-medium text-primary hover:underline">
-              Back to sign in
+              Volver a iniciar sesión
             </Link>
           </div>
         ) : (
           <>
-            <h1 className="font-display text-2xl font-semibold tracking-tight">Forgot your password?</h1>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">¿Olvidó su contraseña?</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Enter your account email and we&rsquo;ll send you a link to choose a new one.
+              Ingrese el correo de su cuenta y le enviaremos un enlace para elegir una nueva.
             </p>
 
             <form action={formAction} className="mt-8 flex flex-col gap-4">
-              <Field label="Email" htmlFor="email">
+              <Field label="Correo electrónico" htmlFor="email">
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  placeholder="you@clinic.com"
+                  placeholder="usted@consultorio.com"
                   className={inputClass}
                 />
               </Field>
@@ -63,14 +64,14 @@ export default function ForgotPasswordPage() {
 
               <button type="submit" className={`${btnPrimary} mt-1 w-full`} disabled={pending}>
                 {pending && <Spinner />}
-                {pending ? 'Sending…' : 'Send reset link'}
+                {pending ? 'Enviando…' : 'Enviar enlace'}
               </button>
             </form>
 
             <p className="mt-6 text-sm text-muted-foreground">
-              Remembered it?{' '}
+              ¿La recordó?{' '}
               <Link href="/login" className="font-medium text-primary hover:underline">
-                Sign in
+                Iniciar sesión
               </Link>
             </p>
           </>

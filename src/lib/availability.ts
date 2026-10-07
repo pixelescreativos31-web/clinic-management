@@ -94,21 +94,21 @@ export function checkAvailability(
   const type = (doctor.availabilityType || 'regular') as AvailabilityTag
 
   if (type === 'onCall') {
-    return { bookable: true, inFinder: true, tag: 'onCall', reason: 'On call' }
+    return { bookable: true, inFinder: true, tag: 'onCall', reason: 'De guardia' }
   }
   if (type === 'byAppointment') {
-    return { bookable: true, inFinder: false, tag: 'byAppointment', reason: 'By appointment' }
+    return { bookable: true, inFinder: false, tag: 'byAppointment', reason: 'Previa cita' }
   }
 
   // regular: must be on an available weekday AND inside the daily window.
   const days = doctor.availableDays?.length ? doctor.availableDays : ALL_DAYS
   const day = weekdayInTz(start, tz)
   if (!days.includes(day)) {
-    return { bookable: false, inFinder: false, tag: 'regular', reason: `Not available on this day` }
+    return { bookable: false, inFinder: false, tag: 'regular', reason: 'No disponible este día' }
   }
   const win = windowOf(doctor)
   if (!isWithinWindow(start, end, win, tz)) {
-    return { bookable: false, inFinder: false, tag: 'regular', reason: `Available ${formatWindow(win)}` }
+    return { bookable: false, inFinder: false, tag: 'regular', reason: `Disponible de ${formatWindow(win).replace(' – ', ' a ')}` }
   }
   return { bookable: true, inFinder: true, tag: 'regular', reason: formatWindow(win) }
 }

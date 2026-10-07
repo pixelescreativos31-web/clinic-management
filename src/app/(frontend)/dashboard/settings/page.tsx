@@ -13,10 +13,11 @@ export default async function SettingsPage() {
   const session = await requireDashboardSession()
   await requireRole(session, ['owner'])
   const t = session.tenant
+  const u = session.user
 
   return (
     <div>
-      <PageTitle subtitle="Your clinic's profile and scheduling defaults.">Settings</PageTitle>
+      <PageTitle subtitle="Datos del consultorio, agenda y su perfil médico.">Configuración</PageTitle>
       <SettingsForm
         initial={{
           name: t?.name ?? '',
@@ -29,6 +30,17 @@ export default async function SettingsPage() {
           closeTime: t?.settings?.closeTime ?? DEFAULT_CLOSE_TIME,
           currency: t?.settings?.currency ?? DEFAULT_CURRENCY,
           timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
+          taxId: t?.taxId ?? '',
+          practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
+        }}
+        profile={{
+          practitioner: u.practitioner === true,
+          specialty: u.specialty ?? '',
+          licenseNumber: u.licenseNumber ?? '',
+          consultationFee: u.consultationFee != null ? String(u.consultationFee) : '',
+          availableDays: (u.availableDays as string[] | null | undefined) ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
+          availableFrom: u.availableFrom ?? DEFAULT_OPEN_TIME,
+          availableTo: u.availableTo ?? DEFAULT_CLOSE_TIME,
         }}
       />
     </div>
