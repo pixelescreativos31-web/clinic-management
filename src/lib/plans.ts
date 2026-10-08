@@ -15,10 +15,10 @@ export const PLAN_LIMITS = {
   free: {
     doctors: 1,
     patients: 50,
-    label: 'Prueba',
+    label: 'Gratis',
     priceUsd: 0,
     perDoctor: false,
-    description: 'Para conocer el sistema. Hasta 50 pacientes.',
+    description: 'Para probar EMR con pacientes reales.',
   },
   pro: {
     doctors: 1,
@@ -65,6 +65,67 @@ export const PLAN_LIMITS = {
 >
 
 export type Plan = keyof typeof PLAN_LIMITS
+
+// ---- Marketing (pricing page) ---------------------------------------------
+// Plans are grouped in two audiences and each lists only what it ADDS over the
+// previous one ("Todo lo de X, más:"). Only list what the software really does;
+// service commitments (support, onboarding) are marked as such in the docs.
+
+export type PlanAudience = 'individual' | 'institutions'
+
+export const PLAN_AUDIENCES: { key: PlanAudience; label: string; hint: string; plans: Plan[] }[] = [
+  { key: 'individual', label: 'Médicos y consultorios', hint: 'Para el médico independiente y consultorios pequeños.', plans: ['free', 'pro', 'clinic'] },
+  { key: 'institutions', label: 'Clínicas e instituciones', hint: 'Para clínicas privadas y hospitales del Estado.', plans: ['plus', 'public'] },
+]
+
+export type PlanFeature = { text: string; included: boolean }
+
+export const PLAN_FEATURES: Record<Plan, { inherits?: Plan; features: PlanFeature[] }> = {
+  free: {
+    features: [
+      { text: '1 médico', included: true },
+      { text: 'Hasta 50 pacientes', included: true },
+      { text: 'Agenda, expediente y recetas', included: true },
+      { text: 'Facturación y pagos', included: true },
+      { text: 'Recordatorios por WhatsApp', included: false },
+    ],
+  },
+  pro: {
+    inherits: 'free',
+    features: [
+      { text: 'Pacientes ilimitados', included: true },
+      { text: 'Cuenta para su asistente', included: true },
+      { text: 'Recordatorios por WhatsApp', included: true },
+      { text: 'Formatos de consulta por especialidad (p. ej. nutrición)', included: true },
+      { text: 'Reportes mensuales y exportación a Excel', included: true },
+    ],
+  },
+  clinic: {
+    inherits: 'pro',
+    features: [
+      { text: 'Hasta 3 médicos con un solo pago', included: true },
+      { text: 'Asistentes para todo el consultorio', included: true },
+      { text: 'Agenda y reportes por médico', included: true },
+      { text: 'Registro de actividad (auditoría)', included: true },
+    ],
+  },
+  plus: {
+    inherits: 'clinic',
+    features: [
+      { text: 'Médicos ilimitados, pago por médico', included: true },
+      { text: 'Ayuda para migrar sus expedientes', included: true },
+      { text: 'Soporte prioritario por WhatsApp', included: true },
+    ],
+  },
+  public: {
+    inherits: 'plus',
+    features: [
+      { text: 'Precio y facturación según contrato institucional', included: true },
+      { text: 'Implementación y capacitación del personal', included: true },
+      { text: 'Opción de instalar en servidores de la institución', included: true },
+    ],
+  },
+}
 export type LimitedResource = 'doctors' | 'patients'
 
 export const PLANS = Object.keys(PLAN_LIMITS) as Plan[]

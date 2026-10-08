@@ -17,7 +17,8 @@ import {
   IconWhatsApp,
 } from '@/components/icons'
 import { APP_NAME, APP_TAGLINE, BASED_ON } from '@/lib/brand'
-import { PLANS, PLAN_LIMITS, planPriceLabel } from '@/lib/plans'
+import { PLAN_LIMITS } from '@/lib/plans'
+import { PricingTabs } from '@/components/PricingTabs'
 
 // Demo logins only exist on the demo instance (SHOW_DEMO=1, seeded with `pnpm seed`),
 // never on the real one, which links out to DEMO_URL instead. Read at request time
@@ -75,15 +76,6 @@ const FEATURES = [
     title: 'Usted y su asistente',
     body: 'Usted ve la parte clínica; su asistente maneja la agenda y los cobros. Cada quien ve solo lo que necesita.',
   },
-]
-
-const PRICING_POINTS = [
-  'Agenda de citas y pacientes sin cita',
-  'Expediente e historia clínica',
-  'Recetas imprimibles',
-  'Facturación y pagos',
-  'Recordatorios por WhatsApp',
-  'Acceso para su asistente',
 ]
 
 const DEMO_LOGINS = [
@@ -413,40 +405,7 @@ export default async function HomePage() {
             Pague por médico, no por paciente ni por cita. Precios en dólares, mensuales.
           </p>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PLANS.filter((p) => p !== 'free').map((p) => {
-            const plan = PLAN_LIMITS[p]
-            const featured = p === 'pro'
-            return (
-              <div key={p} className={`card-flat flex flex-col p-6 ${featured ? 'border-primary ring-1 ring-primary/30' : ''}`}>
-                <h3 className="text-[15px] font-semibold">{plan.label}</h3>
-                <div className="mt-2 font-display text-3xl font-semibold text-primary">{planPriceLabel(p)}</div>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
-                {plan.priceUsd === null ? (
-                  <a href="mailto:gelinson@pixelescreativos.com.do?subject=EMR%20para%20hospitales" className={`${btnGhost} mt-5 w-full`}>
-                    Contáctenos
-                  </a>
-                ) : (
-                  <Link href="/signup" className={`${featured ? btnPrimary : btnGhost} mt-5 w-full`}>
-                    Crear cuenta
-                  </Link>
-                )}
-              </div>
-            )
-          })}
-          <div className="card-flat flex flex-col p-6">
-            <h3 className="text-[15px] font-semibold">Todos los planes incluyen</h3>
-            <ul className="mt-3 space-y-2.5 text-sm">
-              {PRICING_POINTS.map((pt) => (
-                <li key={pt} className="flex items-center gap-2.5">
-                  <IconCheck size={14} strokeWidth={2.5} className="shrink-0 text-primary" />
-                  {pt}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-xs text-muted-foreground">Pruebe gratis con hasta 50 pacientes.</p>
-          </div>
-        </div>
+        <PricingTabs />
       </section>
 
       {/* ---------------- Demo accounts ---------------- */}
