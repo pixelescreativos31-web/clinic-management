@@ -149,7 +149,7 @@ export default async function PatientProfile({
 
       <div className="mt-3 grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* Patient info rail */}
-        <Card className="sticky top-6 overflow-hidden">
+        <Card className="overflow-hidden lg:sticky lg:top-6">
           <div className="border-b bg-secondary/30 px-5 py-5 text-center">
             <span className="inline-flex">
               <Avatar name={patient.name} />
@@ -158,9 +158,22 @@ export default async function PatientProfile({
             <span className="tabular mt-1 inline-block rounded bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground">
               {patient.mrn}
             </span>
+            {/* Phones: one summary line instead of the full list, so the clinical
+                history is reachable without scrolling past every field. */}
+            <p className="tabular mt-2 text-[13px] text-muted-foreground lg:hidden">
+              {[
+                patient.phone,
+                GENDER_LABELS[patient.gender] ?? patient.gender,
+                age != null ? `${age} ${age === 1 ? 'año' : 'años'}` : null,
+                patient.bloodGroup,
+                patient.insurance?.provider,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
           </div>
 
-          <dl className="divide-y divide-border text-sm">
+          <dl className="hidden divide-y divide-border text-sm lg:block">
             {[
               {
                 label: 'Teléfono',

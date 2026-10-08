@@ -11,6 +11,7 @@ export {
   Search as IconSearch,
   Plus as IconPlus,
   X as IconX,
+  Menu as IconMenu,
   ChevronLeft as IconChevronLeft,
   ChevronRight as IconChevronRight,
   Clock as IconClock,

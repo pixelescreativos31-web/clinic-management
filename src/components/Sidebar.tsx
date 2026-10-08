@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -12,6 +13,7 @@ import {
   IconClock,
   IconCreditCard,
   IconChart,
+  IconMenu,
 } from './icons'
 import { logoutAction } from '@/app/(frontend)/login/actions'
 import { APP_NAME } from '@/lib/brand'
@@ -46,6 +48,8 @@ export function Sidebar({
   individual?: boolean
 }) {
   const pathname = usePathname()
+  // Mobile: the bottom bar fits 3 tabs; everything else lives behind «Más».
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const items: NavItem[] = [
     { href: '/dashboard', label: 'Inicio', icon: IconDashboard },
@@ -162,15 +166,56 @@ export function Sidebar({
         </div>
       </aside>
 
+      {/* Mobile «Más» sheet: admin pages + sign out (no sidebar on phones) */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMoreOpen(false)}>
+          <div className="absolute inset-0 bg-ink/30" />
+          <div
+            className="absolute inset-x-0 bottom-[57px] rounded-t-2xl border-t bg-card p-3 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-3 pt-1 pb-2">
+              <div className="truncate text-sm font-semibold">{userName}</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {roleText} · {clinicName}
+              </div>
+            </div>
+            {adminItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMoreOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium ${
+                    isActive(item.href) ? 'bg-primary-soft text-primary' : 'text-ink'
+                  }`}
+                >
+                  <Icon size={17} strokeWidth={1.75} />
+                  {item.label}
+                </Link>
+              )
+            })}
+            <form action={logoutAction}>
+              <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-red">
+                <IconLogout size={17} strokeWidth={1.75} />
+                Cerrar sesión
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t bg-card md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t bg-card md:hidden">
         {items.slice(0, 3).map((item) => {
-          const active = isActive(item.href)
+          const active = isActive(item.href) && !moreOpen
           const Icon = item.icon
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMoreOpen(false)}
               className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
@@ -180,6 +225,17 @@ export function Sidebar({
             </Link>
           )
         })}
+        <button
+          type="button"
+          onClick={() => setMoreOpen((o) => !o)}
+          aria-expanded={moreOpen}
+          className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
+            moreOpen || adminItems.some((i) => isActive(i.href)) ? 'text-primary' : 'text-muted-foreground'
+          }`}
+        >
+          <IconMenu size={18} strokeWidth={1.75} />
+          Más
+        </button>
       </nav>
     </>
   )
