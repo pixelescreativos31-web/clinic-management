@@ -11,8 +11,10 @@ export async function getPayloadClient() {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const payload = await getPayloadClient()
+  // Read the request headers first: it marks the route dynamic, so `next build`
+  // never tries to prerender it (and boot Payload without a secret/DB).
   const headers = await nextHeaders()
+  const payload = await getPayloadClient()
   const { user } = await payload.auth({ headers })
   return (user as User) ?? null
 }
