@@ -71,6 +71,8 @@ function ApptCard({
     start(async () => {
       const res = await updateAppointmentStatus(a.id, status, cancellationReason)
       if (!res.ok) return onDone(res.message)
+      setCancelling(false)
+      setReason('')
       onDone(msg)
       router.refresh()
     })
