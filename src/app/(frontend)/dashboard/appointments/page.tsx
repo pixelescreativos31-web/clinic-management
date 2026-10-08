@@ -2,14 +2,15 @@ import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { startOfDayInTz } from '@/lib/reports'
-import { formatTime } from '@/lib/format'
+import { formatDate, formatDateTime, formatTime } from '@/lib/format'
 import { btnPrimary, PageTitle } from '@/components/primitives'
 import { IconChevronLeft, IconChevronRight, IconPlus } from '@/components/icons'
 import { DayRail, type DoctorColumn } from '@/components/DayRail'
 import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availability'
-import { waReminderLink } from '@/lib/whatsapp'
+import { toWaDigits, waReminderLink } from '@/lib/whatsapp'
+import { OnlineRequests, type OnlineRequestRow } from '@/components/OnlineRequests'
 import { DEFAULT_TIMEZONE, WEEKDAYS, type AppointmentStatus } from '@/lib/constants'
-import type { Appointment, Patient, User } from '@/payload-types'
+import type { Appointment, BookingRequest, Patient, User } from '@/payload-types'
 import { practitionerWhere } from '@/lib/practice'
 
 function minutesFromMidnight(date: Date, tz: string): number {
@@ -115,6 +116,7 @@ export default async function AppointmentsPage({
           startMinutes: minutesFromMidnight(new Date(a.start), tz),
           durationMins: a.durationMins,
           isWalkIn: Boolean(a.isWalkIn),
+          online: a.source === 'online',
           token: (a as { tokenNumber?: string }).tokenNumber,
           doctorName: doc.name,
           waHref: waReminderLink({
@@ -130,6 +132,34 @@ export default async function AppointmentsPage({
   })
 
   const totalToday = apptsRes.docs.length
+
+  // Pending "extra / emergency" requests from the public booking page.
+  const requestsRes = await payload.find({
+    collection: 'bookingRequests',
+    where: { tenant: { equals: tenantID }, status: { equals: 'pending' } },
+    sort: '-createdAt',
+    limit: 20,
+    depth: 1,
+    overrideAccess: false,
+    user,
+  })
+  const requests: OnlineRequestRow[] = (requestsRes.docs as BookingRequest[]).map((r) => {
+    const p = r.patient as Patient
+    const digits = toWaDigits(p?.phone, tenant?.settings?.currency)
+    const text = `Hola ${p?.name ?? ''}, le escribimos de ${tenant?.name ?? 'el consultorio'} por su solicitud de cita.`
+    return {
+      id: String(r.id),
+      patientId: String(p?.id ?? r.patient),
+      patientName: p?.name ?? 'Paciente',
+      phone: p?.phone ?? '',
+      waHref: digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null,
+      doctorName: (r.doctor as User | null | undefined)?.name ?? null,
+      preferredDate: r.preferredDate ? formatDate(r.preferredDate, tenant) : null,
+      reason: r.reason,
+      urgent: Boolean(r.urgent),
+      receivedLabel: formatDateTime(r.createdAt, tenant),
+    }
+  })
 
   return (
     <div>
@@ -170,6 +200,8 @@ export default async function AppointmentsPage({
       >
         Citas
       </PageTitle>
+
+      {requests.length > 0 && <OnlineRequests rows={requests} />}
 
       <DayRail
         columns={columns}

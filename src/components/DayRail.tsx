@@ -26,6 +26,8 @@ export type Block = {
   startMinutes: number
   durationMins: number
   isWalkIn: boolean
+  /** Booked by the patient from the public link. */
+  online?: boolean
   token?: string | null
   doctorName?: string
   /** Prefilled wa.me reminder link (v3 §6.2); null when the phone can't be dialled. */
@@ -293,6 +295,7 @@ export function DayRail({
                 </SheetTitle>
                 <SheetDescription>
                   {selected.durationMins} min{selected.isWalkIn ? ' · sin cita' : ''}
+                  {selected.online ? ' · reservada en línea' : ''}
                 </SheetDescription>
               </SheetHeader>
 
@@ -500,6 +503,11 @@ function QueueList({
                           {b.isWalkIn && (
                             <span className="shrink-0 rounded bg-blue-soft px-1.5 py-px text-[10px] font-bold text-blue">
                               {b.token || 'Sin cita'}
+                            </span>
+                          )}
+                          {b.online && (
+                            <span className="shrink-0 rounded bg-primary-soft px-1.5 py-px text-[10px] font-bold text-primary">
+                              En línea
                             </span>
                           )}
                           {isNext && (

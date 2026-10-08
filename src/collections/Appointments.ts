@@ -233,6 +233,17 @@ export const Appointments: CollectionConfig = {
     },
     { name: 'isWalkIn', type: 'checkbox', defaultValue: false, label: 'Sin cita' },
     {
+      name: 'source',
+      type: 'select',
+      defaultValue: 'staff',
+      label: 'Origen',
+      options: [
+        { label: 'Consultorio', value: 'staff' },
+        { label: 'Reserva en línea', value: 'online' },
+      ],
+      access: { update: () => false },
+    },
+    {
       name: 'tokenNumber',
       type: 'text',
       label: 'Turno',

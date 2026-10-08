@@ -219,3 +219,26 @@ export async function startConsultation(
     return { ok: false, ...toActionError(err) }
   }
 }
+
+/** Close an online "extra / emergency" request once staff has handled or declined it. */
+export async function resolveBookingRequest(
+  id: string,
+  status: 'handled' | 'dismissed',
+): Promise<ActionResult<null>> {
+  const ctx = await actorTenant()
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
+  try {
+    await ctx.payload.update({
+      collection: 'bookingRequests',
+      id,
+      user: ctx.user,
+      overrideAccess: false,
+      data: { status: status === 'handled' ? 'handled' : 'dismissed' },
+    })
+    revalidatePath('/dashboard/appointments')
+    revalidatePath('/dashboard')
+    return { ok: true, data: null }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}

@@ -74,6 +74,7 @@ export interface Config {
     visits: Visit;
     invoices: Invoice;
     auditLogs: AuditLog;
+    bookingRequests: BookingRequest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     visits: VisitsSelect<false> | VisitsSelect<true>;
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     auditLogs: AuditLogsSelect<false> | AuditLogsSelect<true>;
+    bookingRequests: BookingRequestsSelect<false> | BookingRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -185,6 +187,14 @@ export interface Tenant {
      * Nutrición agrega antropometría, laboratorio y la hoja de seguimiento.
      */
     consultTemplate?: ('general' | 'nutrition') | null;
+    /**
+     * Los pacientes agendan desde el enlace público, dentro del horario de cada médico.
+     */
+    onlineBookingEnabled?: boolean | null;
+    /**
+     * Permite pedir una cita fuera de los horarios publicados; el consultorio la revisa.
+     */
+    onlineRequestsEnabled?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -305,6 +315,7 @@ export interface Appointment {
   reason?: string | null;
   status: 'scheduled' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
   isWalkIn?: boolean | null;
+  source?: ('staff' | 'online') | null;
   /**
    * Se asigna automáticamente por día a pacientes sin cita.
    */
@@ -496,6 +507,22 @@ export interface AuditLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookingRequests".
+ */
+export interface BookingRequest {
+  id: string;
+  tenant: string | Tenant;
+  patient: string | Patient;
+  doctor?: (string | null) | User;
+  preferredDate?: string | null;
+  reason: string;
+  urgent?: boolean | null;
+  status: 'pending' | 'handled' | 'dismissed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -545,6 +572,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'auditLogs';
         value: string | AuditLog;
+      } | null)
+    | ({
+        relationTo: 'bookingRequests';
+        value: string | BookingRequest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -620,6 +651,8 @@ export interface TenantsSelect<T extends boolean = true> {
         currency?: T;
         timezone?: T;
         consultTemplate?: T;
+        onlineBookingEnabled?: T;
+        onlineRequestsEnabled?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -729,6 +762,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   reason?: T;
   status?: T;
   isWalkIn?: T;
+  source?: T;
   tokenNumber?: T;
   cancellationReason?: T;
   createdBy?: T;
@@ -864,6 +898,21 @@ export interface AuditLogsSelect<T extends boolean = true> {
   targetId?: T;
   summary?: T;
   meta?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookingRequests_select".
+ */
+export interface BookingRequestsSelect<T extends boolean = true> {
+  tenant?: T;
+  patient?: T;
+  doctor?: T;
+  preferredDate?: T;
+  reason?: T;
+  urgent?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

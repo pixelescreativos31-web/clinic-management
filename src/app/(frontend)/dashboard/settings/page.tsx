@@ -1,6 +1,7 @@
 import { requireDashboardSession, requireRole } from '@/lib/auth'
 import { PageTitle } from '@/components/primitives'
 import { SettingsForm } from '@/components/SettingsForm'
+import { appBaseUrl } from '@/lib/email'
 import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_CLOSE_TIME,
@@ -33,7 +34,10 @@ export default async function SettingsPage() {
           taxId: t?.taxId ?? '',
           practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
           consultTemplate: t?.settings?.consultTemplate === 'nutrition' ? 'nutrition' : 'general',
+          onlineBookingEnabled: t?.settings?.onlineBookingEnabled !== false,
+          onlineRequestsEnabled: t?.settings?.onlineRequestsEnabled === true,
         }}
+        bookingUrl={t?.slug ? `${appBaseUrl()}/agendar/${t.slug}` : null}
         profile={{
           practitioner: u.practitioner === true,
           specialty: u.specialty ?? '',

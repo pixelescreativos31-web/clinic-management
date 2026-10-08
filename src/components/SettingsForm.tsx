@@ -7,7 +7,7 @@ import { AppSelect } from './AppSelect'
 import { TimePicker } from './TimePicker'
 import { updateClinicSettings, updateMyPractitionerProfile } from '@/app/(frontend)/dashboard/settings/actions'
 import { CURRENCIES, TIMEZONES, PRACTICE_TYPES, WEEKDAYS } from '@/lib/constants'
-import { IconCheck, IconBuilding, IconClock, IconStethoscope } from './icons'
+import { IconCheck, IconBuilding, IconCalendar, IconClock, IconStethoscope } from './icons'
 
 export type SettingsInitial = {
   name: string
@@ -23,6 +23,8 @@ export type SettingsInitial = {
   taxId: string
   practiceType: 'individual' | 'clinic'
   consultTemplate: 'general' | 'nutrition'
+  onlineBookingEnabled: boolean
+  onlineRequestsEnabled: boolean
 }
 
 export type ProfileInitial = {
@@ -65,7 +67,16 @@ function Section({
   )
 }
 
-export function SettingsForm({ initial, profile: initialProfile }: { initial: SettingsInitial; profile: ProfileInitial }) {
+export function SettingsForm({
+  initial,
+  profile: initialProfile,
+  bookingUrl,
+}: {
+  initial: SettingsInitial
+  profile: ProfileInitial
+  /** Public booking link for this clinic (/agendar/<slug>). */
+  bookingUrl: string | null
+}) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -74,6 +85,22 @@ export function SettingsForm({ initial, profile: initialProfile }: { initial: Se
   const set = (k: keyof typeof form, v: string) => {
     setSaved(false)
     setForm((f) => ({ ...f, [k]: v }))
+  }
+  const [booking, setBooking] = useState({ enabled: initial.onlineBookingEnabled, requests: initial.onlineRequestsEnabled })
+  const setB = (patch: Partial<typeof booking>) => {
+    setSaved(false)
+    setBooking((b) => ({ ...b, ...patch }))
+  }
+  const [copied, setCopied] = useState(false)
+  const copyLink = async () => {
+    if (!bookingUrl) return
+    try {
+      await navigator.clipboard.writeText(bookingUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard blocked — the link is still selectable */
+    }
   }
   const [profile, setProfile] = useState(initialProfile)
   const setP = <K extends keyof ProfileInitial>(k: K, v: ProfileInitial[K]) => {
@@ -95,6 +122,8 @@ export function SettingsForm({ initial, profile: initialProfile }: { initial: Se
         taxId: form.taxId || undefined,
         practiceType: form.practiceType,
         consultTemplate: form.consultTemplate,
+        onlineBookingEnabled: booking.enabled,
+        onlineRequestsEnabled: booking.requests,
         appointmentDurationMins: Number(form.appointmentDurationMins) || 20,
         openTime: form.openTime,
         closeTime: form.closeTime,
@@ -208,6 +237,43 @@ export function SettingsForm({ initial, profile: initialProfile }: { initial: Se
               />
             </Field>
           </div>
+        </div>
+      </Section>
+
+      <Section
+        icon={<IconCalendar size={15} strokeWidth={1.75} />}
+        title="Reservas en línea"
+        description="Comparta su enlace en Instagram, WhatsApp o Google. Los pacientes agendan solos dentro del horario de cada médico, hasta 30 días antes."
+      >
+        <div className="flex flex-col gap-4">
+          <label className="flex items-start gap-3 text-sm">
+            <input type="checkbox" className="mt-0.5 size-4 accent-[var(--primary)]" checked={booking.enabled} onChange={(e) => setB({ enabled: e.target.checked })} />
+            <span>
+              <span className="font-medium">Permitir que los pacientes agenden en línea</span>
+              <span className="block text-xs text-muted-foreground">Las citas se confirman al instante y aparecen en su agenda marcadas «En línea».</span>
+            </span>
+          </label>
+          <label className={`flex items-start gap-3 text-sm ${booking.enabled ? '' : 'opacity-50'}`}>
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-[var(--primary)]"
+              disabled={!booking.enabled}
+              checked={booking.requests}
+              onChange={(e) => setB({ requests: e.target.checked })}
+            />
+            <span>
+              <span className="font-medium">Recibir solicitudes adicionales o de emergencia</span>
+              <span className="block text-xs text-muted-foreground">Si no encuentran horario, pueden pedir una cita; usted decide si la agenda.</span>
+            </span>
+          </label>
+          {booking.enabled && bookingUrl && (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input className={`${inputClass} tabular flex-1`} readOnly value={bookingUrl} onFocus={(e) => e.currentTarget.select()} />
+              <button type="button" className={btnPrimary} onClick={copyLink}>
+                {copied ? 'Copiado' : 'Copiar enlace'}
+              </button>
+            </div>
+          )}
         </div>
       </Section>
 

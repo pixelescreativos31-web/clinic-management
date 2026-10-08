@@ -14,6 +14,8 @@ export type ClinicSettingsInput = {
   taxId?: string
   practiceType?: 'individual' | 'clinic'
   consultTemplate?: 'general' | 'nutrition'
+  onlineBookingEnabled?: boolean
+  onlineRequestsEnabled?: boolean
   appointmentDurationMins: number
   openTime: string
   closeTime: string
@@ -64,6 +66,8 @@ export async function updateClinicSettings(
           currency: input.currency,
           timezone: input.timezone,
           consultTemplate: input.consultTemplate === 'nutrition' ? 'nutrition' : 'general',
+          onlineBookingEnabled: input.onlineBookingEnabled !== false,
+          onlineRequestsEnabled: input.onlineRequestsEnabled === true,
         },
       } as never,
     })

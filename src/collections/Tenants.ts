@@ -14,8 +14,12 @@ import {
 import { PLANS, planLabel } from '@/lib/plans'
 import { auditTenants } from '@/hooks/audit'
 
+// The slug is the clinic's public booking URL (/agendar/<slug>), so accents are
+// folded ("Jiménez" → "jimenez") instead of turning into dashes.
 const slugify = (value: string): string =>
   value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
@@ -205,6 +209,20 @@ export const Tenants: CollectionConfig = {
           ],
           label: 'Formato de consulta',
           admin: { description: 'Nutrición agrega antropometría, laboratorio y la hoja de seguimiento.' },
+        },
+        {
+          name: 'onlineBookingEnabled',
+          type: 'checkbox',
+          defaultValue: true,
+          label: 'Reservas en línea',
+          admin: { description: 'Los pacientes agendan desde el enlace público, dentro del horario de cada médico.' },
+        },
+        {
+          name: 'onlineRequestsEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          label: 'Solicitudes adicionales o de emergencia',
+          admin: { description: 'Permite pedir una cita fuera de los horarios publicados; el consultorio la revisa.' },
         },
       ],
     },

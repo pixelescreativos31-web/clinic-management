@@ -104,6 +104,7 @@ export const PLAN_FEATURES: Record<Plan, { inherits?: Plan; features: PlanFeatur
     inherits: 'pro',
     features: [
       { text: 'Hasta 3 médicos con un solo pago', included: true },
+      { text: 'Expediente compartido: todos los médicos ven la historia completa del paciente', included: true },
       { text: 'Asistentes para todo el consultorio', included: true },
       { text: 'Agenda y reportes por médico', included: true },
       { text: 'Registro de actividad (auditoría)', included: true },
@@ -113,6 +114,7 @@ export const PLAN_FEATURES: Record<Plan, { inherits?: Plan; features: PlanFeatur
     inherits: 'clinic',
     features: [
       { text: 'Médicos ilimitados, pago por médico', included: true },
+      { text: 'Una sola historia clínica por paciente en toda la institución', included: true },
       { text: 'Ayuda para migrar sus expedientes', included: true },
       { text: 'Soporte prioritario por WhatsApp', included: true },
     ],
