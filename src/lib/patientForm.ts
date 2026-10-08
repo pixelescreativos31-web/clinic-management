@@ -15,6 +15,10 @@ export type PatientInitial = {
   email: string
   address: string
   occupation: string
+  nationality: string
+  maritalStatus: string
+  religion: string
+  referredBy: string
   insuranceProvider: string
   insuranceAffiliate: string
   insurancePlan: string
@@ -45,6 +49,10 @@ export const EMPTY_PATIENT: PatientInitial = {
   email: '',
   address: '',
   occupation: '',
+  nationality: '',
+  maritalStatus: '',
+  religion: '',
+  referredBy: '',
   insuranceProvider: '',
   insuranceAffiliate: '',
   insurancePlan: '',
@@ -76,6 +84,10 @@ export function patientToInitial(p: {
   email?: string | null
   address?: string | null
   occupation?: string | null
+  nationality?: string | null
+  maritalStatus?: string | null
+  religion?: string | null
+  referredBy?: string | null
   insurance?: { provider?: string | null; affiliateNumber?: string | null; plan?: string | null } | null
   emergencyContact?: { name?: string | null; relationship?: string | null; phone?: string | null } | null
   history?: {
@@ -104,6 +116,10 @@ export function patientToInitial(p: {
     email: p.email ?? '',
     address: p.address ?? '',
     occupation: p.occupation ?? '',
+    nationality: p.nationality ?? '',
+    maritalStatus: p.maritalStatus ?? '',
+    religion: p.religion ?? '',
+    referredBy: p.referredBy ?? '',
     insuranceProvider: p.insurance?.provider ?? '',
     insuranceAffiliate: p.insurance?.affiliateNumber ?? '',
     insurancePlan: p.insurance?.plan ?? '',

@@ -195,6 +195,17 @@ export const Tenants: CollectionConfig = {
           label: 'Zona horaria',
           admin: { description: 'Todas las horas se muestran en esta zona horaria.' },
         },
+        {
+          name: 'consultTemplate',
+          type: 'select',
+          defaultValue: 'general',
+          options: [
+            { label: 'General', value: 'general' },
+            { label: 'Nutrición', value: 'nutrition' },
+          ],
+          label: 'Formato de consulta',
+          admin: { description: 'Nutrición agrega antropometría, laboratorio y la hoja de seguimiento.' },
+        },
       ],
     },
   ],

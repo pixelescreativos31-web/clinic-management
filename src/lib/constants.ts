@@ -87,6 +87,14 @@ export const ALL_DAYS = WEEKDAYS.map((d) => d.value)
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
 
+export const MARITAL_STATUSES = [
+  { label: 'Soltero/a', value: 'single' },
+  { label: 'Casado/a', value: 'married' },
+  { label: 'Unión libre', value: 'common-law' },
+  { label: 'Divorciado/a', value: 'divorced' },
+  { label: 'Viudo/a', value: 'widowed' },
+] as const
+
 // --- v2: clinical loop ---
 
 // Appointment statuses on which a Visit (consultation) may be recorded.

@@ -5,7 +5,9 @@ import { getTenantID } from '@/access'
 import { AllergyBanner, Card, StatusBadge, EmptyState, Avatar, btnPrimary, btnGhost } from '@/components/primitives'
 import { IconChevronLeft, IconPhone, IconPlus, IconPrinter } from '@/components/icons'
 import { StartConsultationButton } from '@/components/StartConsultationButton'
-import { GENDER_LABELS, PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
+import { GENDER_LABELS, MARITAL_STATUSES, PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
+import { isNutritionPractice, nutritionLines, NUTRITION_GROUP_LABELS, type NutritionGroup } from '@/lib/nutrition'
+import { NutritionFollowUp } from '@/components/NutritionFollowUp'
 import { isClinical } from '@/lib/practice'
 import { vitalsLine } from '@/lib/clinical'
 import { ageFromDOB, formatDate, formatDateTime, formatMoney } from '@/lib/format'
@@ -132,6 +134,8 @@ export default async function PatientProfile({
   const tabHref = (key: TabKey) => `/dashboard/patients/${id}?tab=${key}`
 
   const age = patient.ageYears ?? (patient.dateOfBirth ? ageFromDOB(patient.dateOfBirth) : null)
+  const nutritionPractice = isNutritionPractice(tenant)
+  const maritalLabel = MARITAL_STATUSES.find((m) => m.value === patient.maritalStatus)?.label
 
   return (
     <div>
@@ -173,6 +177,11 @@ export default async function PatientProfile({
               { label: 'Sexo', value: GENDER_LABELS[patient.gender] ?? patient.gender },
               { label: 'Edad', value: age != null ? `${age} ${age === 1 ? 'año' : 'años'}` : '—' },
               { label: 'Grupo sanguíneo', value: patient.bloodGroup || '—' },
+              ...(patient.occupation ? [{ label: 'Ocupación', value: patient.occupation }] : []),
+              ...(patient.nationality ? [{ label: 'Nacionalidad', value: patient.nationality }] : []),
+              ...(maritalLabel ? [{ label: 'Estado civil', value: maritalLabel }] : []),
+              ...(patient.religion ? [{ label: 'Religión', value: patient.religion }] : []),
+              ...(patient.referredBy ? [{ label: 'Referido por', value: patient.referredBy }] : []),
               ...(patient.insurance?.provider
                 ? [{ label: 'Seguro', value: `${patient.insurance.provider}${patient.insurance.affiliateNumber ? ` · ${patient.insurance.affiliateNumber}` : ''}` }]
                 : []),
@@ -253,6 +262,8 @@ export default async function PatientProfile({
               )}
             </Card>
 
+            {nutritionPractice && visits.length > 0 && <NutritionFollowUp visits={visits} tenant={tenant} />}
+
             {visits.length === 0 ? (
               <Card>
                 <p className="px-5 py-8 text-center text-sm text-muted-foreground">
@@ -285,6 +296,12 @@ export default async function PatientProfile({
                       <Block label="Motivo de consulta" value={v.chiefComplaint} />
                       <Block label="Historia de la enfermedad actual" value={v.symptoms} />
                       {vl && <Block label="Signos vitales" value={vl} />}
+                      {(['antropometria', 'interrogatorio', 'laboratorio', 'seguimiento'] as NutritionGroup[]).map((g) => {
+                        const lines = nutritionLines(v.nutrition, g)
+                        return lines.length ? (
+                          <Block key={g} label={NUTRITION_GROUP_LABELS[g]} value={lines.map((l) => `${l.label}: ${l.value}`).join('\n')} />
+                        ) : null
+                      })}
                       <Block label="Examen físico" value={v.physicalExam} />
                       <Block label="Diagnóstico" value={v.diagnosis} />
                       {(v.prescription?.length ?? 0) > 0 && (

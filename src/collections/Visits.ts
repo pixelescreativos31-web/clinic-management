@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
+import { GOOD_BAD, NUTRITION_FIELDS, YES_NO } from '@/lib/nutrition'
 import { APIError } from 'payload'
 import { tenantScoped, denyAll, visitsWriteAccess, getTenantID, clinicalReadField } from '@/access'
 import { auditVisits } from '@/hooks/audit'
@@ -210,6 +211,22 @@ export const Visits: CollectionConfig = {
         { name: 'heightCm', type: 'number', min: 20, max: 250, label: 'Talla (cm)' },
         { name: 'glucoseMgDl', type: 'number', min: 10, max: 1000, label: 'Glucemia (mg/dL)' },
       ],
+    },
+    // Nutrition template (clinics with settings.consultTemplate = 'nutrition').
+    // Field list lives in src/lib/nutrition.ts; clinical roles only, like the exam.
+    {
+      name: 'nutrition',
+      type: 'group',
+      label: 'Nutrición',
+      access: { read: clinicalReadField },
+      fields: NUTRITION_FIELDS.map((f): Field => {
+        const label = f.unit ? `${f.label} (${f.unit})` : f.label
+        if (f.kind === 'number') return { name: f.key, type: 'number', label, min: f.min, max: f.max }
+        if (f.kind === 'yesno' || f.kind === 'goodbad') {
+          return { name: f.key, type: 'select', label, options: f.kind === 'yesno' ? YES_NO : GOOD_BAD }
+        }
+        return f.long ? { name: f.key, type: 'textarea', label } : { name: f.key, type: 'text', label }
+      }),
     },
     {
       name: 'prescription',

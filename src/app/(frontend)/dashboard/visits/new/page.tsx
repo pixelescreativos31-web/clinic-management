@@ -4,6 +4,7 @@ import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { Card, EmptyState } from '@/components/primitives'
 import { IconCheck } from '@/components/icons'
+import { isNutritionPractice } from '@/lib/nutrition'
 import { VisitForm } from '@/components/VisitForm'
 import { PostVisitActions } from '@/components/PostVisitActions'
 import { VISIT_ALLOWED_APPOINTMENT_STATUSES } from '@/lib/constants'
@@ -18,7 +19,7 @@ export default async function NewVisitPage({
 }: {
   searchParams: Promise<{ appointment?: string }>
 }) {
-  const { user } = await requireDashboardSession()
+  const { user, tenant } = await requireDashboardSession()
   // Only clinical roles author visits.
   if (user.role === 'receptionist') redirect('/dashboard/appointments')
 
@@ -94,6 +95,7 @@ export default async function NewVisitPage({
         doctorName={(appt.doctor as User)?.name ?? 'Médico'}
         allergies={patient?.allergies}
         background={backgroundLine(patient)}
+        nutritionTemplate={isNutritionPractice(tenant)}
       />
     </div>
   )

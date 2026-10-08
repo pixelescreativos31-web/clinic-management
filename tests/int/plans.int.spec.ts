@@ -113,7 +113,7 @@ describe('v3 — plan limits', () => {
   // ---- Test 4: downgrade over-limit ----
 
   it('downgrade over-limit keeps existing data editable but blocks new creates', async () => {
-    await setPlan(f.a.tenant.id, 'clinic') // 5-doctor plan
+    await setPlan(f.a.tenant.id, 'clinic') // 3-doctor plan
     await addDoctor(f.a.tenant.id) // 2 active
     await addDoctor(f.a.tenant.id) // 3 active
     await setPlan(f.a.tenant.id, 'free') // downgrade — now over the 1-doctor limit
@@ -132,12 +132,12 @@ describe('v3 — plan limits', () => {
   })
 
   it('clinic plan admits doctors up to its higher ceiling', async () => {
-    await setPlan(f.a.tenant.id, 'clinic') // limit 5, one already present
-    for (let i = 0; i < 4; i++) {
+    await setPlan(f.a.tenant.id, 'clinic') // limit 3, one already present
+    for (let i = 0; i < 2; i++) {
       const d = await addDoctor(f.a.tenant.id)
       expect(d.id).toBeTruthy()
     }
-    // 6th active doctor exceeds the clinic ceiling.
+    // 4th active doctor exceeds the clinic ceiling.
     await rejectsWithCode(addDoctor(f.a.tenant.id), ERROR_CODES.PLAN_LIMIT)
   })
 })

@@ -32,6 +32,7 @@ export default async function SettingsPage() {
           timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
           taxId: t?.taxId ?? '',
           practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
+          consultTemplate: t?.settings?.consultTemplate === 'nutrition' ? 'nutrition' : 'general',
         }}
         profile={{
           practitioner: u.practitioner === true,

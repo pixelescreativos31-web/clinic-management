@@ -6,6 +6,7 @@ import { VisitForm, type VisitInitial } from '@/components/VisitForm'
 import { backgroundLine } from '@/lib/clinical'
 import { isClinical } from '@/lib/practice'
 import { formatDateTime } from '@/lib/format'
+import { isNutritionPractice, nutritionToForm } from '@/lib/nutrition'
 import type { Patient, User, Visit } from '@/payload-types'
 
 const relId = (v: unknown): string =>
@@ -60,6 +61,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
       quantity: r.quantity ?? '',
       instructions: r.instructions ?? '',
     })),
+    nutrition: nutritionToForm(visit.nutrition),
   }
 
   return (
@@ -79,6 +81,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
         allergies={patient?.allergies}
         background={backgroundLine(patient)}
         initial={initial}
+        nutritionTemplate={isNutritionPractice(tenant)}
       />
     </div>
   )

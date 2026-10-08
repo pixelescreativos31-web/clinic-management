@@ -8,6 +8,16 @@ import { DatePicker } from './DatePicker'
 import { IconPlus, IconX, IconStethoscope } from './icons'
 import { PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
 import {
+  EMPTY_NUTRITION,
+  GOOD_BAD,
+  NUTRITION_FIELDS,
+  NUTRITION_GROUP_LABELS,
+  YES_NO,
+  waistHipRatio,
+  type NutritionFormState,
+  type NutritionGroup,
+} from '@/lib/nutrition'
+import {
   recordVisit,
   updateVisit,
   type PrescriptionRowInput,
@@ -35,6 +45,7 @@ export type VisitInitial = {
   followUpDate: string
   vitals: Record<VitalKey, string>
   prescription: PrescriptionRowInput[]
+  nutrition?: NutritionFormState
 }
 
 type VitalKey =
@@ -84,6 +95,52 @@ function bmi(weightKg: string, heightCm: string): string | null {
   return `IMC ${v.toFixed(1)} · ${band}`
 }
 
+/** Inputs for one nutrition group, laid out like the paper form. */
+function NutritionFields({
+  group,
+  values,
+  onChange,
+}: {
+  group: NutritionGroup
+  values: NutritionFormState
+  onChange: (key: string, value: string) => void
+}) {
+  const fields = NUTRITION_FIELDS.filter((f) => f.group === group)
+  const compact = fields.filter((f) => !f.long)
+  const long = fields.filter((f) => f.long)
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        {compact.map((f) => (
+          <Field key={f.key} label={f.unit ? `${f.label} (${f.unit})` : f.label}>
+            {f.kind === 'yesno' || f.kind === 'goodbad' ? (
+              <AppSelect
+                value={values[f.key] ?? ''}
+                onChange={(v) => onChange(f.key, v)}
+                placeholder="—"
+                options={f.kind === 'yesno' ? YES_NO : GOOD_BAD}
+              />
+            ) : (
+              <input
+                className={inputClass}
+                inputMode={f.kind === 'number' ? 'decimal' : undefined}
+                value={values[f.key] ?? ''}
+                onChange={(e) => onChange(f.key, e.target.value)}
+                placeholder={f.placeholder}
+              />
+            )}
+          </Field>
+        ))}
+      </div>
+      {long.map((f) => (
+        <Field key={f.key} label={f.label}>
+          <textarea className={textareaClass} rows={2} value={values[f.key] ?? ''} onChange={(e) => onChange(f.key, e.target.value)} />
+        </Field>
+      ))}
+    </div>
+  )
+}
+
 export function VisitForm({
   appointmentId,
   visitId,
@@ -92,6 +149,7 @@ export function VisitForm({
   allergies,
   background,
   initial,
+  nutritionTemplate = false,
 }: {
   /** New consultation for this appointment… */
   appointmentId?: string
@@ -103,6 +161,8 @@ export function VisitForm({
   /** Short clinical background shown while consulting (chronic conditions, meds). */
   background?: string | null
   initial?: VisitInitial
+  /** Clinic uses the nutrition consultation template (src/lib/nutrition.ts). */
+  nutritionTemplate?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -117,6 +177,8 @@ export function VisitForm({
   const [labOrders, setLabOrders] = useState(initial?.labOrders ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [followUp, setFollowUp] = useState(initial?.followUpDate ?? '')
+  const [nutrition, setNutrition] = useState<NutritionFormState>(initial?.nutrition ?? EMPTY_NUTRITION)
+  const setNutritionField = (key: string, value: string) => setNutrition((n) => ({ ...n, [key]: value }))
   const [rows, setRows] = useState<PrescriptionRowInput[]>(
     initial?.prescription.length ? initial.prescription : [blankRow()],
   )
@@ -128,6 +190,10 @@ export function VisitForm({
 
   const num = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(',', '.')))
   const bmiText = bmi(vitals.weightKg, vitals.heightCm)
+  const ratio = nutritionTemplate ? waistHipRatio({ waistCm: num(nutrition.waistCm), hipCm: num(nutrition.hipCm) }) : null
+  // Sections are numbered in render order; the nutrition template inserts three.
+  let sectionNo = 0
+  const next = () => ++sectionNo
 
   const submit = () => {
     setError(null)
@@ -145,6 +211,7 @@ export function VisitForm({
           .filter((r) => r.medicine.trim())
           .map((r) => ({ ...r, durationDays: r.durationDays ? Number(r.durationDays) : undefined })),
         followUpDate: followUp || undefined,
+        ...(nutritionTemplate ? { nutrition } : {}),
       }
       if (visitId) {
         const res = await updateVisit(visitId, data)
@@ -180,7 +247,7 @@ export function VisitForm({
         </div>
       )}
 
-      <Section n={1} title="Motivo de consulta e historia">
+      <Section n={next()} title="Motivo de consulta e historia">
         <div className="flex flex-col gap-4">
           <Field label="Motivo de consulta">
             <input className={inputClass} value={chiefComplaint} onChange={(e) => setChiefComplaint(e.target.value)} placeholder="p. ej. Fiebre de 3 días" />
@@ -191,7 +258,7 @@ export function VisitForm({
         </div>
       </Section>
 
-      <Section n={2} title="Signos vitales">
+      <Section n={next()} title={nutritionTemplate ? 'Signos vitales, peso y talla' : 'Signos vitales'}>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           {VITALS.map((v) => (
             <Field key={v.key} label={v.label}>
@@ -208,7 +275,24 @@ export function VisitForm({
         {bmiText && <p className="tabular mt-2.5 text-xs font-medium text-muted-foreground">{bmiText}</p>}
       </Section>
 
-      <Section n={3} title="Examen físico y diagnóstico">
+      {nutritionTemplate && (
+        <>
+          <Section n={next()} title={NUTRITION_GROUP_LABELS.antropometria}>
+            <NutritionFields group="antropometria" values={nutrition} onChange={setNutritionField} />
+            {ratio != null && (
+              <p className="tabular mt-2.5 text-xs font-medium text-muted-foreground">Relación cintura/cadera {ratio}</p>
+            )}
+          </Section>
+          <Section n={next()} title={NUTRITION_GROUP_LABELS.interrogatorio}>
+            <NutritionFields group="interrogatorio" values={nutrition} onChange={setNutritionField} />
+          </Section>
+          <Section n={next()} title={NUTRITION_GROUP_LABELS.laboratorio}>
+            <NutritionFields group="laboratorio" values={nutrition} onChange={setNutritionField} />
+          </Section>
+        </>
+      )}
+
+      <Section n={next()} title={nutritionTemplate ? 'Examen físico y diagnóstico nutricional' : 'Examen físico y diagnóstico'}>
         <div className="flex flex-col gap-4">
           <Field label="Examen físico">
             <textarea className={textareaClass} rows={3} value={physicalExam} onChange={(e) => setPhysicalExam(e.target.value)} placeholder="Hallazgos por sistemas…" />
@@ -219,7 +303,7 @@ export function VisitForm({
         </div>
       </Section>
 
-      <Section n={4} title="Receta">
+      <Section n={next()} title="Receta">
         <div className="flex flex-col gap-2.5">
           {rows.map((row, i) => (
             <div key={i} className="rounded-lg border border-border bg-canvas/40 p-3">
@@ -259,8 +343,9 @@ export function VisitForm({
         </div>
       </Section>
 
-      <Section n={5} title="Plan, estudios y seguimiento">
+      <Section n={next()} title={nutritionTemplate ? 'Tratamiento y seguimiento' : 'Plan, estudios y seguimiento'}>
         <div className="flex flex-col gap-4">
+          {nutritionTemplate && <NutritionFields group="seguimiento" values={nutrition} onChange={setNutritionField} />}
           <Field label="Plan e indicaciones generales" hint="Se imprime en la receta.">
             <textarea className={textareaClass} rows={2} value={treatmentPlan} onChange={(e) => setTreatmentPlan(e.target.value)} placeholder="Reposo, dieta, signos de alarma…" />
           </Field>

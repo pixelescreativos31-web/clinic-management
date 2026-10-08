@@ -71,6 +71,10 @@ export type PatientInput = {
   email?: string
   address?: string
   occupation?: string
+  nationality?: string
+  maritalStatus?: string
+  religion?: string
+  referredBy?: string
   insurance?: { provider?: string; affiliateNumber?: string; plan?: string }
   emergencyContact?: { name?: string; relationship?: string; phone?: string }
   history?: {
@@ -105,6 +109,10 @@ function toData(input: PatientInput) {
     email: input.email || null,
     address: input.address || null,
     occupation: input.occupation || null,
+    nationality: input.nationality || null,
+    maritalStatus: input.maritalStatus || null,
+    religion: input.religion || null,
+    referredBy: input.referredBy || null,
     insurance: clean(input.insurance),
     emergencyContact: clean(input.emergencyContact),
     ...(input.history ? { history: clean(input.history) } : {}),

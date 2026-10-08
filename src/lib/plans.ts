@@ -5,10 +5,12 @@
 // src/hooks/planLimit.ts.
 
 //
-// Commercial model: ~US$10 per doctor per month. `free` is the trial tier, `pro` is
-// the independent-doctor plan (the MVP's main product), `clinic`/`plus` keep the
-// multi-doctor path open. Prices are display-only until a payment gateway lands —
-// the plan itself is still switched by the super admin (upgrade workflow).
+// Commercial model (2026-10): `free` is the trial tier; `pro` is one independent
+// doctor plus their assistant; `clinic` is a flat-priced practice of up to 3
+// doctors; `plus` is private clinics priced per doctor; `public` is government
+// hospitals, quoted individually (priceUsd null). Plan keys are stored on tenants,
+// so labels/prices may change but keys must not be renamed. Prices are
+// display-only until a payment gateway lands — the super admin switches plans.
 export const PLAN_LIMITS = {
   free: {
     doctors: 1,
@@ -21,28 +23,46 @@ export const PLAN_LIMITS = {
   pro: {
     doctors: 1,
     patients: null, // null = unlimited
-    label: 'Profesional',
-    priceUsd: 10,
+    label: 'Médico independiente',
+    priceUsd: 25,
     perDoctor: false,
-    description: 'Un médico independiente, pacientes ilimitados, asistente incluida.',
+    description: 'Un médico y su asistente, pacientes ilimitados.',
   },
   clinic: {
-    doctors: 5,
+    doctors: 3,
     patients: null,
-    label: 'Clínica',
-    priceUsd: 10,
-    perDoctor: true,
-    description: 'Hasta 5 médicos en el mismo consultorio o clínica.',
+    label: 'Consultorio',
+    priceUsd: 50,
+    perDoctor: false,
+    description: 'Hasta 3 médicos en el mismo consultorio, con sus asistentes.',
   },
   plus: {
     doctors: null,
     patients: null,
-    label: 'Plus',
-    priceUsd: 10,
+    label: 'Clínica privada',
+    priceUsd: 15,
     perDoctor: true,
-    description: 'Médicos ilimitados. Precio por médico.',
+    description: 'Clínicas con más médicos. Precio por médico.',
   },
-} as const
+  public: {
+    doctors: null,
+    patients: null,
+    label: 'Hospital público',
+    priceUsd: null,
+    perDoctor: false,
+    description: 'Hospitales y centros del Estado. Precio según el contrato.',
+  },
+} as const satisfies Record<
+  string,
+  {
+    doctors: number | null
+    patients: number | null
+    label: string
+    priceUsd: number | null
+    perDoctor: boolean
+    description: string
+  }
+>
 
 export type Plan = keyof typeof PLAN_LIMITS
 export type LimitedResource = 'doctors' | 'patients'
@@ -61,9 +81,10 @@ export function limitFor(plan: Plan, resource: LimitedResource): number | null {
 
 export const planLabel = (plan: Plan): string => PLAN_LIMITS[plan].label
 
-/** "Gratis", "US$10/mes" or "US$10/médico/mes". */
+/** "Gratis", "A cotizar", "US$25/mes" or "US$15/médico/mes". */
 export function planPriceLabel(plan: Plan): string {
   const p = PLAN_LIMITS[plan]
+  if (p.priceUsd === null) return 'A cotizar'
   if (p.priceUsd === 0) return 'Gratis'
   return p.perDoctor ? `US$${p.priceUsd}/médico/mes` : `US$${p.priceUsd}/mes`
 }

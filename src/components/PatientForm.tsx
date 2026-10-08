@@ -11,7 +11,7 @@ import {
   type PatientHit,
   type PatientInput,
 } from '@/app/(frontend)/dashboard/patients/actions'
-import { BLOOD_GROUPS, DOCUMENT_TYPES, GENDERS, GENDER_LABELS } from '@/lib/constants'
+import { BLOOD_GROUPS, DOCUMENT_TYPES, GENDERS, GENDER_LABELS, MARITAL_STATUSES } from '@/lib/constants'
 import { ageFromDOB } from '@/lib/format'
 import { EMPTY_PATIENT, type PatientInitial } from '@/lib/patientForm'
 
@@ -89,6 +89,10 @@ export function PatientForm({
         email: form.email || undefined,
         address: form.address || undefined,
         occupation: form.occupation || undefined,
+        nationality: form.nationality || undefined,
+        maritalStatus: form.maritalStatus || undefined,
+        religion: form.religion || undefined,
+        referredBy: form.referredBy || undefined,
         insurance: { provider: form.insuranceProvider, affiliateNumber: form.insuranceAffiliate, plan: form.insurancePlan },
         emergencyContact: { name: form.emergencyName, relationship: form.emergencyRelationship, phone: form.emergencyPhone },
         ...(clinical
@@ -171,8 +175,27 @@ export function PatientForm({
               />
             </Field>
           </div>
-          <Field label="Ocupación">
-            <input className={inputClass} {...text('occupation')} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Ocupación">
+              <input className={inputClass} {...text('occupation')} />
+            </Field>
+            <Field label="Nacionalidad">
+              <input className={inputClass} {...text('nationality')} placeholder="Dominicana" />
+            </Field>
+            <Field label="Estado civil">
+              <AppSelect
+                value={form.maritalStatus}
+                onChange={(v) => set('maritalStatus', v)}
+                placeholder="—"
+                options={MARITAL_STATUSES.map((m) => ({ value: m.value, label: m.label }))}
+              />
+            </Field>
+            <Field label="Religión">
+              <input className={inputClass} {...text('religion')} />
+            </Field>
+          </div>
+          <Field label="Referido por">
+            <input className={inputClass} {...text('referredBy')} placeholder="p. ej. Dr. Pérez, Instagram, una paciente" />
           </Field>
         </div>
       </Section>

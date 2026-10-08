@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
+import { formToNutrition, type NutritionFormState } from '@/lib/nutrition'
 
 export type PrescriptionRowInput = {
   medicine: string
@@ -36,6 +37,8 @@ export type VisitInput = {
   }
   prescription?: PrescriptionRowInput[]
   followUpDate?: string
+  /** Only sent by clinics on the nutrition template. */
+  nutrition?: NutritionFormState
 }
 
 const FORBIDDEN = { ok: false as const, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
@@ -72,6 +75,7 @@ function clinicalData(input: Omit<VisitInput, 'appointmentId'>, forUpdate: boole
     vitals: vitals && Object.keys(vitals).length ? vitals : forUpdate ? {} : undefined,
     prescription,
     followUpDate: input.followUpDate || empty,
+    nutrition: formToNutrition(input.nutrition, forUpdate),
   }
 }
 

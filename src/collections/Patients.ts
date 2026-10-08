@@ -3,7 +3,7 @@ import { APIError } from 'payload'
 import { superAdminOnly, tenantScoped, getTenantID, clinicalReadField } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { enforcePlanLimit } from '@/hooks/planLimit'
-import { GENDERS, GENDER_LABELS, BLOOD_GROUPS, DOCUMENT_TYPES, ERROR_CODES } from '@/lib/constants'
+import { GENDERS, GENDER_LABELS, BLOOD_GROUPS, DOCUMENT_TYPES, ERROR_CODES, MARITAL_STATUSES } from '@/lib/constants'
 import { auditPatients } from '@/hooks/audit'
 
 /** Strip spaces/dashes; keep leading + and digits. Market-agnostic. */
@@ -121,6 +121,15 @@ export const Patients: CollectionConfig = {
     },
     { name: 'address', type: 'textarea', label: 'Dirección' },
     { name: 'occupation', type: 'text', label: 'Ocupación' },
+    { name: 'nationality', type: 'text', label: 'Nacionalidad' },
+    {
+      name: 'maritalStatus',
+      type: 'select',
+      label: 'Estado civil',
+      options: MARITAL_STATUSES.map((m) => ({ label: m.label, value: m.value })),
+    },
+    { name: 'religion', type: 'text', label: 'Religión' },
+    { name: 'referredBy', type: 'text', label: 'Referido por' },
     {
       name: 'insurance',
       type: 'group',

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, btnPrimary, btnGhost, textareaClass, Spinner } from './primitives'
 import { IconCheck, IconClock } from './icons'
-import { PLANS, PLAN_LIMITS, planLabel, usage, type Plan, type LimitedResource } from '@/lib/plans'
+import { PLANS, PLAN_LIMITS, planLabel, planPriceLabel, usage, type Plan, type LimitedResource } from '@/lib/plans'
 import { requestUpgrade } from '@/app/(frontend)/dashboard/plan/actions'
 
 const RESOURCE_LABELS: Record<LimitedResource, string> = {
@@ -116,7 +116,7 @@ export function PlanPanel({
       )}
 
       {/* Plan cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {PLANS.map((p) => {
           const limits = PLAN_LIMITS[p]
           const isCurrent = p === plan
@@ -131,6 +131,8 @@ export function PlanPanel({
                   </span>
                 )}
               </div>
+              <div className="tabular mt-1 text-sm font-semibold text-primary">{planPriceLabel(p)}</div>
+              <p className="mt-1 text-xs text-muted-foreground">{limits.description}</p>
               <ul className="mt-3 flex-1 space-y-1.5 text-[13px] text-muted-foreground">
                 <li>{limitLine(limits.doctors, 'médico', 'médicos')}</li>
                 <li>{limitLine(limits.patients, 'paciente', 'pacientes')}</li>

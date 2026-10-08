@@ -148,9 +148,9 @@ export interface Tenant {
   /**
    * Nivel de suscripción; límites definidos en código (src/lib/plans.ts).
    */
-  plan: 'free' | 'pro' | 'clinic' | 'plus';
+  plan: 'free' | 'pro' | 'clinic' | 'plus' | 'public';
   upgradeRequest?: {
-    requestedPlan?: ('free' | 'pro' | 'clinic' | 'plus') | null;
+    requestedPlan?: ('free' | 'pro' | 'clinic' | 'plus' | 'public') | null;
     requestedAt?: string | null;
     note?: string | null;
   };
@@ -181,6 +181,10 @@ export interface Tenant {
       | 'America/Costa_Rica'
       | 'America/Panama'
       | 'Europe/Madrid';
+    /**
+     * Nutrición agrega antropometría, laboratorio y la hoja de seguimiento.
+     */
+    consultTemplate?: ('general' | 'nutrition') | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -254,6 +258,10 @@ export interface Patient {
   bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
   address?: string | null;
   occupation?: string | null;
+  nationality?: string | null;
+  maritalStatus?: ('single' | 'married' | 'common-law' | 'divorced' | 'widowed') | null;
+  religion?: string | null;
+  referredBy?: string | null;
   insurance?: {
     provider?: string | null;
     affiliateNumber?: string | null;
@@ -343,6 +351,36 @@ export interface Visit {
     weightKg?: number | null;
     heightCm?: number | null;
     glucoseMgDl?: number | null;
+  };
+  nutrition?: {
+    constipation?: ('yes' | 'no') | null;
+    waterIntake?: ('good' | 'poor') | null;
+    anxiety?: ('yes' | 'no') | null;
+    stress?: ('yes' | 'no') | null;
+    sleepHours?: number | null;
+    sleepQuality?: string | null;
+    goal?: string | null;
+    usualWeightKg?: number | null;
+    armCm?: number | null;
+    waistCm?: number | null;
+    abdomenCm?: number | null;
+    glutesCm?: number | null;
+    hipCm?: number | null;
+    labHemogram?: string | null;
+    labFastingGlucose?: number | null;
+    labHba1c?: number | null;
+    labGlucoseOther?: string | null;
+    labTotalCholesterol?: number | null;
+    labLdl?: number | null;
+    labHdl?: number | null;
+    labTriglycerides?: number | null;
+    labUrinalysis?: string | null;
+    labAbdominalUltrasound?: string | null;
+    labThyroidUltrasound?: string | null;
+    labStool?: string | null;
+    changes?: string | null;
+    exercise?: string | null;
+    diet?: string | null;
   };
   prescription?:
     | {
@@ -581,6 +619,7 @@ export interface TenantsSelect<T extends boolean = true> {
         closeTime?: T;
         currency?: T;
         timezone?: T;
+        consultTemplate?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -641,6 +680,10 @@ export interface PatientsSelect<T extends boolean = true> {
   bloodGroup?: T;
   address?: T;
   occupation?: T;
+  nationality?: T;
+  maritalStatus?: T;
+  religion?: T;
+  referredBy?: T;
   insurance?:
     | T
     | {
@@ -721,6 +764,38 @@ export interface VisitsSelect<T extends boolean = true> {
         weightKg?: T;
         heightCm?: T;
         glucoseMgDl?: T;
+      };
+  nutrition?:
+    | T
+    | {
+        constipation?: T;
+        waterIntake?: T;
+        anxiety?: T;
+        stress?: T;
+        sleepHours?: T;
+        sleepQuality?: T;
+        goal?: T;
+        usualWeightKg?: T;
+        armCm?: T;
+        waistCm?: T;
+        abdomenCm?: T;
+        glutesCm?: T;
+        hipCm?: T;
+        labHemogram?: T;
+        labFastingGlucose?: T;
+        labHba1c?: T;
+        labGlucoseOther?: T;
+        labTotalCholesterol?: T;
+        labLdl?: T;
+        labHdl?: T;
+        labTriglycerides?: T;
+        labUrinalysis?: T;
+        labAbdominalUltrasound?: T;
+        labThyroidUltrasound?: T;
+        labStool?: T;
+        changes?: T;
+        exercise?: T;
+        diet?: T;
       };
   prescription?:
     | T

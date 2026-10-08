@@ -46,7 +46,7 @@ describe('v3 — plans & upgrade requests', () => {
 
     const logs = await findAudit(f.a.tenant.id, 'plan.upgrade-requested')
     expect(logs.totalDocs).toBe(1)
-    expect(logs.docs[0].summary).toMatch(/mejorar al plan Plus/i)
+    expect(logs.docs[0].summary).toMatch(/mejorar al plan Clínica privada/i)
   })
 
   it('never lets an owner change their own plan (field is superAdmin-only)', async () => {

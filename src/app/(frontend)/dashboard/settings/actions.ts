@@ -13,6 +13,7 @@ export type ClinicSettingsInput = {
   country?: string
   taxId?: string
   practiceType?: 'individual' | 'clinic'
+  consultTemplate?: 'general' | 'nutrition'
   appointmentDurationMins: number
   openTime: string
   closeTime: string
@@ -62,6 +63,7 @@ export async function updateClinicSettings(
           closeTime: input.closeTime,
           currency: input.currency,
           timezone: input.timezone,
+          consultTemplate: input.consultTemplate === 'nutrition' ? 'nutrition' : 'general',
         },
       } as never,
     })

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { connection } from 'next/server'
 import Image from 'next/image'
 import { btnPrimary, btnGhost } from '@/components/primitives'
 import {
@@ -16,6 +17,11 @@ import {
   IconWhatsApp,
 } from '@/components/icons'
 import { APP_NAME, APP_TAGLINE, BASED_ON } from '@/lib/brand'
+import { PLANS, PLAN_LIMITS, planPriceLabel } from '@/lib/plans'
+
+// Demo logins only exist on the demo instance (SHOW_DEMO=1, seeded with `pnpm seed`),
+// never on the real one, which links out to DEMO_URL instead. Read at request time
+// so one image serves both deployments.
 
 const STEPS = [
   {
@@ -96,15 +102,19 @@ const DEMO_LOGINS = [
     icon: IconBuilding,
   },
   {
-    label: 'Superadministrador',
-    clinic: 'Plataforma',
-    email: 'super@clinic.app',
-    blurb: 'Todos los consultorios en una vista',
+    label: 'Médico de clínica',
+    clinic: 'Clínica con varios médicos',
+    email: 'doctor1@clinica.app',
+    blurb: 'Su propia agenda y pacientes dentro de una clínica',
     icon: IconStethoscope,
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  await connection()
+  const SHOW_DEMO = process.env.SHOW_DEMO === '1'
+  const DEMO_URL = process.env.DEMO_URL?.replace(/\/+$/, '')
+  const demoHref = SHOW_DEMO ? '#demo' : DEMO_URL ? `${DEMO_URL}/#demo` : null
   return (
     <main className="min-h-screen bg-canvas">
       {/* ---------------- Nav ---------------- */}
@@ -128,9 +138,11 @@ export default function HomePage() {
             <a href="#precios" className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink md:block">
               Precios
             </a>
-            <a href="#demo" className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink sm:block">
-              Demostración
-            </a>
+            {demoHref && (
+              <a href={demoHref} className="hidden px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-ink sm:block">
+                Demostración
+              </a>
+            )}
             <Link href="/login" className={btnGhost}>
               Iniciar sesión
             </Link>
@@ -182,16 +194,22 @@ export default function HomePage() {
               usted y su asistente.
             </p>
             <p className="mt-2 text-sm text-faint">
-              Desde <strong className="font-semibold text-ink">US$10/mes por médico</strong>.
+              Desde <strong className="font-semibold text-ink">US${PLAN_LIMITS.pro.priceUsd}/mes</strong> por médico con su asistente.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className={btnPrimary}>
                 Crear cuenta
                 <IconArrowRight size={15} />
               </Link>
-              <a href="#demo" className={btnGhost}>
-                Pruebe la demostración
-              </a>
+              {demoHref ? (
+                <a href={demoHref} className={btnGhost}>
+                  Pruebe la demostración
+                </a>
+              ) : (
+                <a href="#precios" className={btnGhost}>
+                  Ver precios
+                </a>
+              )}
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
               {['Sin citas duplicadas', 'Recordatorios por WhatsApp', 'Recetas listas para imprimir'].map((t) => (
@@ -268,7 +286,7 @@ export default function HomePage() {
       <section className="border-y border-border/70 bg-card">
         <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-border/70 px-6 sm:grid-cols-4">
           {[
-            { v: 'US$10', l: 'al mes por médico' },
+            { v: `US$${PLAN_LIMITS.pro.priceUsd}`, l: 'al mes por médico' },
             { v: '1 + 1', l: 'usted y su asistente' },
             { v: '0', l: 'citas duplicadas' },
             { v: 'WhatsApp', l: 'recordatorios en un clic' },
@@ -392,31 +410,47 @@ export default function HomePage() {
           <span className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">Precios</span>
           <h2 className="mt-3 font-display text-3xl font-semibold">Un precio simple, sin sorpresas</h2>
           <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-            Pague por médico, no por paciente ni por cita.
+            Pague por médico, no por paciente ni por cita. Precios en dólares, mensuales.
           </p>
         </div>
-        <div className="card-flat mx-auto mt-10 max-w-md p-8 text-center">
-          <div className="text-sm font-medium text-muted-foreground">Desde</div>
-          <div className="mt-1 font-display text-5xl font-semibold text-primary">
-            US$10<span className="text-lg font-medium text-muted-foreground">/mes</span>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {PLANS.filter((p) => p !== 'free').map((p) => {
+            const plan = PLAN_LIMITS[p]
+            const featured = p === 'pro'
+            return (
+              <div key={p} className={`card-flat flex flex-col p-6 ${featured ? 'border-primary ring-1 ring-primary/30' : ''}`}>
+                <h3 className="text-[15px] font-semibold">{plan.label}</h3>
+                <div className="mt-2 font-display text-3xl font-semibold text-primary">{planPriceLabel(p)}</div>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
+                {plan.priceUsd === null ? (
+                  <a href="mailto:gelinson@pixelescreativos.com.do?subject=EMR%20para%20hospitales" className={`${btnGhost} mt-5 w-full`}>
+                    Contáctenos
+                  </a>
+                ) : (
+                  <Link href="/signup" className={`${featured ? btnPrimary : btnGhost} mt-5 w-full`}>
+                    Crear cuenta
+                  </Link>
+                )}
+              </div>
+            )
+          })}
+          <div className="card-flat flex flex-col p-6">
+            <h3 className="text-[15px] font-semibold">Todos los planes incluyen</h3>
+            <ul className="mt-3 space-y-2.5 text-sm">
+              {PRICING_POINTS.map((pt) => (
+                <li key={pt} className="flex items-center gap-2.5">
+                  <IconCheck size={14} strokeWidth={2.5} className="shrink-0 text-primary" />
+                  {pt}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-xs text-muted-foreground">Pruebe gratis con hasta 50 pacientes.</p>
           </div>
-          <div className="mt-1 text-sm text-muted-foreground">por médico</div>
-          <ul className="mt-6 space-y-2.5 text-start text-sm">
-            {PRICING_POINTS.map((p) => (
-              <li key={p} className="flex items-center gap-2.5">
-                <IconCheck size={14} strokeWidth={2.5} className="shrink-0 text-primary" />
-                {p}
-              </li>
-            ))}
-          </ul>
-          <Link href="/signup" className={`${btnPrimary} mt-7 w-full`}>
-            Crear cuenta
-            <IconArrowRight size={15} />
-          </Link>
         </div>
       </section>
 
       {/* ---------------- Demo accounts ---------------- */}
+      {SHOW_DEMO && (
       <section id="demo" className="mx-auto max-w-6xl scroll-mt-20 px-6 pb-20">
         <div className="card-flat overflow-hidden">
           <div className="grid items-center gap-8 p-8 sm:p-10 lg:grid-cols-[1fr_1.3fr]">
@@ -463,6 +497,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ---------------- Footer ---------------- */}
       <footer className="border-t border-border/70 bg-card">

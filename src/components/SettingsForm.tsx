@@ -22,6 +22,7 @@ export type SettingsInitial = {
   timezone: string
   taxId: string
   practiceType: 'individual' | 'clinic'
+  consultTemplate: 'general' | 'nutrition'
 }
 
 export type ProfileInitial = {
@@ -93,6 +94,7 @@ export function SettingsForm({ initial, profile: initialProfile }: { initial: Se
         country: form.country || undefined,
         taxId: form.taxId || undefined,
         practiceType: form.practiceType,
+        consultTemplate: form.consultTemplate,
         appointmentDurationMins: Number(form.appointmentDurationMins) || 20,
         openTime: form.openTime,
         closeTime: form.closeTime,
@@ -148,6 +150,16 @@ export function SettingsForm({ initial, profile: initialProfile }: { initial: Se
               value={form.practiceType}
               onChange={(v) => set('practiceType', v)}
               options={PRACTICE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            />
+          </Field>
+          <Field label="Formato de consulta" hint="«Nutrición» agrega antropometría, laboratorio y la hoja de seguimiento.">
+            <AppSelect
+              value={form.consultTemplate}
+              onChange={(v) => set('consultTemplate', v)}
+              options={[
+                { value: 'general', label: 'General' },
+                { value: 'nutrition', label: 'Nutrición' },
+              ]}
             />
           </Field>
         </div>
