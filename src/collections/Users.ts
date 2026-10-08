@@ -224,6 +224,21 @@ export const Users: CollectionConfig = {
         description: 'En la moneda del consultorio. Se usa al facturar.',
       },
     },
+    // Appointment types offered on the public booking page (/agendar/<slug>):
+    // each with its own duration and display price. Empty ⇒ one "Consulta" at the
+    // clinic's default duration and the consultation fee.
+    {
+      name: 'bookingServices',
+      type: 'array',
+      label: 'Tipos de cita en línea',
+      maxRows: 8,
+      admin: { condition: (data) => isPractitioner(data) },
+      fields: [
+        { name: 'name', type: 'text', required: true, label: 'Nombre' },
+        { name: 'durationMins', type: 'number', required: true, min: 5, max: 240, label: 'Duración (min)' },
+        { name: 'price', type: 'number', min: 0, label: 'Precio' },
+      ],
+    },
     // Availability pattern. `regular` doctors keep set weekdays + a daily window;
     // `onCall` and `byAppointment` doctors are bookable any time (different tags).
     {

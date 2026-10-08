@@ -223,6 +223,14 @@ export interface User {
    * En la moneda del consultorio. Se usa al facturar.
    */
   consultationFee?: number | null;
+  bookingServices?:
+    | {
+        name: string;
+        durationMins: number;
+        price?: number | null;
+        id?: string | null;
+      }[]
+    | null;
   availabilityType?: ('regular' | 'onCall' | 'byAppointment') | null;
   availableDays?: ('sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')[] | null;
   availableFrom?: string | null;
@@ -262,9 +270,13 @@ export interface Patient {
   documentNumber?: string | null;
   phone: string;
   email?: string | null;
-  gender: 'male' | 'female' | 'other';
+  gender?: ('male' | 'female' | 'other') | null;
   dateOfBirth?: string | null;
   ageYears?: number | null;
+  /**
+   * Registrado desde la reserva en línea; falta edad o sexo.
+   */
+  pendingIntake?: boolean | null;
   bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
   address?: string | null;
   occupation?: string | null;
@@ -674,6 +686,14 @@ export interface UsersSelect<T extends boolean = true> {
   specialty?: T;
   licenseNumber?: T;
   consultationFee?: T;
+  bookingServices?:
+    | T
+    | {
+        name?: T;
+        durationMins?: T;
+        price?: T;
+        id?: T;
+      };
   availabilityType?: T;
   availableDays?: T;
   availableFrom?: T;
@@ -710,6 +730,7 @@ export interface PatientsSelect<T extends boolean = true> {
   gender?: T;
   dateOfBirth?: T;
   ageYears?: T;
+  pendingIntake?: T;
   bloodGroup?: T;
   address?: T;
   occupation?: T;

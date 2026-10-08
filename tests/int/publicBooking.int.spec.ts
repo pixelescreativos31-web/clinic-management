@@ -123,6 +123,46 @@ describe('public online booking', () => {
     expect(patients.docs.map((p) => p.name).sort()).toEqual(['Juan Pérez', 'María Pérez'])
   })
 
+  it('registers online patients with name + WhatsApp only, flagged for intake', async () => {
+    const res = await bookOnline(payload, clinic, { name: 'Pedro Sánchez', phone: '829 555 0000', doctorId: String(f.a.doctor.id), date: TUE, time: '10:00', firstTime: true, reason: 'Dolor de espalda' }, NOW)
+    expect(res.code).toMatch(/^CITA-[0-9A-F]{4}$/)
+    const appt = await payload.findByID({ collection: 'appointments', id: res.appointmentId, overrideAccess: true, depth: 1 })
+    expect(appt.reason).toBe('Consulta · primera vez · Dolor de espalda')
+    const patient = appt.patient as { id: string; pendingIntake?: boolean; gender?: string | null }
+    expect(patient.pendingIntake).toBe(true)
+    expect(patient.gender ?? null).toBeNull()
+
+    // Staff completing age + sex clears the flag; staff can't save an incomplete patient.
+    const done = await payload.update({ collection: 'patients', id: patient.id, overrideAccess: true, data: { gender: 'male', ageYears: 41 } })
+    expect(done.pendingIntake).toBe(false)
+    const incomplete = payload.create({
+      collection: 'patients',
+      overrideAccess: true,
+      data: { tenant: f.a.tenant.id, name: 'Sin Datos', phone: '8095550001' } as never,
+    })
+    expect(await codeOf(incomplete)).toBe(ERROR_CODES.VALIDATION)
+  })
+
+  it('offers each service with its own duration on a half-hour grid', async () => {
+    await payload.update({
+      collection: 'users',
+      id: f.a.doctor.id,
+      overrideAccess: true,
+      data: { bookingServices: [{ name: 'Primera consulta', durationMins: 45, price: 2500 }, { name: 'Seguimiento', durationMins: 30, price: 1800 }] } as never,
+    })
+    const c = (await getPublicClinic(payload, 'clinica-a'))!
+    expect(c.doctors[0].services.map((s) => s.name)).toEqual(['Primera consulta', 'Seguimiento'])
+    const first = await freeSlots(payload, c, String(f.a.doctor.id), TUE, NOW, 0)
+    // 45-min visits every 30 min, the last one must end by 12:00.
+    expect(first).toEqual(['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00'])
+
+    const res = await bookOnline(payload, c, { ...contact, doctorId: String(f.a.doctor.id), date: TUE, time: '09:00', serviceIndex: 0 }, NOW)
+    expect(res.durationMins).toBe(45)
+    // 09:00–09:45 blocks the 08:30, 09:00 and 09:30 starts of a 45-min visit.
+    const after = await freeSlots(payload, c, String(f.a.doctor.id), TUE, NOW, 0)
+    expect(after).toEqual(['08:00', '10:00', '10:30', '11:00'])
+  })
+
   it('validates the contact data', async () => {
     const bad = bookOnline(payload, clinic, { ...contact, phone: '123', doctorId: String(f.a.doctor.id), date: TUE, time: '08:00' }, NOW)
     expect(await codeOf(bad)).toBe(ERROR_CODES.VALIDATION)

@@ -73,7 +73,7 @@ export const EMPTY_PATIENT: PatientInitial = {
 export function patientToInitial(p: {
   name: string
   phone: string
-  gender: string
+  gender?: string | null
   ageYears?: number | null
   dateOfBirth?: string | null
   bloodGroup?: string | null
@@ -105,7 +105,7 @@ export function patientToInitial(p: {
   return {
     name: p.name,
     phone: p.phone,
-    gender: p.gender,
+    gender: p.gender ?? '',
     ageYears: p.ageYears != null ? String(p.ageYears) : '',
     dateOfBirth: p.dateOfBirth ? p.dateOfBirth.slice(0, 10) : '',
     bloodGroup: p.bloodGroup ?? '',

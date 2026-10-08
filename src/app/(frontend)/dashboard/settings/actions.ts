@@ -86,6 +86,7 @@ export type PractitionerProfileInput = {
   availableDays?: string[]
   availableFrom?: string
   availableTo?: string
+  bookingServices?: { name: string; durationMins: number; price?: number }[]
 }
 
 /**
@@ -125,6 +126,14 @@ export async function updateMyPractitionerProfile(
               availableDays: input.availableDays,
               availableFrom: input.availableFrom,
               availableTo: input.availableTo,
+              ...(input.bookingServices
+                ? {
+                    bookingServices: input.bookingServices
+                      .filter((s) => s.name?.trim() && s.durationMins >= 5 && s.durationMins <= 240)
+                      .slice(0, 8)
+                      .map((s) => ({ name: s.name.trim().slice(0, 60), durationMins: Math.round(s.durationMins), price: s.price ?? null })),
+                  }
+                : {}),
             }
           : {}),
       } as never,

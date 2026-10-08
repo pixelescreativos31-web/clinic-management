@@ -22,13 +22,18 @@ export const BOOKING_WINDOW_DAYS = 30
 /** Minimum notice: no online booking for a slot starting sooner than this. */
 export const MIN_LEAD_MINUTES = 120
 
+export type PublicService = { name: string; durationMins: number; price: number | null }
+
 export type PublicDoctor = {
   id: string
   name: string
   specialty: string | null
+  licenseNumber: string | null
   days: string[]
   from: string
   to: string
+  /** Appointment types offered online; never empty (falls back to one "Consulta"). */
+  services: PublicService[]
 }
 
 export type PublicClinic = {
@@ -82,10 +87,17 @@ export async function getPublicClinic(payload: Payload, slug: string): Promise<P
     .filter((d) => (d.availabilityType ?? 'regular') === 'regular')
     .map((d) => {
       const win = windowOf(d)
+      const services: PublicService[] = (d.bookingServices ?? [])
+        .filter((s) => s.name?.trim() && s.durationMins)
+        .map((s) => ({ name: s.name.trim(), durationMins: s.durationMins, price: s.price ?? null }))
       return {
         id: String(d.id),
         name: d.name,
         specialty: d.specialty ?? null,
+        licenseNumber: d.licenseNumber ?? null,
+        services: services.length
+          ? services
+          : [{ name: 'Consulta', durationMins: tenant.settings?.appointmentDurationMins || DEFAULT_APPOINTMENT_DURATION, price: d.consultationFee ?? null }],
         days: (d.availableDays as string[] | null | undefined)?.length ? (d.availableDays as string[]) : ALL_DAYS,
         from: win.from,
         to: win.to,
@@ -125,11 +137,17 @@ export async function freeSlots(
   doctorId: string,
   date: string,
   now = new Date(),
+  serviceIndex = 0,
 ): Promise<string[]> {
   const doctor = clinic.doctors.find((d) => d.id === doctorId)
   if (!doctor || !bookableDates(clinic, doctor, now).includes(date)) return []
+  const service = doctor.services[serviceIndex]
+  if (!service) return []
 
-  const dur = clinic.durationMins
+  // Slots start on a fixed grid (the shorter of the service and 30 min) so long
+  // services still offer every half hour; each must fit whole inside the window.
+  const dur = service.durationMins
+  const step = Math.min(dur, 30)
   const fromMin = hhmmToMinutes(doctor.from)
   const toMin = hhmmToMinutes(doctor.to)
   const earliest = now.getTime() + MIN_LEAD_MINUTES * 60_000
@@ -152,7 +170,7 @@ export async function freeSlots(
   const busy = taken.docs.map((a) => [new Date(a.start), new Date(a.end ?? a.start)] as const)
 
   const slots: string[] = []
-  for (let m = fromMin; m + dur <= toMin; m += dur) {
+  for (let m = fromMin; m + dur <= toMin; m += step) {
     const time = toHHMM(m)
     const start = wallTimeToUTC(clinic.tz, date, time)
     if (start.getTime() < earliest) continue
@@ -163,7 +181,8 @@ export async function freeSlots(
   return slots
 }
 
-export type PatientContact = { name: string; phone: string; gender: string; ageYears: number }
+/** Online patients give name + WhatsApp; age and sex are optional (completed at check-in). */
+export type PatientContact = { name: string; phone: string; gender?: string; ageYears?: number }
 
 const normName = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -173,11 +192,11 @@ function validateContact(c: PatientContact): PatientContact {
   const name = c.name?.trim() ?? ''
   if (name.length < 3) throw fail('Escriba su nombre completo.')
   if (digitsOf(c.phone ?? '').length < 10) throw fail('Escriba un teléfono válido, con código de área.')
-  if (!(GENDERS as readonly string[]).includes(c.gender)) throw fail('Indique el sexo del paciente.')
-  const age = Number(c.ageYears)
-  if (!Number.isInteger(age) || age < 0 || age > 120) throw fail('Indique la edad del paciente.')
+  const gender = c.gender && (GENDERS as readonly string[]).includes(c.gender) ? c.gender : undefined
+  const age = c.ageYears === undefined || c.ageYears === null || (c.ageYears as unknown) === '' ? undefined : Number(c.ageYears)
+  if (age !== undefined && (!Number.isInteger(age) || age < 0 || age > 120)) throw fail('Revise la edad del paciente.')
   // Patients store phones as digits (the collection normalises on save).
-  return { name, phone: digitsOf(c.phone), gender: c.gender, ageYears: age }
+  return { name, phone: digitsOf(c.phone), gender, ageYears: age }
 }
 
 /**
@@ -198,7 +217,16 @@ async function findOrCreatePatient(payload: Payload, tenantId: string, c: Patien
     return (await payload.create({
       collection: 'patients',
       overrideAccess: true,
-      data: { tenant: tenantId, name: c.name, phone: c.phone, gender: c.gender, ageYears: c.ageYears, notes: 'Registrado desde la reserva en línea.' } as never,
+      data: {
+        tenant: tenantId,
+        name: c.name,
+        phone: c.phone,
+        gender: c.gender,
+        ageYears: c.ageYears,
+        // Staff complete age / sex at check-in; the collection allows it meanwhile.
+        pendingIntake: !(c.gender && c.ageYears !== undefined),
+        notes: 'Registrado desde la reserva en línea.',
+      } as never,
     })) as Patient
   } catch (err) {
     if (err instanceof APIError && (err.data as { code?: string } | undefined)?.code === ERROR_CODES.PLAN_LIMIT) {
@@ -208,12 +236,25 @@ async function findOrCreatePatient(payload: Payload, tenantId: string, c: Patien
   }
 }
 
-export type OnlineBookingInput = PatientContact & { doctorId: string; date: string; time: string; reason?: string }
+export type OnlineBookingInput = PatientContact & {
+  doctorId: string
+  date: string
+  time: string
+  /** Index into the doctor's `services` (default 0). */
+  serviceIndex?: number
+  reason?: string
+  firstTime?: boolean
+}
+
+/** Short human code shown to the patient and staff ("CITA-7F3K"), derived from the id. */
+export const bookingCode = (appointmentId: string) => `CITA-${appointmentId.slice(-4).toUpperCase()}`
 
 /** Book a published slot; confirmed immediately. */
 export async function bookOnline(payload: Payload, clinic: PublicClinic, input: OnlineBookingInput, now = new Date()) {
   const contact = validateContact(input)
-  const slots = await freeSlots(payload, clinic, input.doctorId, input.date, now)
+  const serviceIndex = input.serviceIndex ?? 0
+  const service = clinic.doctors.find((d) => d.id === input.doctorId)?.services[serviceIndex]
+  const slots = service ? await freeSlots(payload, clinic, input.doctorId, input.date, now, serviceIndex) : []
   if (!slots.includes(input.time)) {
     throw fail('Ese horario ya no está disponible. Elija otro.', 409, ERROR_CODES.SLOT_TAKEN)
   }
@@ -227,13 +268,24 @@ export async function bookOnline(payload: Payload, clinic: PublicClinic, input: 
       patient: patient.id,
       doctor: input.doctorId,
       start: start.toISOString(),
-      durationMins: clinic.durationMins,
-      reason: input.reason?.trim().slice(0, 200) || undefined,
+      durationMins: service!.durationMins,
+      // Reason line staff see in the agenda: "Primera consulta · primera vez · motivo".
+      reason:
+        [service!.name, input.firstTime ? 'primera vez' : null, input.reason?.trim().slice(0, 160) || null]
+          .filter(Boolean)
+          .join(' · ') || undefined,
       status: 'scheduled',
       source: 'online',
     } as never,
   })
-  return { appointmentId: String(appt.id), start: start.toISOString(), patientName: patient.name }
+  return {
+    appointmentId: String(appt.id),
+    code: bookingCode(String(appt.id)),
+    start: start.toISOString(),
+    durationMins: service!.durationMins,
+    serviceName: service!.name,
+    patientName: patient.name,
+  }
 }
 
 export type OnlineRequestInput = PatientContact & {

@@ -135,7 +135,7 @@ export default async function PatientsPage({
                   </Td>
                   <Td className="tabular hidden text-muted-foreground sm:table-cell">{p.phone}</Td>
                   <Td className="hidden text-muted-foreground md:table-cell">
-                    {age(p) != null ? `${age(p)} años` : '—'} · {GENDER_LABELS[p.gender] ?? p.gender}
+                    {age(p) != null ? `${age(p)} años` : '—'} · {p.gender ? GENDER_LABELS[p.gender] : 'Sexo por completar'}
                   </Td>
                   <Td className="hidden lg:table-cell">
                     {p.allergies ? (

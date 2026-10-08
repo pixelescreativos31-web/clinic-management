@@ -27,7 +27,7 @@ export const Patients: CollectionConfig = {
   timestamps: true,
   hooks: {
     beforeValidate: [
-      ({ data }) => {
+      ({ data, originalDoc }) => {
         if (!data) return data
         if (data.phone) data.phone = normalizePhone(data.phone)
         if (data.emergencyContact?.phone) {
@@ -38,9 +38,16 @@ export const Patients: CollectionConfig = {
         if (data.documentNumber && (data.documentType ?? 'cedula') === 'cedula') {
           data.documentNumber = String(data.documentNumber).replace(/[^0-9]/g, '')
         }
-        // Clinics often know only the age. Require at least one of DOB / age.
-        if (!data.dateOfBirth && (data.ageYears === undefined || data.ageYears === null)) {
-          throw new APIError('Indique la fecha de nacimiento o la edad.', 400, {
+        // Clinics often know only the age. Require at least one of DOB / age, and
+        // the sex — except for patients who booked online with just name + phone
+        // (`pendingIntake`); staff complete those at check-in, which clears the flag.
+        const merged = { ...(originalDoc ?? {}), ...data }
+        const hasAge = Boolean(merged.dateOfBirth) || (merged.ageYears !== undefined && merged.ageYears !== null)
+        const complete = hasAge && Boolean(merged.gender)
+        if (complete) {
+          if (merged.pendingIntake) data.pendingIntake = false
+        } else if (!merged.pendingIntake) {
+          throw new APIError(hasAge ? 'Indique el sexo del paciente.' : 'Indique la fecha de nacimiento o la edad.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -102,8 +109,7 @@ export const Patients: CollectionConfig = {
     {
       name: 'gender',
       type: 'select',
-      required: true,
-      label: 'Sexo',
+      label: 'Sexo', // required by the beforeValidate hook unless pendingIntake
       options: GENDERS.map((g) => ({ label: GENDER_LABELS[g], value: g })),
     },
     {
@@ -113,6 +119,13 @@ export const Patients: CollectionConfig = {
       admin: { date: { pickerAppearance: 'dayOnly' } },
     },
     { name: 'ageYears', type: 'number', min: 0, max: 130, label: 'Edad (años)' },
+    {
+      name: 'pendingIntake',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Datos por completar',
+      admin: { description: 'Registrado desde la reserva en línea; falta edad o sexo.' },
+    },
     {
       name: 'bloodGroup',
       type: 'select',

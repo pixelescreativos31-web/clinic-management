@@ -35,6 +35,8 @@ export type ProfileInitial = {
   availableDays: string[]
   availableFrom: string
   availableTo: string
+  /** Appointment types for online booking (strings while editing). */
+  services: { name: string; durationMins: string; price: string }[]
 }
 
 /** Stripe-style settings row: description rail on the left, fields card on the right. */
@@ -139,6 +141,9 @@ export function SettingsForm({
         availableDays: profile.availableDays,
         availableFrom: profile.availableFrom,
         availableTo: profile.availableTo,
+        bookingServices: profile.services
+          .filter((s) => s.name.trim() && Number(s.durationMins) > 0)
+          .map((s) => ({ name: s.name.trim(), durationMins: Number(s.durationMins), price: s.price === '' ? undefined : Number(s.price) })),
       })
       if (!prof.ok) return setError(prof.message)
       setSaved(true)
@@ -330,6 +335,40 @@ export function SettingsForm({
             <Field label="Hasta">
               <TimePicker value={profile.availableTo} onChange={(v) => setP('availableTo', v)} openTime="00:00" closeTime="24:00" stepMins={30} />
             </Field>
+            <div className="sm:col-span-2 xl:col-span-3">
+              <Field label="Tipos de cita (reservas en línea)" hint="Cada tipo tiene su duración y precio. Si no agrega ninguno, se ofrece «Consulta» con la duración de la agenda.">
+                <div className="flex flex-col gap-2">
+                  {profile.services.map((s, i) => {
+                    const setS = (patch: Partial<typeof s>) =>
+                      setP('services', profile.services.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+                    return (
+                      <div key={i} className="grid grid-cols-[1fr_88px_104px_auto] items-center gap-2">
+                        <input className={inputClass} value={s.name} onChange={(e) => setS({ name: e.target.value })} placeholder="Primera consulta" aria-label="Nombre del tipo de cita" />
+                        <input className={inputClass} inputMode="numeric" value={s.durationMins} onChange={(e) => setS({ durationMins: e.target.value.replace(/\D/g, '') })} placeholder="min" aria-label="Duración en minutos" />
+                        <input className={inputClass} inputMode="numeric" value={s.price} onChange={(e) => setS({ price: e.target.value.replace(/[^0-9.]/g, '') })} placeholder="Precio" aria-label="Precio" />
+                        <button
+                          type="button"
+                          onClick={() => setP('services', profile.services.filter((_, j) => j !== i))}
+                          className="h-10 rounded-md border border-border px-3 text-sm text-muted-foreground hover:border-red/40 hover:text-red"
+                          aria-label="Quitar tipo de cita"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )
+                  })}
+                  {profile.services.length < 8 && (
+                    <button
+                      type="button"
+                      onClick={() => setP('services', [...profile.services, { name: '', durationMins: '30', price: '' }])}
+                      className="w-fit text-[13px] font-medium text-primary hover:underline"
+                    >
+                      + Agregar tipo de cita
+                    </button>
+                  )}
+                </div>
+              </Field>
+            </div>
           </div>
         )}
       </Section>

@@ -163,7 +163,7 @@ export default async function PatientProfile({
             <p className="tabular mt-2 text-[13px] text-muted-foreground lg:hidden">
               {[
                 patient.phone,
-                GENDER_LABELS[patient.gender] ?? patient.gender,
+                patient.gender ? GENDER_LABELS[patient.gender] : null,
                 age != null ? `${age} ${age === 1 ? 'año' : 'años'}` : null,
                 patient.bloodGroup,
                 patient.insurance?.provider,
@@ -187,7 +187,7 @@ export default async function PatientProfile({
               ...(patient.documentNumber
                 ? [{ label: patient.documentType === 'passport' ? 'Pasaporte' : patient.documentType === 'other' ? 'Documento' : 'Cédula', value: <span className="tabular">{patient.documentType === 'cedula' || !patient.documentType ? fmtCedula(patient.documentNumber) : patient.documentNumber}</span> }]
                 : []),
-              { label: 'Sexo', value: GENDER_LABELS[patient.gender] ?? patient.gender },
+              { label: 'Sexo', value: patient.gender ? GENDER_LABELS[patient.gender] : '—' },
               { label: 'Edad', value: age != null ? `${age} ${age === 1 ? 'año' : 'años'}` : '—' },
               { label: 'Grupo sanguíneo', value: patient.bloodGroup || '—' },
               ...(patient.occupation ? [{ label: 'Ocupación', value: patient.occupation }] : []),
@@ -210,6 +210,14 @@ export default async function PatientProfile({
             ))}
           </dl>
 
+          {patient.pendingIntake && (
+            <Link
+              href={`/dashboard/patients/${patient.id}/edit`}
+              className="block border-t bg-amber-soft px-5 py-3 text-[13px] text-amber hover:underline"
+            >
+              <span className="font-semibold">Datos por completar.</span> Agendó en línea: falta {[!patient.gender && 'el sexo', patient.ageYears == null && !patient.dateOfBirth && 'la edad'].filter(Boolean).join(' y ') || 'revisar sus datos'}.
+            </Link>
+          )}
           {patient.allergies && (
             <div className="border-t px-4 py-3">
               <AllergyBanner allergies={patient.allergies} />

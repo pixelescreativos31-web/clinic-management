@@ -69,7 +69,7 @@ export function PatientForm({
   }
 
   const derivedAge = form.dateOfBirth ? ageFromDOB(form.dateOfBirth) : null
-  const canSave = Boolean(form.name.trim() && form.phone.trim() && (form.dateOfBirth || form.ageYears))
+  const canSave = Boolean(form.name.trim() && form.phone.trim() && form.gender && (form.dateOfBirth || form.ageYears))
 
   const submit = () => {
     setError(null)
@@ -147,6 +147,7 @@ export function PatientForm({
             <AppSelect
               value={form.gender}
               onChange={(v) => set('gender', v)}
+              placeholder="Elija…"
               options={GENDERS.map((g) => ({ value: g, label: GENDER_LABELS[g] }))}
             />
           </Field>

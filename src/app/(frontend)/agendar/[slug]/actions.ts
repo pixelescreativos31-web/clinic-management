@@ -27,17 +27,17 @@ async function clientIp(): Promise<string> {
   return h.get('cf-connecting-ip') || h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
 }
 
-export async function getSlots(slug: string, doctorId: string, date: string): Promise<string[]> {
+export async function getSlots(slug: string, doctorId: string, date: string, serviceIndex = 0): Promise<string[]> {
   const payload = await getPayloadClient()
   const clinic = await getPublicClinic(payload, slug)
   if (!clinic) return []
-  return freeSlots(payload, clinic, doctorId, date)
+  return freeSlots(payload, clinic, doctorId, date, new Date(), serviceIndex)
 }
 
 export async function submitBooking(
   slug: string,
   input: OnlineBookingInput,
-): Promise<ActionResult<{ start: string; patientName: string }>> {
+): Promise<ActionResult<{ code: string; start: string; durationMins: number; serviceName: string; patientName: string }>> {
   const payload = await getPayloadClient()
   const clinic = await getPublicClinic(payload, slug)
   if (!clinic) return UNAVAILABLE
@@ -46,7 +46,8 @@ export async function submitBooking(
     const res = await bookOnline(payload, clinic, input)
     revalidatePath('/dashboard/appointments')
     revalidatePath('/dashboard')
-    return { ok: true, data: { start: res.start, patientName: res.patientName } }
+    const { code, start, durationMins, serviceName, patientName } = res
+    return { ok: true, data: { code, start, durationMins, serviceName, patientName } }
   } catch (err) {
     return { ok: false, ...toActionError(err) }
   }

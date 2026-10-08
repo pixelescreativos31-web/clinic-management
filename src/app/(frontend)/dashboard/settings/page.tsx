@@ -46,6 +46,7 @@ export default async function SettingsPage() {
           availableDays: (u.availableDays as string[] | null | undefined) ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
           availableFrom: u.availableFrom ?? DEFAULT_OPEN_TIME,
           availableTo: u.availableTo ?? DEFAULT_CLOSE_TIME,
+          services: (u.bookingServices ?? []).map((s) => ({ name: s.name, durationMins: String(s.durationMins), price: s.price != null ? String(s.price) : '' })),
         }}
       />
     </div>
