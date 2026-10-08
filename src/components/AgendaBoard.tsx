@@ -8,7 +8,7 @@
 // The timeline shows free slots ("Libre · tocar para agendar") that open the
 // quick-booking sheet at that time.
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
@@ -191,6 +191,7 @@ export function AgendaBoard({
   appts,
   clinical,
   defaultDoctorId,
+  initialToast,
 }: {
   days: AgendaDay[]
   date: string
@@ -205,11 +206,22 @@ export function AgendaBoard({
   appts: AgendaAppt[]
   clinical: boolean
   defaultDoctorId: string
+  /** One-off message after returning from another screen (e.g. «Consulta guardada»). */
+  initialToast?: string
 }) {
   const [view, setView] = useState<'list' | 'timeline'>('list')
   const [doctorFilter, setDoctorFilter] = useState<string>(doctors.length > 1 ? 'all' : defaultDoctorId)
   const [sheet, setSheet] = useState<{ mode: QuickMode; time?: string } | null>(null)
   const { toast, say } = useToast()
+  const router = useRouter()
+  useEffect(() => {
+    if (!initialToast) return
+    say(initialToast)
+    // Drop ?ok= so a refresh doesn't repeat the message.
+    const url = new URL(window.location.href)
+    url.searchParams.delete('ok')
+    router.replace(url.pathname + url.search, { scroll: false })
+  }, [initialToast, say, router])
 
   const shown = appts.filter((a) => doctorFilter === 'all' || a.doctorId === doctorFilter)
   const waiting = shown.filter((a) => a.status === 'checked-in').length

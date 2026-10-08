@@ -212,6 +212,17 @@ export const Visits: CollectionConfig = {
         { name: 'glucoseMgDl', type: 'number', min: 10, max: 1000, label: 'Glucemia (mg/dL)' },
       ],
     },
+    // Consultation format chosen in the form; the clinic's consultTemplate is only
+    // the default. Nutrition adds the fields below.
+    {
+      name: 'format',
+      type: 'select',
+      label: 'Formato',
+      options: [
+        { label: 'General', value: 'general' },
+        { label: 'Nutrición', value: 'nutrition' },
+      ],
+    },
     // Nutrition template (clinics with settings.consultTemplate = 'nutrition').
     // Field list lives in src/lib/nutrition.ts; clinical roles only, like the exam.
     {

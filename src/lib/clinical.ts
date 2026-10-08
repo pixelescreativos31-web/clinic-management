@@ -50,3 +50,34 @@ export function vitalsLine(v: VitalsLike): string {
     .filter(Boolean)
     .join(' · ')
 }
+
+/**
+ * A doctor's most frequent diagnoses (last 200 consultations), offered as
+ * one-tap chips in the consultation form. Falls back to «Control».
+ */
+export async function frequentDiagnoses(
+  payload: import('payload').Payload,
+  tenantID: string,
+  doctorID: string,
+  limit = 4,
+): Promise<string[]> {
+  const res = await payload.find({
+    collection: 'visits',
+    where: { tenant: { equals: tenantID }, doctor: { equals: doctorID } },
+    sort: '-visitDate',
+    limit: 200,
+    depth: 0,
+    overrideAccess: true,
+    select: { diagnosis: true },
+  })
+  const counts = new Map<string, { label: string; n: number }>()
+  for (const v of res.docs as { diagnosis?: string | null }[]) {
+    const label = v.diagnosis?.trim()
+    if (!label || label.length > 40) continue
+    const key = label.toLowerCase()
+    const cur = counts.get(key)
+    counts.set(key, { label: cur?.label ?? label, n: (cur?.n ?? 0) + 1 })
+  }
+  const top = [...counts.values()].sort((a, b) => b.n - a.n).slice(0, limit).map((c) => c.label)
+  return top.length ? top : ['Control']
+}

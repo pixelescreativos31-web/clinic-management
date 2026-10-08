@@ -37,8 +37,9 @@ export type VisitInput = {
   }
   prescription?: PrescriptionRowInput[]
   followUpDate?: string
-  /** Only sent by clinics on the nutrition template. */
+  /** Only sent when the consultation uses the nutrition format. */
   nutrition?: NutritionFormState
+  format?: 'general' | 'nutrition'
 }
 
 const FORBIDDEN = { ok: false as const, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
@@ -76,6 +77,7 @@ function clinicalData(input: Omit<VisitInput, 'appointmentId'>, forUpdate: boole
     prescription,
     followUpDate: input.followUpDate || empty,
     nutrition: formToNutrition(input.nutrition, forUpdate),
+    ...(input.format ? { format: input.format === 'nutrition' ? 'nutrition' : 'general' } : {}),
   }
 }
 

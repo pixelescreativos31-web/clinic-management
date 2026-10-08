@@ -24,7 +24,7 @@ function addDays(dateStr: string, delta: number): string {
 
 const DOW = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
 
-export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<{ date?: string; ok?: string }> }) {
   const { user, tenant } = await requireDashboardSession()
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)!
@@ -189,6 +189,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
             appts={rows}
             clinical={isClinical(user)}
             defaultDoctorId={defaultDoctorId}
+            initialToast={params.ok?.slice(0, 120)}
           />
         )}
       </AppContent>

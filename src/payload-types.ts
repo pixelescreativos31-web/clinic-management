@@ -375,6 +375,7 @@ export interface Visit {
     heightCm?: number | null;
     glucoseMgDl?: number | null;
   };
+  format?: ('general' | 'nutrition') | null;
   nutrition?: {
     constipation?: ('yes' | 'no') | null;
     waterIntake?: ('good' | 'poor') | null;
@@ -820,6 +821,7 @@ export interface VisitsSelect<T extends boolean = true> {
         heightCm?: T;
         glucoseMgDl?: T;
       };
+  format?: T;
   nutrition?:
     | T
     | {

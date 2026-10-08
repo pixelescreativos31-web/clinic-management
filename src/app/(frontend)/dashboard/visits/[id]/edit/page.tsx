@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
@@ -6,6 +5,9 @@ import { VisitForm, type VisitInitial } from '@/components/VisitForm'
 import { backgroundLine } from '@/lib/clinical'
 import { isClinical } from '@/lib/practice'
 import { formatDateTime } from '@/lib/format'
+import { AppHeader, AppContent } from '@/components/AppHeader'
+import { frequentDiagnoses } from '@/lib/clinical'
+import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { isNutritionPractice, nutritionToForm } from '@/lib/nutrition'
 import type { Patient, User, Visit } from '@/payload-types'
 
@@ -62,27 +64,36 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
       instructions: r.instructions ?? '',
     })),
     nutrition: nutritionToForm(visit.nutrition),
+    // Older visits have no stored format: infer it from saved nutrition data.
+    format:
+      visit.format === 'nutrition' || visit.format === 'general'
+        ? visit.format
+        : Object.values(visit.nutrition ?? {}).some((x) => x != null && x !== '')
+          ? 'nutrition'
+          : isNutritionPractice(tenant)
+            ? 'nutrition'
+            : 'general',
   }
 
+  const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link
-        href={`/dashboard/patients/${relId(patient)}?tab=historia`}
-        className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink"
-      >
-        ‹ {patient?.name ?? 'Paciente'}
-      </Link>
-      <h1 className="mt-2 text-[1.45rem] font-semibold">Editar consulta</h1>
-      <p className="mb-6 text-sm text-muted-foreground">{formatDateTime(visit.visitDate, tenant)}</p>
-      <VisitForm
-        visitId={String(visit.id)}
-        patientName={patient?.name ?? 'Paciente'}
-        doctorName={(visit.doctor as User)?.name ?? 'Médico'}
-        allergies={patient?.allergies}
-        background={backgroundLine(patient)}
-        initial={initial}
-        nutritionTemplate={isNutritionPractice(tenant)}
+    <>
+      <AppHeader
+        title="Editar consulta"
+        subtitle={`${patient?.name ?? 'Paciente'} · ${formatDateTime(visit.visitDate, tenant)}`}
+        backHref={`/dashboard/patients/${relId(patient)}?tab=historia`}
       />
-    </div>
+      <AppContent>
+        <VisitForm
+          visitId={String(visit.id)}
+          allergies={patient?.allergies}
+          background={backgroundLine(patient)}
+          initial={initial}
+          defaultFormat={isNutritionPractice(tenant) ? 'nutrition' : 'general'}
+          frequentDiagnoses={await frequentDiagnoses(payload, String(tenantID), relId(visit.doctor as User))}
+          baseDate={new Date(visit.visitDate).toLocaleDateString('en-CA', { timeZone: tz })}
+        />
+      </AppContent>
+    </>
   )
 }

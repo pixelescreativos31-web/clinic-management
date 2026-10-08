@@ -16,7 +16,13 @@ import { initialsOf } from '@/lib/apptStatus'
 import { APP_NAME } from '@/lib/brand'
 
 /** Pages already on the new design render their own AppHeader. */
-const REDESIGNED = ['/dashboard', '/dashboard/appointments', '/dashboard/invoices']
+const REDESIGNED: RegExp[] = [
+  /^\/dashboard$/,
+  /^\/dashboard\/appointments$/,
+  /^\/dashboard\/invoices$/,
+  /^\/dashboard\/visits\/new$/,
+  /^\/dashboard\/visits\/[^/]+\/edit$/,
+]
 
 function UserMenu() {
   const shell = useShell()
@@ -119,7 +125,7 @@ export function AppContent({ children, className = '' }: { children: React.React
  */
 export function ContentFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  if (REDESIGNED.includes(pathname)) return <main className="flex-1 overflow-x-hidden pb-24 md:pb-0">{children}</main>
+  if (REDESIGNED.some((r) => r.test(pathname))) return <main className="flex-1 overflow-x-hidden pb-24 md:pb-0">{children}</main>
   return (
     <main className="flex-1 overflow-x-hidden pb-24 md:pb-8">
       <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e3e7e7] bg-[rgba(244,246,246,.92)] px-4 backdrop-blur-md md:hidden">
