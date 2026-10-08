@@ -112,7 +112,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
   }
 
   return (
-    <div className="mx-auto max-w-5xl animate-fade-up px-6 py-8">
+    <div className="mx-auto max-w-5xl animate-fade-up px-4 py-6 sm:px-6 sm:py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-xl font-semibold tracking-tight text-primary">
@@ -120,8 +120,11 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">Consola de la plataforma · {plural(tenants.length, 'consultorio', 'consultorios')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <a href="/admin" className={btnGhost}>Panel de administración</a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a href="/admin" className={btnGhost}>
+            <span className="sm:hidden">Admin</span>
+            <span className="hidden sm:inline">Panel de administración</span>
+          </a>
           <button className={btnPrimary} onClick={() => setShowAdd((s) => !s)}>
             <IconPlus size={15} />
             Nuevo consultorio
@@ -271,46 +274,47 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
       )}
 
       <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-canvas/50">
               <Th>Consultorio</Th>
-              <Th>Plan</Th>
-              <Th>Moneda</Th>
-              <Th>Estado</Th>
-              <Th className="text-end">Médicos</Th>
-              <Th className="text-end">Pacientes</Th>
-              <Th className="text-end">Citas</Th>
+              <Th className="hidden sm:table-cell">Plan</Th>
+              <Th className="hidden lg:table-cell">Moneda</Th>
+              <Th className="hidden sm:table-cell">Estado</Th>
+              <Th className="hidden text-end md:table-cell">Médicos</Th>
+              <Th className="hidden text-end md:table-cell">Pacientes</Th>
+              <Th className="hidden text-end md:table-cell">Citas</Th>
               <Th className="text-end" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {pageRows.map((t) => (
               <tr key={t.id} className="transition-colors hover:bg-canvas/60">
-                <Td>
+                {/* w-full + max-w-0 lets the name truncate instead of widening the table. */}
+                <Td className="w-full max-w-0">
                   <div className="flex items-center gap-3">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
                       <IconBuilding size={15} />
                     </span>
                     <div className="min-w-0">
                       <div className="truncate font-medium">{t.name}</div>
-                      <div className="truncate text-xs text-faint">{t.city || '—'}</div>
+                      <div className="truncate text-xs text-faint">
+                        {t.city || '—'}
+                        <span className="sm:hidden"> · {planLabel(asPlan(t.plan))}</span>
+                      </div>
+                      <div className="mt-1 sm:hidden"><StatusPill status={t.status} /></div>
                     </div>
                   </div>
                 </Td>
-                <Td className="text-muted-foreground">{planLabel(asPlan(t.plan))}</Td>
-                <Td className="text-muted-foreground">{t.currency}</Td>
-                <Td>
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    t.status === 'active' ? 'bg-primary-soft text-primary' : 'bg-amber-soft text-amber'
-                  }`}>
-                    <span className={`size-1.5 rounded-full ${t.status === 'active' ? 'bg-primary' : 'bg-amber'}`} />
-                    {STATUS_LABELS[t.status] ?? t.status}
-                  </span>
+                <Td className="hidden whitespace-nowrap text-muted-foreground sm:table-cell">{planLabel(asPlan(t.plan))}</Td>
+                <Td className="hidden text-muted-foreground lg:table-cell">{t.currency}</Td>
+                <Td className="hidden whitespace-nowrap sm:table-cell">
+                  <StatusPill status={t.status} />
                 </Td>
-                <Td className="tabular text-end">{t.doctors}</Td>
-                <Td className="tabular text-end">{t.patients}</Td>
-                <Td className="tabular text-end">{t.appointments}</Td>
+                <Td className="tabular hidden text-end md:table-cell">{t.doctors}</Td>
+                <Td className="tabular hidden text-end md:table-cell">{t.patients}</Td>
+                <Td className="tabular hidden text-end md:table-cell">{t.appointments}</Td>
                 <Td className="text-end">
                   <button
                     className={`text-xs font-medium transition-colors ${
@@ -326,6 +330,7 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
             ))}
           </tbody>
         </table>
+        </div>
         <TablePager page={page} totalPages={totalPages} onChange={setPage} />
       </Card>
 
@@ -351,5 +356,16 @@ export function SuperConsole({ tenants, activity = [] }: { tenants: TenantRow[];
         </Card>
       )}
     </div>
+  )
+}
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      status === 'active' ? 'bg-primary-soft text-primary' : 'bg-amber-soft text-amber'
+    }`}>
+      <span className={`size-1.5 rounded-full ${status === 'active' ? 'bg-primary' : 'bg-amber'}`} />
+      {STATUS_LABELS[status] ?? status}
+    </span>
   )
 }

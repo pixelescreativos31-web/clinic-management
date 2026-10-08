@@ -20,7 +20,7 @@ export function Toast({ message }: { message: string }) {
   return (
     <div
       role="status"
-      className="fixed bottom-24 left-1/2 z-[60] max-w-[calc(100vw-32px)] -translate-x-1/2 truncate rounded-full bg-[#15201e] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,.5)] md:bottom-7"
+      className="fixed bottom-24 left-1/2 z-[60] max-w-[calc(100vw-32px)] -translate-x-1/2 truncate rounded-full bg-[#15201e] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,.5)] lg:bottom-7"
     >
       {message}
     </div>

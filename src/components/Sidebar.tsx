@@ -107,7 +107,7 @@ export function Sidebar({
     <ShellContext.Provider value={{ clinicName, userName, roleText, adminItems: admin.map(({ href, label }) => ({ href, label })) }}>
       <div className="flex min-h-screen bg-[#f4f6f6] text-[#15201e]">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col gap-1 border-r border-[#e3e7e7] bg-white px-3 py-5 md:flex">
+        <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col gap-1 border-r border-[#e3e7e7] bg-white px-3 py-5 lg:flex">
           <Link href="/dashboard" className="flex items-center gap-2.5 px-2.5 pb-[18px] text-[#15201e] hover:text-[#15201e]">
             <span aria-hidden className="flex size-7 items-center justify-center rounded-lg bg-[#0d6e60] text-sm font-bold text-white">
               +
@@ -151,7 +151,7 @@ export function Sidebar({
           {children}
           {/* Mobile bottom tabs */}
           <nav
-            className="fixed inset-x-0 bottom-0 z-30 grid border-t border-[#e3e7e7] bg-white px-1 pt-1.5 pb-[max(14px,env(safe-area-inset-bottom))] md:hidden"
+            className="fixed inset-x-0 bottom-0 z-30 grid border-t border-[#e3e7e7] bg-white px-1 pt-1.5 pb-[max(14px,env(safe-area-inset-bottom))] lg:hidden"
             style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
           >
             {tabs.map((item) => {

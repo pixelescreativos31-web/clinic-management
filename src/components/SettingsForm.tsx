@@ -52,7 +52,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-[300px_1fr] lg:gap-10">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-10">
       <div>
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-secondary text-primary">

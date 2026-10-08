@@ -82,12 +82,13 @@ export default async function ActivityPage({
         {logs.length === 0 ? (
           <EmptyState message={activeAction ? 'Aún no hay actividad para este filtro.' : 'Aún no se ha registrado actividad.'} />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-canvas/50">
                 <Th>Fecha</Th>
-                <Th>Usuario</Th>
-                <Th>Acción</Th>
+                <Th className="hidden md:table-cell">Usuario</Th>
+                <Th className="hidden sm:table-cell">Acción</Th>
                 <Th>Resumen</Th>
               </tr>
             </thead>
@@ -96,19 +97,29 @@ export default async function ActivityPage({
                 const who = (log.user as User)?.name ?? '—'
                 return (
                   <tr key={log.id} className="transition-colors hover:bg-canvas/60">
-                    <Td className="tabular whitespace-nowrap text-muted-foreground">{fmt(log.createdAt)}</Td>
-                    <Td className="whitespace-nowrap font-medium">{who}</Td>
-                    <Td className="whitespace-nowrap">
+                    <Td className="tabular align-top whitespace-nowrap text-muted-foreground md:align-middle">
+                      {fmt(log.createdAt)}
+                      {/* Narrow screens fold the user into this cell instead of a column. */}
+                      <div className="mt-0.5 max-w-[9rem] truncate font-medium text-ink md:hidden">{who}</div>
+                    </Td>
+                    <Td className="hidden whitespace-nowrap font-medium md:table-cell">{who}</Td>
+                    <Td className="hidden whitespace-nowrap sm:table-cell">
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                         {actionLabel(log.action)}
                       </span>
                     </Td>
-                    <Td>{log.summary}</Td>
+                    <Td className="break-words">
+                      <span className="mb-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs font-medium whitespace-nowrap text-muted-foreground sm:hidden">
+                        {actionLabel(log.action)}
+                      </span>
+                      <div>{log.summary}</div>
+                    </Td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

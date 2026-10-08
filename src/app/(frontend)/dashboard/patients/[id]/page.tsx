@@ -147,9 +147,9 @@ export default async function PatientProfile({
         Pacientes
       </Link>
 
-      <div className="mt-3 grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="mt-3 grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
         {/* Patient info rail */}
-        <Card className="overflow-hidden lg:sticky lg:top-6">
+        <Card className="overflow-hidden xl:sticky xl:top-6">
           <div className="border-b bg-secondary/30 px-5 py-5 text-center">
             <span className="inline-flex">
               <Avatar name={patient.name} />
@@ -160,7 +160,7 @@ export default async function PatientProfile({
             </span>
             {/* Phones: one summary line instead of the full list, so the clinical
                 history is reachable without scrolling past every field. */}
-            <p className="tabular mt-2 text-[13px] text-muted-foreground lg:hidden">
+            <p className="tabular mt-2 text-[13px] text-muted-foreground xl:hidden">
               {[
                 patient.phone,
                 patient.gender ? GENDER_LABELS[patient.gender] : null,
@@ -173,7 +173,7 @@ export default async function PatientProfile({
             </p>
           </div>
 
-          <dl className="hidden divide-y divide-border text-sm lg:block">
+          <dl className="hidden divide-y divide-border text-sm xl:block">
             {[
               {
                 label: 'Teléfono',
@@ -243,16 +243,16 @@ export default async function PatientProfile({
           </div>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
         {/* Tabs: Historia clínica (clinical) · Resumen · Citas · Facturas */}
-        <div className="inline-flex w-fit rounded-lg border border-border bg-card p-0.5 text-sm">
+        <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-lg border border-border bg-card p-0.5 text-sm [scrollbar-width:none]">
           {TABS.map((t) => {
             const active = t.key === tab
             return (
               <Link
                 key={t.key}
                 href={tabHref(t.key)}
-                className={`rounded-md px-3.5 py-1.5 font-medium transition-colors ${
+                className={`shrink-0 rounded-md px-2.5 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors sm:px-3.5 sm:text-sm ${
                   active ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-ink'
                 }`}
               >
@@ -371,9 +371,9 @@ export default async function PatientProfile({
                 {timeline.map((e) => (
                   <li
                     key={`${e.kind}-${e.id}`}
-                    className="flex items-center gap-4 px-5 py-3 text-sm"
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm sm:flex-nowrap sm:gap-4 sm:px-5"
                   >
-                    <span className="tabular w-44 shrink-0 text-[13px] text-muted-foreground">
+                    <span className="tabular basis-full text-xs text-muted-foreground sm:w-44 sm:shrink-0 sm:basis-auto sm:text-[13px]">
                       {formatDateTime(e.at, tenant)}
                     </span>
                     {e.kind === 'visit' && (
@@ -455,8 +455,8 @@ export default async function PatientProfile({
             ) : (
               <ul className="divide-y divide-border">
                 {appts.map((a) => (
-                  <li key={a.id} className="flex items-center gap-4 px-5 py-3 text-sm transition-colors hover:bg-canvas/60">
-                    <span className="tabular w-44 shrink-0 text-[13px] text-muted-foreground">
+                  <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm transition-colors hover:bg-canvas/60 sm:flex-nowrap sm:gap-4 sm:px-5">
+                    <span className="tabular basis-full text-xs text-muted-foreground sm:w-44 sm:shrink-0 sm:basis-auto sm:text-[13px]">
                       {formatDateTime(a.start, tenant)}
                     </span>
                     <span className="min-w-0 flex-1 truncate">

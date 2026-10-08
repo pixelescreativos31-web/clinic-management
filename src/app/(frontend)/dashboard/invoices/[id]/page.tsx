@@ -54,7 +54,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex flex-col gap-4">
           {/* Patient */}
           <Card className="flex items-center gap-3 p-4">
@@ -74,17 +74,17 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 <tr className="border-b border-border bg-canvas/50">
                   <Th>Descripción</Th>
                   <Th className="text-end">Cant.</Th>
-                  <Th className="text-end">Precio unit.</Th>
+                  <Th className="hidden text-end sm:table-cell">Precio unit.</Th>
                   <Th className="text-end">Monto</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {lines.map((li, i) => (
                   <tr key={i}>
-                    <Td>{li.description}</Td>
+                    <Td className="break-words">{li.description}</Td>
                     <Td className="tabular text-end">{li.quantity}</Td>
-                    <Td className="tabular text-end">{m(li.unitAmount)}</Td>
-                    <Td className="tabular text-end font-medium">{m(li.amount)}</Td>
+                    <Td className="tabular hidden text-end whitespace-nowrap sm:table-cell">{m(li.unitAmount)}</Td>
+                    <Td className="tabular text-end font-medium whitespace-nowrap">{m(li.amount)}</Td>
                   </tr>
                 ))}
               </tbody>

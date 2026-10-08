@@ -140,7 +140,7 @@ export default async function DashboardHome({ searchParams }: { searchParams?: P
           </section>
         )}
 
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <NextPatientCard next={next} clinical={isClinical(user)} />
 
           <div className="col-span-full grid grid-cols-3 gap-2.5">

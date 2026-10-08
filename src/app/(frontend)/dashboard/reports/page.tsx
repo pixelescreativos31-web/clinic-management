@@ -161,8 +161,8 @@ export default async function ReportsPage({
                     <tr className="border-b border-border">
                       <Th className="ps-6">Médico</Th>
                       <Th className="text-end">Citas</Th>
-                      <Th className="text-end">Atendidas</Th>
-                      <Th className="text-end">Tasa de inasistencia</Th>
+                      <Th className="hidden text-end sm:table-cell">Atendidas</Th>
+                      <Th className="hidden text-end sm:table-cell">Tasa de inasistencia</Th>
                       <Th className="pe-6 text-end">Ingresos</Th>
                     </tr>
                   </thead>
@@ -171,9 +171,9 @@ export default async function ReportsPage({
                       <tr key={d.id} className="border-b border-border/60 last:border-0">
                         <Td className="ps-6 font-medium">{d.name}</Td>
                         <Td className="tabular text-end">{d.total}</Td>
-                        <Td className="tabular text-end">{d.completed}</Td>
-                        <Td className="tabular text-end">{pct(d.noShowRate)}</Td>
-                        <Td className="tabular pe-6 text-end font-medium">{money(d.revenue)}</Td>
+                        <Td className="tabular hidden text-end sm:table-cell">{d.completed}</Td>
+                        <Td className="tabular hidden text-end sm:table-cell">{pct(d.noShowRate)}</Td>
+                        <Td className="tabular pe-6 text-end font-medium whitespace-nowrap">{money(d.revenue)}</Td>
                       </tr>
                     ))}
                   </tbody>

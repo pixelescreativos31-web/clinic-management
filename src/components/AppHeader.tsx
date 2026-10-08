@@ -34,7 +34,7 @@ function UserMenu() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Menú de usuario"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e6f1ee] text-[11px] font-semibold text-[#0d6e60] md:hidden"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e6f1ee] text-[11px] font-semibold text-[#0d6e60] lg:hidden"
       >
         {initialsOf(shell.userName)}
       </button>
@@ -42,7 +42,7 @@ function UserMenu() {
           block of this fixed overlay and trap it inside the 56px bar. */}
       {open &&
         createPortal(
-        <div className="fixed inset-0 z-50 md:hidden" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-[rgba(12,33,29,.45)]" />
           <div
             className="absolute inset-x-0 bottom-0 flex animate-[emr-up_.25s_ease-out] flex-col gap-1 rounded-t-[18px] bg-white px-4 pt-2.5 pb-[max(20px,env(safe-area-inset-bottom))]"
@@ -125,10 +125,10 @@ export function AppContent({ children, className = '' }: { children: React.React
  */
 export function ContentFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  if (REDESIGNED.some((r) => r.test(pathname))) return <main className="flex-1 overflow-x-hidden pb-24 md:pb-0">{children}</main>
+  if (REDESIGNED.some((r) => r.test(pathname))) return <main className="flex-1 overflow-x-hidden pb-24 lg:pb-0">{children}</main>
   return (
-    <main className="flex-1 overflow-x-hidden pb-24 md:pb-8">
-      <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e3e7e7] bg-[rgba(244,246,246,.92)] px-4 backdrop-blur-md md:hidden">
+    <main className="flex-1 overflow-x-hidden pb-24 lg:pb-8">
+      <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e3e7e7] bg-[rgba(244,246,246,.92)] px-4 backdrop-blur-md lg:hidden">
         <span className="flex items-center gap-2 font-display text-base font-bold">
           <span aria-hidden className="flex size-6 items-center justify-center rounded-md bg-[#0d6e60] text-xs text-white">
             +

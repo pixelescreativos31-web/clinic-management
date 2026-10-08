@@ -532,7 +532,7 @@ export function VisitForm({
       )}
 
       {/* Sticky save bar — sits above the phone tab bar */}
-      <div className="fixed inset-x-0 bottom-[82px] z-20 bg-[linear-gradient(to_top,#f4f6f6_70%,rgba(244,246,246,0))] px-3.5 py-2.5 md:bottom-0 md:left-[232px] md:px-7 md:pb-4">
+      <div className="fixed inset-x-0 bottom-[82px] z-20 bg-[linear-gradient(to_top,#f4f6f6_70%,rgba(244,246,246,0))] px-3.5 py-2.5 lg:bottom-0 lg:left-[232px] md:px-7 md:pb-4">
         <div className="flex w-full max-w-[720px] gap-2">
           <button
             type="button"

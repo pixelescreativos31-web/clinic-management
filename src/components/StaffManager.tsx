@@ -247,31 +247,34 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
       )}
 
       <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-canvas/50">
               <Th>Miembro</Th>
-              <Th>Rol</Th>
-              <Th className="hidden md:table-cell">Teléfono</Th>
-              <Th className="hidden sm:table-cell">Especialidad · Tarifa · Disponibilidad</Th>
+              <Th className="hidden sm:table-cell">Rol</Th>
+              <Th className="hidden xl:table-cell">Teléfono</Th>
+              <Th className="hidden lg:table-cell">Especialidad · Tarifa · Disponibilidad</Th>
               <Th className="text-end" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {pageRows.map((s) => (
               <tr key={s.id} className={`transition-colors hover:bg-canvas/60 ${s.active ? '' : 'opacity-50'}`}>
-                <Td>
+                {/* w-full + max-w-0 lets the name truncate instead of widening the table. */}
+                <Td className="w-full max-w-0">
                   <div className="flex items-center gap-3">
                     <Avatar name={s.name} size="sm" />
                     <div className="min-w-0">
                       <div className="truncate font-medium">{s.name}</div>
                       <div className="truncate text-xs text-faint">{s.email}</div>
+                      <div className="mt-1 sm:hidden"><RoleBadge role={s.role} /></div>
                     </div>
                   </div>
                 </Td>
-                <Td><RoleBadge role={s.role} /></Td>
-                <Td className="tabular hidden text-muted-foreground md:table-cell">{s.phone || '—'}</Td>
-                <Td className="hidden sm:table-cell">
+                <Td className="hidden sm:table-cell"><RoleBadge role={s.role} /></Td>
+                <Td className="tabular hidden whitespace-nowrap text-muted-foreground xl:table-cell">{s.phone || '—'}</Td>
+                <Td className="hidden lg:table-cell">
                   {s.role === 'doctor' ? (
                     <div className="text-muted-foreground">
                       <div>{s.specialty || '—'} · <span className="tabular">{money(s.consultationFee)}</span></div>
@@ -303,6 +306,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
             ))}
           </tbody>
         </table>
+        </div>
         <TablePager page={page} totalPages={totalPages} onChange={setPage} />
       </Card>
       <p className="mt-3 text-xs text-faint">
