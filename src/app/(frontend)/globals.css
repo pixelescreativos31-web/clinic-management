@@ -316,3 +316,11 @@
     transform: none;
   }
 }
+@keyframes emr-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}

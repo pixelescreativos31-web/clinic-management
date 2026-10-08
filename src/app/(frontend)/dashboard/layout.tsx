@@ -1,6 +1,7 @@
 import React from 'react'
 import { requireDashboardSession } from '@/lib/auth'
 import { Sidebar } from '@/components/Sidebar'
+import { ContentFrame } from '@/components/AppHeader'
 import { APP_NAME, SUPPORT_EMAIL } from '@/lib/brand'
 import { isIndividualPractice, isPractitioner } from '@/lib/practice'
 
@@ -21,17 +22,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="flex min-h-screen bg-canvas">
-      <Sidebar
-        clinicName={tenant?.name ?? 'Consultorio'}
-        userName={user.name}
-        role={user.role}
-        practitioner={isPractitioner(user)}
-        individual={isIndividualPractice(tenant)}
-      />
-      <main className="flex-1 overflow-x-hidden px-4 pt-6 pb-24 sm:px-6 md:pb-8">
-        <div className="mx-auto max-w-7xl animate-fade-up">{children}</div>
-      </main>
-    </div>
+    <Sidebar
+      clinicName={tenant?.name ?? 'Consultorio'}
+      userName={user.name}
+      role={user.role}
+      practitioner={isPractitioner(user)}
+      individual={isIndividualPractice(tenant)}
+    >
+      <ContentFrame>{children}</ContentFrame>
+    </Sidebar>
   )
 }

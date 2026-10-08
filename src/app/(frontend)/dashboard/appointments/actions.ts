@@ -6,7 +6,7 @@ import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { wallTimeToUTC } from '@/lib/reports'
 import { computeEnd, findConflict } from '@/lib/booking'
-import { checkAvailability, formatWindow, windowOf, type AvailabilityTag } from '@/lib/availability'
+import { checkAvailability, formatWindow, hhmmToMinutes, weekdayInTz, windowOf, type AvailabilityTag } from '@/lib/availability'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Tenant, User } from '@/payload-types'
 import { isPractitioner } from '@/lib/practice'
@@ -241,4 +241,63 @@ export async function resolveBookingRequest(
   } catch (err) {
     return { ok: false, ...toActionError(err) }
   }
+}
+
+/**
+ * Free start times ("HH:mm") for a doctor on a date, for the quick «Nueva cita»
+ * sheet. Uses the clinic's default duration as the grid, the doctor's window
+ * (or the clinic's hours for on-call / by-appointment doctors) and skips times
+ * already past today. The booking action re-checks everything on save.
+ */
+export async function staffFreeSlots(doctorId: string, date: string): Promise<string[]> {
+  const ctx = await actorTenant()
+  if (!ctx || !doctorId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
+  const { payload, tenant, tenantID } = ctx
+  const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
+  const dur = tenant?.settings?.appointmentDurationMins || 15
+
+  const doctor = (await payload
+    .findByID({ collection: 'users', id: doctorId, depth: 0, overrideAccess: true })
+    .catch(() => null)) as User | null
+  if (!doctor || getTenantID(doctor as never) !== tenantID || !isPractitioner(doctor)) return []
+
+  const noon = wallTimeToUTC(tz, date, '12:00')
+  const regular = (doctor.availabilityType ?? 'regular') === 'regular'
+  if (regular) {
+    const days = (doctor.availableDays as string[] | null | undefined) ?? []
+    if (days.length && !days.includes(weekdayInTz(noon, tz))) return []
+  }
+  const win = regular ? windowOf(doctor) : { from: tenant?.settings?.openTime || '08:00', to: tenant?.settings?.closeTime || '18:00' }
+  const fromMin = hhmmToMinutes(win.from)
+  const toMin = hhmmToMinutes(win.to)
+
+  const dayStart = wallTimeToUTC(tz, date, '00:00')
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3600_000)
+  const taken = await payload.find({
+    collection: 'appointments',
+    where: {
+      tenant: { equals: tenantID },
+      doctor: { equals: doctorId },
+      status: { in: ['scheduled', 'checked-in'] },
+      isWalkIn: { not_equals: true },
+      and: [{ start: { less_than: dayEnd.toISOString() } }, { end: { greater_than: dayStart.toISOString() } }],
+    },
+    limit: 500,
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+  })
+  const busy = taken.docs.map((a) => [new Date(a.start).getTime(), new Date(a.end ?? a.start).getTime()] as const)
+  const now = Date.now()
+
+  const out: string[] = []
+  for (let m = fromMin; m + dur <= toMin; m += dur) {
+    const hhmm = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+    const start = wallTimeToUTC(tz, date, hhmm).getTime()
+    const end = start + dur * 60_000
+    if (start < now) continue
+    if (busy.some(([s, e]) => start < e && end > s)) continue
+    out.push(hhmm)
+  }
+  return out
 }
