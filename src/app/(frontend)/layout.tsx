@@ -1,5 +1,5 @@
 import React from 'react'
-import { figtree, bricolage } from '@/lib/fonts'
+import { dmSans, bricolage } from '@/lib/fonts'
 import { APP_NAME, APP_TAGLINE } from '@/lib/brand'
 import './globals.css'
 
@@ -11,7 +11,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${figtree.variable} ${bricolage.variable}`}>
+    <html lang="es" className={`${dmSans.variable} ${bricolage.variable}`}>
       <body>{children}</body>
     </html>
   )

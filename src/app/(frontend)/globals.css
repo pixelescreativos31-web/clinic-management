@@ -11,53 +11,53 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------- 1. Brand palette → shadcn variables ----------
-   "Azul clínico": confident blue on cool, airy surfaces with a deep-navy app
-   chrome. Distinct from the upstream Matab teal so the product reads as its own. */
+   EMR teal (design handoff 2026-10, design_handoff_emr/README.md "Tokens"):
+   deep teal brand on cool grey surfaces, near-black green app chrome. */
 :root {
   /* surfaces & text */
-  --background: #f5f7fb; /* canvas — cool, airy */
-  --foreground: #131a2b; /* ink — all body text */
+  --background: #f4f6f6; /* app background */
+  --foreground: #15201e; /* ink — all body text */
   --card: #ffffff;
-  --card-foreground: #131a2b;
+  --card-foreground: #15201e;
   --popover: #ffffff;
-  --popover-foreground: #131a2b;
+  --popover-foreground: #15201e;
 
   /* brand */
-  --primary: #2b59e0; /* azul clínico (AA on white) */
+  --primary: #0d6e60; /* EMR teal (AA on white) */
   --primary-foreground: #ffffff;
-  --secondary: #e9effd; /* primary-soft */
-  --secondary-foreground: #1f45b8;
-  --accent: #e9effd;
-  --accent-foreground: #1f45b8;
+  --secondary: #e6f1ee; /* primary-soft */
+  --secondary-foreground: #0a584d;
+  --accent: #e6f1ee;
+  --accent-foreground: #0a584d;
 
   /* support */
-  --muted: #eef1f6;
-  --muted-foreground: #5d687c;
-  --destructive: #c0312b;
+  --muted: #eef1f1;
+  --muted-foreground: #6b7577;
+  --destructive: #b3261e;
   --destructive-foreground: #ffffff;
-  --border: #e2e6ee;
-  --input: #d6dbe6;
-  --ring: #2b59e0;
+  --border: #e3e7e7;
+  --input: #d5dbdb;
+  --ring: #0d6e60;
 
   /* status / semantic extras */
   --amber: #b45309;
-  --amber-soft: #fdf4e7;
-  --red-soft: #fdeeed;
+  --amber-soft: #faf3e6;
+  --red-soft: #fbeceb;
   --blue: #2563ab;
-  --blue-soft: #e8f0fa;
-  --green-strong: #12805c;
-  --green-soft: #e5f5ee;
+  --blue-soft: #e9f0f9;
+  --green-strong: #1a7a50;
+  --green-soft: #e8f4ec;
 
   /* charts: single-series discipline */
-  --chart-1: #2b59e0;
-  --chart-grid: #e2e6ee;
+  --chart-1: #0d6e60;
+  --chart-grid: #e3e7e7;
 
   /* dark sidebar (app chrome) */
-  --sidebar: #0e1630;
-  --sidebar-soft: #161f3d;
-  --sidebar-foreground: #a2adc8;
-  --sidebar-active-fg: #f4f6fc;
-  --sidebar-accent: #8aa6ff;
+  --sidebar: #0c211d;
+  --sidebar-soft: #122b26;
+  --sidebar-foreground: #9fb5ae;
+  --sidebar-active-fg: #f3f7f5;
+  --sidebar-accent: #3ad6bb;
   --sidebar-border: rgba(255, 255, 255, 0.08);
 
   --radius: 0.75rem; /* 12px cards/dialogs; md = 8px for buttons/inputs */
@@ -101,8 +101,8 @@
   --color-sidebar-border: var(--sidebar-border);
 
   /* typography (variables set by next/font in layout.tsx — see fonts.ts) */
-  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-figtree), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-dm-sans), ui-sans-serif, sans-serif;
 
   --radius-xl: calc(var(--radius) + 4px);
   --radius-lg: var(--radius);
@@ -248,10 +248,10 @@
   --color-canvas: var(--background); /* legacy: bg-canvas → bg-background */
   --color-surface: var(--card); /* legacy: bg-surface → bg-card */
   --color-ink: var(--foreground); /* legacy: text-ink → text-foreground */
-  --color-faint: #8f98aa; /* quietest text (timestamps, counts) */
+  --color-faint: #97a09a; /* quietest text (timestamps, counts) */
   --color-red: var(--destructive); /* legacy: text-red → text-destructive */
   --color-primary-soft: var(--secondary); /* legacy: bg-primary-soft → bg-secondary */
-  --color-primary-hover: #1f45b8; /* button hover tone */
+  --color-primary-hover: #0a584d; /* button hover tone */
   --color-status-completed-bg: var(--green-soft);
   --color-status-completed-fg: var(--green-strong);
   --color-status-cancelled-bg: var(--muted);
@@ -276,5 +276,33 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+}
+
+/* ---------- Homepage motion (design handoff) ---------- */
+@keyframes emr-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes emr-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  70%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*='animate-[emr-'] {
+    animation: none !important;
   }
 }

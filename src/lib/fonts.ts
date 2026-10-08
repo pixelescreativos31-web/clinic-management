@@ -1,19 +1,15 @@
-// src/lib/fonts.ts — Matab typography (replaces Inter entirely)
+// src/lib/fonts.ts — EMR typography (design handoff 2026-10)
 //
-// Wire-up in src/app/(frontend)/layout.tsx:
-//
-//   import { figtree, bricolage } from '@/lib/fonts'
-//   <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
-//
-// globals.css already maps --font-figtree / --font-bricolage to
-// --font-sans / --font-display. Remove every import/reference to Inter.
+// DM Sans for text, Bricolage Grotesque for headings and figures. Wired up in
+// src/app/(frontend)/layout.tsx; globals.css maps --font-dm-sans /
+// --font-bricolage to --font-sans / --font-display.
 
-import { Bricolage_Grotesque, Figtree } from 'next/font/google'
+import { Bricolage_Grotesque, DM_Sans } from 'next/font/google'
 
-export const figtree = Figtree({
+export const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
-  variable: '--font-figtree',
+  variable: '--font-dm-sans',
   display: 'swap',
 })
 

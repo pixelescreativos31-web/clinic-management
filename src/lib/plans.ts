@@ -26,7 +26,7 @@ export const PLAN_LIMITS = {
     label: 'Médico independiente',
     priceUsd: 25,
     perDoctor: false,
-    description: 'Un médico y su asistente, pacientes ilimitados.',
+    description: 'Un médico y su asistente.',
   },
   clinic: {
     doctors: 3,
@@ -34,7 +34,7 @@ export const PLAN_LIMITS = {
     label: 'Consultorio',
     priceUsd: 50,
     perDoctor: false,
-    description: 'Hasta 3 médicos en el mismo consultorio, con sus asistentes.',
+    description: 'Hasta 3 médicos en el mismo consultorio.',
   },
   plus: {
     doctors: null,
@@ -42,7 +42,7 @@ export const PLAN_LIMITS = {
     label: 'Clínica privada',
     priceUsd: 15,
     perDoctor: true,
-    description: 'Clínicas con más médicos. Precio por médico.',
+    description: 'Clínicas con más médicos.',
   },
   public: {
     doctors: null,
@@ -50,7 +50,7 @@ export const PLAN_LIMITS = {
     label: 'Hospital público',
     priceUsd: null,
     perDoctor: false,
-    description: 'Hospitales y centros del Estado. Precio según el contrato.',
+    description: 'Hospitales del Estado y centros de salud.',
   },
 } as const satisfies Record<
   string,
@@ -96,14 +96,14 @@ export const PLAN_FEATURES: Record<Plan, { inherits?: Plan; features: PlanFeatur
       { text: 'Pacientes ilimitados', included: true },
       { text: 'Cuenta para su asistente', included: true },
       { text: 'Recordatorios por WhatsApp', included: true },
-      { text: 'Formatos de consulta por especialidad (p. ej. nutrición)', included: true },
+      { text: 'Formatos de consulta por especialidad (nutrición)', included: true },
       { text: 'Reportes mensuales y exportación a Excel', included: true },
     ],
   },
   clinic: {
     inherits: 'pro',
     features: [
-      { text: 'Hasta 3 médicos con un solo pago', included: true },
+      { text: 'Hasta 3 médicos en un solo pago', included: true },
       { text: 'Expediente compartido: todos los médicos ven la historia completa del paciente', included: true },
       { text: 'Asistentes para todo el consultorio', included: true },
       { text: 'Agenda y reportes por médico', included: true },
@@ -115,16 +115,16 @@ export const PLAN_FEATURES: Record<Plan, { inherits?: Plan; features: PlanFeatur
     features: [
       { text: 'Médicos ilimitados, pago por médico', included: true },
       { text: 'Una sola historia clínica por paciente en toda la institución', included: true },
-      { text: 'Ayuda para migrar sus expedientes', included: true },
-      { text: 'Soporte prioritario por WhatsApp', included: true },
+      { text: 'Ayuda para migrar sus expedientes ¹', included: true },
+      { text: 'Soporte prioritario por WhatsApp ¹', included: true },
     ],
   },
   public: {
     inherits: 'plus',
     features: [
-      { text: 'Precio y facturación según contrato institucional', included: true },
-      { text: 'Implementación y capacitación del personal', included: true },
-      { text: 'Opción de instalar en servidores de la institución', included: true },
+      { text: 'Precio y facturación bajo contrato institucional ¹', included: true },
+      { text: 'Capacitación del personal ¹', included: true },
+      { text: 'Opción de instalar en los servidores de la institución', included: true },
     ],
   },
 }
@@ -144,10 +144,10 @@ export function limitFor(plan: Plan, resource: LimitedResource): number | null {
 
 export const planLabel = (plan: Plan): string => PLAN_LIMITS[plan].label
 
-/** "Gratis", "A cotizar", "US$25/mes" or "US$15/médico/mes". */
+/** "Gratis", "Cotizado", "US$25/mes" or "US$15/médico/mes". */
 export function planPriceLabel(plan: Plan): string {
   const p = PLAN_LIMITS[plan]
-  if (p.priceUsd === null) return 'A cotizar'
+  if (p.priceUsd === null) return 'Cotizado'
   if (p.priceUsd === 0) return 'Gratis'
   return p.perDoctor ? `US$${p.priceUsd}/médico/mes` : `US$${p.priceUsd}/mes`
 }
