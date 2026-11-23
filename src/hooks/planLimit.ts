@@ -14,14 +14,15 @@ import { APIError } from 'payload'
 import { getTenantID } from '@/access'
 import { ERROR_CODES } from '@/lib/constants'
 import { asPlan, limitFor, planLabel, resourceLabel, type LimitedResource } from '@/lib/plans'
-import { practitionerWhere } from '@/lib/practice'
+import { doctorWhere } from '@/lib/practice'
 
 export function enforcePlanLimit(resource: LimitedResource): CollectionBeforeChangeHook {
   return async ({ data, req, operation }) => {
     if (operation !== 'create' || !data) return data
 
     // Practitioners are the only capped users: doctors, plus an owner who also
-    // practises (the independent-doctor setup). Other roles pass through.
+    // practises (the independent-doctor setup). Other roles — therapists
+    // included — pass through.
     if (resource === 'doctors' && !(data.role === 'doctor' || (data.role === 'owner' && data.practitioner))) {
       return data
     }
@@ -41,7 +42,7 @@ export function enforcePlanLimit(resource: LimitedResource): CollectionBeforeCha
 
     const where: Where =
       resource === 'doctors'
-        ? { and: [practitionerWhere(tenantID), { active: { not_equals: false } }] }
+        ? { and: [doctorWhere(tenantID), { active: { not_equals: false } }] }
         : { tenant: { equals: tenantID } }
     const collection = resource === 'doctors' ? 'users' : 'patients'
 

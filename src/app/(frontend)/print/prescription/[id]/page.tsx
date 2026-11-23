@@ -67,7 +67,12 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
           {doctor?.licenseNumber && <div className="text-[11px] text-muted-foreground">Exequátur: {doctor.licenseNumber}</div>}
         </div>
         <div className="text-end text-[11px] leading-relaxed text-muted-foreground">
-          <div className="font-semibold text-ink">{tenant?.name}</div>
+          {tenant?.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={tenant.logo} alt={tenant.name} className="ms-auto mb-1 h-12 w-auto" />
+          ) : (
+            <div className="font-semibold text-ink">{tenant?.name}</div>
+          )}
           {tenant?.address && <div>{tenant.address}</div>}
           {[tenant?.city, tenant?.country].filter(Boolean).join(', ')}
           {tenant?.phone && <div>Tel.: {tenant.phone}</div>}

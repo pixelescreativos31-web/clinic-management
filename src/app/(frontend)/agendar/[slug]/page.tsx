@@ -72,14 +72,22 @@ export default async function BookingPage({ params }: Props) {
 
   return (
     <main className="flex min-h-screen flex-col bg-[#f4f6f6] text-[15px] leading-[1.45] text-[#15201e]">
-      <header className="flex shrink-0 items-center gap-2.5 border-b border-[#e3e7e7] bg-white px-[18px] py-3.5">
-        <span aria-hidden className="flex size-[26px] items-center justify-center rounded-[7px] bg-[#0d6e60] text-[13px] font-bold text-white">
-          +
-        </span>
-        <span className="truncate text-[13px] text-[#6b7577]">
-          Agenda en línea · <strong className="font-semibold text-[#15201e]">{clinic.name}</strong>
-        </span>
-      </header>
+      {clinic.logo ? (
+        <header className="flex shrink-0 flex-col items-center gap-1 border-b border-[#e3e7e7] bg-white px-[18px] py-3.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={clinic.logo} alt={clinic.name} className="h-16 w-auto md:h-20" />
+          <span className="text-[12px] text-[#6b7577]">Agenda en línea</span>
+        </header>
+      ) : (
+        <header className="flex shrink-0 items-center gap-2.5 border-b border-[#e3e7e7] bg-white px-[18px] py-3.5">
+          <span aria-hidden className="flex size-[26px] items-center justify-center rounded-[7px] bg-[#0d6e60] text-[13px] font-bold text-white">
+            +
+          </span>
+          <span className="truncate text-[13px] text-[#6b7577]">
+            Agenda en línea · <strong className="font-semibold text-[#15201e]">{clinic.name}</strong>
+          </span>
+        </header>
+      )}
 
       <div className="flex-1 px-3.5 pt-3.5 pb-8 md:px-6 md:pt-8 md:pb-12">
         {doctors.length === 0 ? (

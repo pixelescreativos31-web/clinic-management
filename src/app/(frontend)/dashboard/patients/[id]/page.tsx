@@ -6,9 +6,11 @@ import { AllergyBanner, Card, StatusBadge, EmptyState, Avatar, btnPrimary, btnGh
 import { IconChevronLeft, IconPhone, IconPlus, IconPrinter } from '@/components/icons'
 import { StartConsultationButton } from '@/components/StartConsultationButton'
 import { GENDER_LABELS, MARITAL_STATUSES, PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
-import { isNutritionPractice, nutritionLines, NUTRITION_GROUP_LABELS, type NutritionGroup } from '@/lib/nutrition'
+import { nutritionLines, NUTRITION_GROUP_LABELS, type NutritionGroup } from '@/lib/nutrition'
+import { massageAlerts, massageLines, massageServicesLine, MASSAGE_GROUP_LABELS, type MassageGroup } from '@/lib/massage'
+import { practiceProfile } from '@/lib/profiles'
 import { NutritionFollowUp } from '@/components/NutritionFollowUp'
-import { isClinical } from '@/lib/practice'
+import { canRecordVisits, isClinical } from '@/lib/practice'
 import { vitalsLine } from '@/lib/clinical'
 import { ageFromDOB, formatDate, formatDateTime, formatMoney } from '@/lib/format'
 import { getPatientTimeline } from '@/lib/timeline'
@@ -67,7 +69,10 @@ export default async function PatientProfile({
   const sp = await searchParams
   const hp = Math.max(1, Number(sp.hp) || 1)
   const clinical = isClinical(user)
-  const TABS = ALL_TABS.filter((t) => clinical || !t.clinicalOnly)
+  // Therapists see the record tab too, but only their massage sheets reach them
+  // readable (field-level access hides the medical narrative).
+  const recorder = canRecordVisits(user)
+  const TABS = ALL_TABS.filter((t) => recorder || !t.clinicalOnly)
   const tab: TabKey = TABS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : TABS[0].key
 
   let patient: Patient
@@ -134,7 +139,12 @@ export default async function PatientProfile({
   const tabHref = (key: TabKey) => `/dashboard/patients/${id}?tab=${key}`
 
   const age = patient.ageYears ?? (patient.dateOfBirth ? ageFromDOB(patient.dateOfBirth) : null)
-  const nutritionPractice = isNutritionPractice(tenant)
+  // Weight follow-up sheet: every consultation in a nutrition practice; in mixed
+  // profiles (aesthetic) only the consultations recorded in the nutrition format.
+  const profile = practiceProfile(tenant)
+  const nutritionVisits =
+    profile === 'nutrition' ? visits.filter((v) => v.format !== 'massage') : profile === 'aesthetic' ? visits.filter((v) => v.format === 'nutrition') : []
+  const shownVisits = clinical ? visits : visits.filter((v) => v.format === 'massage')
   const maritalLabel = MARITAL_STATUSES.find((m) => m.value === patient.maritalStatus)?.label
 
   return (
@@ -230,7 +240,7 @@ export default async function PatientProfile({
           )}
 
           <div className="flex flex-col gap-2 border-t p-4">
-            {clinical && <StartConsultationButton patientId={String(patient.id)} />}
+            {recorder && <StartConsultationButton patientId={String(patient.id)} />}
             <div className="flex gap-2">
               <Link href={`/dashboard/patients/${patient.id}/edit`} className={`${btnGhost} flex-1`}>
                 Editar
@@ -265,6 +275,7 @@ export default async function PatientProfile({
         {/* Historia clínica — background + full consultation notes */}
         {tab === 'historia' && (
           <>
+            {clinical && (
             <Card className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
                 <h2 className="text-sm font-semibold">Antecedentes</h2>
@@ -282,18 +293,57 @@ export default async function PatientProfile({
                 </dl>
               )}
             </Card>
+            )}
 
-            {nutritionPractice && visits.length > 0 && <NutritionFollowUp visits={visits} tenant={tenant} />}
+            {nutritionVisits.length > 0 && <NutritionFollowUp visits={nutritionVisits} tenant={tenant} />}
 
-            {visits.length === 0 ? (
+            {shownVisits.length === 0 ? (
               <Card>
                 <p className="px-5 py-8 text-center text-sm text-muted-foreground">
                   Todavía no hay consultas registradas. Use «Atender ahora» para iniciar una.
                 </p>
               </Card>
             ) : (
-              visits.map((v) => {
+              shownVisits.map((v) => {
                 const vl = vitalsLine(v.vitals)
+                if (v.format === 'massage') {
+                  const alerts = massageAlerts(v.massage)
+                  return (
+                    <Card key={v.id} className="overflow-hidden">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/25 px-5 py-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold">
+                            <span className="me-1.5 rounded bg-amber-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber">Masajes</span>
+                            {massageServicesLine(v.massage) || 'Sesión'}
+                          </div>
+                          <div className="tabular text-xs text-muted-foreground">
+                            {formatDateTime(v.visitDate, tenant)}
+                            {(v.doctor as User)?.name ? ` · ${(v.doctor as User).name}` : ''}
+                            {v.massage?.consent ? ' · consentimiento aceptado' : ''}
+                          </div>
+                        </div>
+                        <div className="flex gap-3 text-xs font-medium">
+                          <Link href={`/dashboard/visits/${v.id}/edit`} className="text-primary hover:underline">
+                            Editar
+                          </Link>
+                          <Link href={`/print/ficha/${v.id}`} target="_blank" className="inline-flex items-center gap-1 text-primary hover:underline">
+                            <IconPrinter size={13} /> Ficha
+                          </Link>
+                        </div>
+                      </div>
+                      <dl className="flex flex-col gap-3 px-5 py-4">
+                        {alerts.length > 0 && <Block label="Atención" value={alerts.join('\n')} />}
+                        {(['servicio', 'lesiones', 'evaluacion'] as MassageGroup[]).map((g) => {
+                          const lines = massageLines(v.massage, g)
+                          return lines.length ? (
+                            <Block key={g} label={MASSAGE_GROUP_LABELS[g]} value={lines.map((l) => `${l.label}: ${l.value}`).join('\n')} />
+                          ) : null
+                        })}
+                        {v.followUpDate && <Block label="Próxima sesión" value={formatDate(v.followUpDate, tenant)} />}
+                      </dl>
+                    </Card>
+                  )
+                }
                 return (
                   <Card key={v.id} className="overflow-hidden">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/25 px-5 py-3">
@@ -379,10 +429,10 @@ export default async function PatientProfile({
                     {e.kind === 'visit' && (
                       <>
                         <span className="min-w-0 flex-1 truncate">
-                          <span className="me-1.5 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            Consulta
+                          <span className={`me-1.5 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${e.massage ? 'bg-amber-soft text-amber' : 'bg-secondary text-primary'}`}>
+                            {e.massage ? 'Masajes' : 'Consulta'}
                           </span>
-                          <span className="font-medium">{e.diagnosis || 'Consulta'}</span>
+                          <span className="font-medium">{e.diagnosis || (e.massage ? 'Sesión' : 'Consulta')}</span>
                           {e.doctorName && (
                             <span className="text-muted-foreground"> · {e.doctorName}</span>
                           )}
@@ -393,10 +443,10 @@ export default async function PatientProfile({
                           </span>
                         )}
                         <Link
-                          href={`/print/prescription/${e.id}`}
+                          href={e.massage ? `/print/ficha/${e.id}` : `/print/prescription/${e.id}`}
                           target="_blank"
                           className="shrink-0 text-faint transition-colors hover:text-primary"
-                          title="Imprimir receta"
+                          title={e.massage ? 'Imprimir ficha' : 'Imprimir receta'}
                         >
                           <IconPrinter size={14} />
                         </Link>

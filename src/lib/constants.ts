@@ -2,15 +2,18 @@
 // settings with Dominican Republic defaults — nothing region-specific is hardcoded.
 // Labels are user-facing (Spanish); values are stable internal keys.
 
-export const ROLES = ['superAdmin', 'owner', 'doctor', 'receptionist'] as const
+export const ROLES = ['superAdmin', 'owner', 'doctor', 'therapist', 'receptionist'] as const
 export type Role = (typeof ROLES)[number]
 
-export const TENANT_ROLES = ['owner', 'doctor', 'receptionist'] as const
+export const TENANT_ROLES = ['owner', 'doctor', 'therapist', 'receptionist'] as const
 
 export const ROLE_LABELS: Record<Role, string> = {
   superAdmin: 'Superadministrador',
   owner: 'Titular',
   doctor: 'Médico',
+  // Masajista / cosmetóloga: atiende citas y llena sus fichas (masajes), sin
+  // acceso a la historia médica, recetas ni notas privadas.
+  therapist: 'Terapeuta',
   receptionist: 'Asistente',
 }
 

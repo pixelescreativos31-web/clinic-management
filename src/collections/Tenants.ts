@@ -12,6 +12,10 @@ import {
   PRACTICE_TYPES,
 } from '@/lib/constants'
 import { PLANS, planLabel } from '@/lib/plans'
+import { PROFILES } from '@/lib/profiles'
+
+/** Logos are stored inline as a small data URL (resized client-side, ≤ 300 KB). */
+export const MAX_LOGO_CHARS = 400_000
 import { auditTenants } from '@/hooks/audit'
 
 // The slug is the clinic's public booking URL (/agendar/<slug>), so accents are
@@ -79,6 +83,18 @@ export const Tenants: CollectionConfig = {
         return /^\+?[0-9]{7,15}$/.test(value.replace(/[\s-]/g, ''))
           ? true
           : 'Ingrese un teléfono válido (7 a 15 dígitos).'
+      },
+    },
+    {
+      // Shown in the app sidebar, the public booking page and printed documents.
+      name: 'logo',
+      type: 'textarea',
+      label: 'Logo',
+      admin: { description: 'Imagen como data URL (PNG/JPEG/WebP). Se sube desde Configuración.' },
+      validate: (value: string | null | undefined) => {
+        if (!value) return true
+        if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value)) return 'El logo debe ser una imagen PNG, JPEG o WebP.'
+        return value.length <= MAX_LOGO_CHARS ? true : 'El logo es demasiado grande.'
       },
     },
     { name: 'address', type: 'textarea', label: 'Dirección' },
@@ -203,12 +219,11 @@ export const Tenants: CollectionConfig = {
           name: 'consultTemplate',
           type: 'select',
           defaultValue: 'general',
-          options: [
-            { label: 'General', value: 'general' },
-            { label: 'Nutrición', value: 'nutrition' },
-          ],
-          label: 'Formato de consulta',
-          admin: { description: 'Nutrición agrega antropometría, laboratorio y la hoja de seguimiento.' },
+          // Stored under its historical name; it now holds the practice profile
+          // (src/lib/profiles.ts), which decides the available record templates.
+          options: PROFILES.map((p) => ({ label: p.label, value: p.value })),
+          label: 'Perfil del consultorio',
+          admin: { description: 'Define qué fichas e historias clínicas usa el consultorio.' },
         },
         {
           name: 'onlineBookingEnabled',

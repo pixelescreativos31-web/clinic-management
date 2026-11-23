@@ -16,6 +16,8 @@ export type TimelineEvent =
       diagnosis: string | null
       doctorName: string | null
       rxCount: number
+      /** Massage session sheet rather than a medical consultation. */
+      massage: boolean
     }
   | {
       kind: 'invoice'
@@ -85,7 +87,8 @@ export async function getPatientTimeline(
       kind: 'visit',
       id: String(v.id),
       at: (v.visitDate ?? v.createdAt) as string,
-      diagnosis: v.diagnosis || null,
+      diagnosis: v.format === 'massage' ? v.chiefComplaint || null : v.diagnosis || null,
+      massage: v.format === 'massage',
       doctorName: doctorName(v.doctor),
       rxCount: Array.isArray(v.prescription) ? v.prescription.length : 0,
     })

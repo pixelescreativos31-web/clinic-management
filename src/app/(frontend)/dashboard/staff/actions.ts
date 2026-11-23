@@ -15,7 +15,7 @@ type StaffInput = {
   name: string
   email: string
   password: string
-  role: 'doctor' | 'receptionist' | 'owner'
+  role: 'doctor' | 'therapist' | 'receptionist' | 'owner'
   phone?: string
   specialty?: string
   consultationFee?: number
@@ -31,6 +31,8 @@ export async function createStaff(input: StaffInput): Promise<ActionResult<{ id:
   if (!input.name || !input.email || !input.password) {
     return { ok: false, code: 'VALIDATION', message: 'El nombre, el correo y la contraseña son obligatorios.' }
   }
+  // Doctors and therapists both carry a bookable profile (specialty, hours, fee).
+  const bookable = input.role === 'doctor' || input.role === 'therapist'
   try {
     const created = await ctx.payload.create({
       collection: 'users',
@@ -42,12 +44,12 @@ export async function createStaff(input: StaffInput): Promise<ActionResult<{ id:
         password: input.password,
         role: input.role,
         phone: input.phone || undefined,
-        specialty: input.role === 'doctor' ? input.specialty : undefined,
-        consultationFee: input.role === 'doctor' ? input.consultationFee : undefined,
-        availabilityType: input.role === 'doctor' ? input.availabilityType || 'regular' : undefined,
-        availableDays: input.role === 'doctor' ? input.availableDays : undefined,
-        availableFrom: input.role === 'doctor' ? input.availableFrom || '09:00' : undefined,
-        availableTo: input.role === 'doctor' ? input.availableTo || '17:00' : undefined,
+        specialty: bookable ? input.specialty : undefined,
+        consultationFee: bookable ? input.consultationFee : undefined,
+        availabilityType: bookable ? input.availabilityType || 'regular' : undefined,
+        availableDays: bookable ? input.availableDays : undefined,
+        availableFrom: bookable ? input.availableFrom || '09:00' : undefined,
+        availableTo: bookable ? input.availableTo || '17:00' : undefined,
       } as never,
     })
     revalidatePath('/dashboard/staff')
@@ -71,7 +73,7 @@ export async function updateStaff(id: string, input: StaffUpdateInput): Promise<
     return { ok: false, code: 'VALIDATION', message: 'No puede cambiar su propio rol.' }
   }
   try {
-    const isDoctor = input.role === 'doctor'
+    const isDoctor = input.role === 'doctor' || input.role === 'therapist'
     // Owners' practitioner details are managed in Configuración → Mi perfil médico;
     // leave them untouched here (null would wipe a practising owner's profile).
     const keep = input.role === 'owner' ? undefined : null

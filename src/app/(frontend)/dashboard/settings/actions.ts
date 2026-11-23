@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { asProfile } from '@/lib/profiles'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
@@ -13,7 +14,9 @@ export type ClinicSettingsInput = {
   country?: string
   taxId?: string
   practiceType?: 'individual' | 'clinic'
-  consultTemplate?: 'general' | 'nutrition'
+  consultTemplate?: string
+  /** Data URL; null removes it, undefined leaves it unchanged. */
+  logo?: string | null
   onlineBookingEnabled?: boolean
   onlineRequestsEnabled?: boolean
   appointmentDurationMins: number
@@ -59,13 +62,14 @@ export async function updateClinicSettings(
         country: input.country || null,
         taxId: input.taxId || null,
         ...(input.practiceType ? { practiceType: input.practiceType } : {}),
+        ...(input.logo !== undefined ? { logo: input.logo } : {}),
         settings: {
           appointmentDurationMins: input.appointmentDurationMins,
           openTime: input.openTime,
           closeTime: input.closeTime,
           currency: input.currency,
           timezone: input.timezone,
-          consultTemplate: input.consultTemplate === 'nutrition' ? 'nutrition' : 'general',
+          consultTemplate: asProfile(input.consultTemplate),
           onlineBookingEnabled: input.onlineBookingEnabled !== false,
           onlineRequestsEnabled: input.onlineRequestsEnabled === true,
         },

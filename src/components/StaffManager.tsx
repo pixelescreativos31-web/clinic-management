@@ -94,7 +94,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
       const input = {
         name: form.name,
         email: form.email,
-        role: form.role as 'doctor' | 'receptionist' | 'owner',
+        role: form.role as 'doctor' | 'therapist' | 'receptionist' | 'owner',
         phone: form.phone || undefined,
         specialty: form.specialty || undefined,
         consultationFee: form.consultationFee ? Number(form.consultationFee) : undefined,
@@ -165,20 +165,21 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
                 options={[
                   { value: 'receptionist', label: 'Asistente' },
                   { value: 'doctor', label: 'Médico' },
+                  { value: 'therapist', label: 'Terapeuta (masajes, cosmetología)' },
                   { value: 'owner', label: 'Administrador(a)' },
                 ]}
               />
             </Field>
             <Field label="Teléfono (opcional)"><input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-            {form.role === 'doctor' && (
+            {(form.role === 'doctor' || form.role === 'therapist') && (
               <>
-                <Field label="Especialidad"><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder="Medicina general" /></Field>
-                <Field label={`Tarifa de consulta (${currency})`}><input className={inputClass} inputMode="numeric" value={form.consultationFee} onChange={(e) => set('consultationFee', e.target.value)} /></Field>
+                <Field label="Especialidad"><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder={form.role === 'therapist' ? 'Masajista' : 'Medicina general'} /></Field>
+                <Field label={`${form.role === 'therapist' ? 'Tarifa por sesión' : 'Tarifa de consulta'} (${currency})`}><input className={inputClass} inputMode="numeric" value={form.consultationFee} onChange={(e) => set('consultationFee', e.target.value)} /></Field>
               </>
             )}
           </div>
 
-          {form.role === 'doctor' && (
+          {(form.role === 'doctor' || form.role === 'therapist') && (
             <div className="mx-6 mb-6 rounded-lg border border-border bg-canvas/50 p-4">
               <Field label="Disponibilidad">
                 <AppSelect
@@ -275,7 +276,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
                 <Td className="hidden sm:table-cell"><RoleBadge role={s.role} /></Td>
                 <Td className="tabular hidden whitespace-nowrap text-muted-foreground xl:table-cell">{s.phone || '—'}</Td>
                 <Td className="hidden lg:table-cell">
-                  {s.role === 'doctor' ? (
+                  {s.role === 'doctor' || s.role === 'therapist' ? (
                     <div className="text-muted-foreground">
                       <div>{s.specialty || '—'} · <span className="tabular">{money(s.consultationFee)}</span></div>
                       {s.availability && <div className="text-xs text-faint">{s.availability}</div>}

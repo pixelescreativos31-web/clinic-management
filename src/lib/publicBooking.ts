@@ -40,6 +40,7 @@ export type PublicClinic = {
   tenantId: string
   name: string
   slug: string
+  logo: string | null
   phone: string | null
   address: string | null
   city: string | null
@@ -108,6 +109,7 @@ export async function getPublicClinic(payload: Payload, slug: string): Promise<P
     tenantId: String(tenant.id),
     name: tenant.name,
     slug,
+    logo: tenant.logo ?? null,
     phone: tenant.phone ?? null,
     address: tenant.address ?? null,
     city: tenant.city ?? null,

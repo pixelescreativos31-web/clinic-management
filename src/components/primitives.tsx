@@ -25,6 +25,7 @@ export const STATUS_BAR: Record<AppointmentStatus, string> = {
 const ROLE_STYLES: Record<string, string> = {
   owner: 'bg-primary-soft text-primary',
   doctor: 'bg-blue-soft text-blue',
+  therapist: 'bg-amber-soft text-amber',
   receptionist: 'bg-muted text-muted-foreground',
   superAdmin: 'bg-primary-soft text-primary',
 }

@@ -2,7 +2,8 @@
 
 // Consultation form — redesigned (design handoff "Consulta"). Only «Motivo» and
 // «Diagnóstico» are required; everything else lives in collapsible sections that
-// change with the format (General / Nutrición). A sticky bar saves (and can print
+// change with the format (General / Nutrición / Ficha de masajes — the formats on
+// offer come from the clinic's profile, see src/lib/profiles.ts). A sticky bar saves (and can print
 // the prescription). Saving a new consultation completes the appointment and
 // returns to the agenda.
 
@@ -12,8 +13,11 @@ import { Spinner } from './primitives'
 import { IconAlert } from './icons'
 import { EMPTY_NUTRITION, GOOD_BAD, NUTRITION_FIELDS, YES_NO, waistHipRatio, type NutritionFormState } from '@/lib/nutrition'
 import { recordVisit, updateVisit, type PrescriptionRowInput, type VisitInput } from '@/app/(frontend)/dashboard/visits/actions'
+import { EMPTY_MASSAGE, type MassageFormState } from '@/lib/massage'
+import { FORMAT_SHORT, type ConsultFormat } from '@/lib/profiles'
+import { MassageSheet } from './MassageSheet'
 
-export type VisitFormat = 'general' | 'nutrition'
+export type VisitFormat = ConsultFormat
 
 export type VisitInitial = {
   chiefComplaint: string
@@ -27,6 +31,7 @@ export type VisitInitial = {
   vitals: Record<VitalKey, string>
   prescription: PrescriptionRowInput[]
   nutrition?: NutritionFormState
+  massage?: MassageFormState
   format?: VisitFormat
 }
 
@@ -116,6 +121,8 @@ export function VisitForm({
   background,
   initial,
   defaultFormat = 'general',
+  formats = ['general', 'nutrition'],
+  massagePrefill,
   frequentDiagnoses = [],
   baseDate,
   returnHref = '/dashboard/appointments',
@@ -129,6 +136,10 @@ export function VisitForm({
   background?: string | null
   initial?: VisitInitial
   defaultFormat?: VisitFormat
+  /** Formats offered by the clinic's profile (one ⇒ no switcher). */
+  formats?: VisitFormat[]
+  /** Previous massage sheet's answers, to pre-fill a new one. */
+  massagePrefill?: MassageFormState
   /** The doctor's most frequent diagnoses, offered as one-tap chips. */
   frequentDiagnoses?: string[]
   /** YYYY-MM-DD the consultation happens (follow-up chips count from here). */
@@ -141,6 +152,8 @@ export function VisitForm({
   const [error, setError] = useState<string | null>(null)
   const [format, setFormat] = useState<VisitFormat>(initial?.format ?? defaultFormat)
   const nutri = format === 'nutrition'
+  const isMassage = format === 'massage'
+  const [massage, setMassage] = useState<MassageFormState>(initial?.massage ?? massagePrefill ?? EMPTY_MASSAGE)
 
   const [chiefComplaint, setChiefComplaint] = useState(initial?.chiefComplaint ?? '')
   const [diagnosis, setDiagnosis] = useState(initial?.diagnosis ?? '')
@@ -184,7 +197,13 @@ export function VisitForm({
   const nutriFields = (group: string) => NUTRITION_FIELDS.filter((f) => f.group === group)
 
   const save = (print: boolean) => {
-    if (!chiefComplaint.trim() || !diagnosis.trim()) {
+    if (isMassage) {
+      const services = Array.isArray(massage.services) ? massage.services : []
+      if (!services.length && !String(massage.servicesOther ?? '').trim()) {
+        setError('Elija al menos un servicio.')
+        return
+      }
+    } else if (!chiefComplaint.trim() || !diagnosis.trim()) {
       setError('Complete el motivo de consulta y el diagnóstico.')
       return
     }
@@ -207,6 +226,7 @@ export function VisitForm({
         followUpDate: followUp || undefined,
         format,
         ...(nutri ? { nutrition } : {}),
+        ...(isMassage ? { massage } : {}),
       }
       const res = visitId ? await updateVisit(visitId, data) : await recordVisit({ appointmentId: appointmentId!, ...data })
       if (!res.ok) {
@@ -214,8 +234,9 @@ export function VisitForm({
         setError(res.message)
         return
       }
-      if (printTab) printTab.location.href = `/print/prescription/${res.data.id}`
-      const msg = encodeURIComponent(print ? 'Consulta guardada · imprimiendo receta' : 'Consulta guardada')
+      if (printTab) printTab.location.href = isMassage ? `/print/ficha/${res.data.id}` : `/print/prescription/${res.data.id}`
+      const saved = isMassage ? 'Ficha guardada' : 'Consulta guardada'
+      const msg = encodeURIComponent(print ? `${saved} · imprimiendo ${isMassage ? 'ficha' : 'receta'}` : saved)
       if (visitId && 'patientId' in res.data) router.push(`/dashboard/patients/${res.data.patientId}?tab=historia`)
       else router.push(`${returnHref}${returnHref.includes('?') ? '&' : '?'}ok=${msg}`)
       router.refresh()
@@ -234,9 +255,10 @@ export function VisitForm({
       )}
       {background && <p className="px-1 text-xs leading-relaxed text-[#6b7577]">{background}</p>}
 
+      {formats.length > 1 && (
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-[#6b7577]">Formato:</span>
-        {(['general', 'nutrition'] as VisitFormat[]).map((f) => (
+        {formats.map((f) => (
           <button
             key={f}
             type="button"
@@ -247,11 +269,16 @@ export function VisitForm({
             }}
             className={`rounded-full border px-3 py-[7px] text-xs font-semibold ${format === f ? 'border-[#0d6e60] bg-[#0d6e60] text-white' : 'border-[#e3e7e7] bg-white'}`}
           >
-            {f === 'general' ? 'General' : 'Nutrición'}
+            {FORMAT_SHORT[f]}
           </button>
         ))}
       </div>
+      )}
 
+      {isMassage && <MassageSheet value={massage} onChange={setMassage} prefilled={!initial?.massage && Boolean(massagePrefill)} />}
+
+      {!isMassage && (
+      <>
       {/* Required */}
       <div className="flex flex-col gap-2.5 rounded-[14px] border border-[#e3e7e7] bg-white p-3.5">
         <label htmlFor="v-motivo" className="text-[13px] font-semibold">
@@ -524,6 +551,8 @@ export function VisitForm({
         )}
         <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas privadas (no se imprimen)" aria-label="Notas privadas" className={AREA} />
       </Section>
+      </>
+      )}
 
       {error && (
         <p className="rounded-[10px] bg-[#fbeceb] px-3 py-2 text-sm text-[#b3261e]" role="alert">
@@ -541,7 +570,7 @@ export function VisitForm({
             className="flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-xl bg-[#0d6e60] p-3.5 text-[15px] font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,110,96,.6)]"
           >
             {pending && <Spinner />}
-            {visitId ? 'Guardar cambios' : 'Guardar consulta'}
+            {visitId ? 'Guardar cambios' : isMassage ? 'Guardar ficha' : 'Guardar consulta'}
           </button>
           <button
             type="button"

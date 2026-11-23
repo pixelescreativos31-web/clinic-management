@@ -197,7 +197,10 @@ export const Appointments: CollectionConfig = {
         const tenantID = getTenantID(user as any)
         const base: Record<string, unknown> = {
           active: { equals: true },
-          or: [{ role: { equals: 'doctor' } }, { and: [{ role: { equals: 'owner' } }, { practitioner: { equals: true } }] }],
+          or: [
+            { role: { in: ['doctor', 'therapist'] } },
+            { and: [{ role: { equals: 'owner' } }, { practitioner: { equals: true } }] },
+          ],
         }
         if (tenantID) base.tenant = { equals: tenantID }
         return base as any

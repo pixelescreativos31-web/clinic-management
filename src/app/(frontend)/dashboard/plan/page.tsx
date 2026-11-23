@@ -3,7 +3,7 @@ import { requireDashboardSession, requireRole, getPayloadClient } from '@/lib/au
 import { PageTitle } from '@/components/primitives'
 import { PlanPanel } from '@/components/PlanPanel'
 import { asPlan } from '@/lib/plans'
-import { practitionerWhere } from '@/lib/practice'
+import { doctorWhere } from '@/lib/practice'
 
 export default async function PlanPage() {
   const session = await requireDashboardSession()
@@ -17,7 +17,7 @@ export default async function PlanPage() {
   const [doctors, patients] = await Promise.all([
     payload.count({
       collection: 'users',
-      where: { and: [practitionerWhere(String(tenant.id)), { active: { not_equals: false } }] },
+      where: { and: [doctorWhere(String(tenant.id)), { active: { not_equals: false } }] },
       overrideAccess: true,
     }),
     payload.count({

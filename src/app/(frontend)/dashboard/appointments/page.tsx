@@ -10,7 +10,7 @@ import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availab
 import { toWaDigits, waReminderLink } from '@/lib/whatsapp'
 import { DEFAULT_TIMEZONE, type AppointmentStatus } from '@/lib/constants'
 import type { Appointment, BookingRequest, Invoice, Patient, User, Visit } from '@/payload-types'
-import { isClinical, practitionerWhere } from '@/lib/practice'
+import { canRecordVisits, practitionerWhere } from '@/lib/practice'
 import { AppHeader, AppContent } from '@/components/AppHeader'
 import { AgendaBoard, type AgendaAppt, type AgendaDay, type AgendaDoctor } from '@/components/AgendaBoard'
 import { OnlineRequests, type OnlineRequestRow } from '@/components/OnlineRequests'
@@ -187,7 +187,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
             durationMins={tenant?.settings?.appointmentDurationMins || 20}
             doctors={doctors}
             appts={rows}
-            clinical={isClinical(user)}
+            clinical={canRecordVisits(user)}
             defaultDoctorId={defaultDoctorId}
             initialToast={params.ok?.slice(0, 120)}
           />

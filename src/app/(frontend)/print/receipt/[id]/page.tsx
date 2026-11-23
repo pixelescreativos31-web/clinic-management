@@ -56,7 +56,12 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
       {/* Letterhead */}
       <header className="flex items-start justify-between border-b border-border pb-4">
         <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight">{tenant?.name}</h1>
+          {tenant?.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={tenant.logo} alt={tenant.name} className="mb-1 h-14 w-auto" />
+          ) : (
+            <h1 className="font-display text-xl font-semibold tracking-tight">{tenant?.name}</h1>
+          )}
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {tenant?.address && <>{tenant.address}<br /></>}
             {[tenant?.city, tenant?.country].filter(Boolean).join(', ')}

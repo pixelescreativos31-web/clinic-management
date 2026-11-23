@@ -141,6 +141,10 @@ export interface Tenant {
    */
   slug?: string | null;
   phone: string;
+  /**
+   * Imagen como data URL (PNG/JPEG/WebP). Se sube desde Configuración.
+   */
+  logo?: string | null;
   address?: string | null;
   city?: string | null;
   country?: string | null;
@@ -184,9 +188,9 @@ export interface Tenant {
       | 'America/Panama'
       | 'Europe/Madrid';
     /**
-     * Nutrición agrega antropometría, laboratorio y la hoja de seguimiento.
+     * Define qué fichas e historias clínicas usa el consultorio.
      */
-    consultTemplate?: ('general' | 'nutrition') | null;
+    consultTemplate?: ('general' | 'nutrition' | 'aesthetic') | null;
     /**
      * Los pacientes agendan desde el enlace público, dentro del horario de cada médico.
      */
@@ -206,7 +210,7 @@ export interface Tenant {
 export interface User {
   id: string;
   name: string;
-  role: 'superAdmin' | 'owner' | 'doctor' | 'receptionist';
+  role: 'superAdmin' | 'owner' | 'doctor' | 'therapist' | 'receptionist';
   /**
    * Obligatorio para todos los roles excepto superadministrador.
    */
@@ -375,7 +379,7 @@ export interface Visit {
     heightCm?: number | null;
     glucoseMgDl?: number | null;
   };
-  format?: ('general' | 'nutrition') | null;
+  format?: ('general' | 'nutrition' | 'massage') | null;
   nutrition?: {
     constipation?: ('yes' | 'no') | null;
     waterIntake?: ('good' | 'poor') | null;
@@ -405,6 +409,84 @@ export interface Visit {
     changes?: string | null;
     exercise?: string | null;
     diet?: string | null;
+  };
+  massage?: {
+    services?:
+      | (
+          | 'relaxing'
+          | 'antistress'
+          | 'decontracting'
+          | 'sports'
+          | 'stretching'
+          | 'volcanicStones'
+          | 'myofascial'
+          | 'reducing'
+          | 'anticellulite'
+          | 'lymphatic'
+          | 'postop'
+          | 'gluteLift'
+          | 'facial'
+          | 'woodTherapy'
+        )[]
+      | null;
+    servicesOther?: string | null;
+    zones?: string | null;
+    goals?: ('relaxation' | 'tension' | 'recovery' | 'aesthetic')[] | null;
+    goalOther?: string | null;
+    surgeryDate?: string | null;
+    medicalAuthorization?: ('yes' | 'no' | 'na') | null;
+    hypertension?: ('yes' | 'no') | null;
+    hypertensionDetail?: string | null;
+    diabetes?: ('yes' | 'no') | null;
+    diabetesDetail?: string | null;
+    cardio?: ('yes' | 'no') | null;
+    cardioDetail?: string | null;
+    varices?: ('yes' | 'no') | null;
+    varicesDetail?: string | null;
+    cancer?: ('yes' | 'no') | null;
+    cancerDetail?: string | null;
+    pregnancy?: ('yes' | 'no') | null;
+    pregnancyDetail?: string | null;
+    recentSurgery?: ('yes' | 'no') | null;
+    recentSurgeryDetail?: string | null;
+    skin?: ('yes' | 'no') | null;
+    skinDetail?: string | null;
+    osteo?: ('yes' | 'no') | null;
+    osteoDetail?: string | null;
+    anticoagulants?: ('yes' | 'no') | null;
+    anticoagulantsDetail?: string | null;
+    otherCondition?: ('yes' | 'no') | null;
+    otherConditionDetail?: string | null;
+    pain?: ('yes' | 'no') | null;
+    painDetail?: string | null;
+    painIntensity?: number | null;
+    painSince?: string | null;
+    injuries?: ('yes' | 'no') | null;
+    injuriesDetail?: string | null;
+    wounds?: ('yes' | 'no') | null;
+    woundsDetail?: string | null;
+    inflammation?: ('yes' | 'no') | null;
+    inflammationDetail?: string | null;
+    sensitiveAreas?: string | null;
+    allergyOils?: ('yes' | 'no') | null;
+    allergyOilsDetail?: string | null;
+    allergyCreams?: ('yes' | 'no') | null;
+    allergyCreamsDetail?: string | null;
+    allergyFragrances?: ('yes' | 'no') | null;
+    allergyFragrancesDetail?: string | null;
+    allergyLatex?: ('yes' | 'no') | null;
+    allergyLatexDetail?: string | null;
+    allergyHeat?: ('yes' | 'no') | null;
+    allergyHeatDetail?: string | null;
+    avoidProducts?: string | null;
+    skinObservations?: string | null;
+    pressure?: ('soft' | 'moderate' | 'firm') | null;
+    precautions?: string | null;
+    postpone?: ('yes' | 'no') | null;
+    postponeDetail?: string | null;
+    sessionNotes?: string | null;
+    consent?: boolean | null;
+    guardianName?: string | null;
   };
   prescription?:
     | {
@@ -640,6 +722,7 @@ export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   phone?: T;
+  logo?: T;
   address?: T;
   city?: T;
   country?: T;
@@ -853,6 +936,69 @@ export interface VisitsSelect<T extends boolean = true> {
         changes?: T;
         exercise?: T;
         diet?: T;
+      };
+  massage?:
+    | T
+    | {
+        services?: T;
+        servicesOther?: T;
+        zones?: T;
+        goals?: T;
+        goalOther?: T;
+        surgeryDate?: T;
+        medicalAuthorization?: T;
+        hypertension?: T;
+        hypertensionDetail?: T;
+        diabetes?: T;
+        diabetesDetail?: T;
+        cardio?: T;
+        cardioDetail?: T;
+        varices?: T;
+        varicesDetail?: T;
+        cancer?: T;
+        cancerDetail?: T;
+        pregnancy?: T;
+        pregnancyDetail?: T;
+        recentSurgery?: T;
+        recentSurgeryDetail?: T;
+        skin?: T;
+        skinDetail?: T;
+        osteo?: T;
+        osteoDetail?: T;
+        anticoagulants?: T;
+        anticoagulantsDetail?: T;
+        otherCondition?: T;
+        otherConditionDetail?: T;
+        pain?: T;
+        painDetail?: T;
+        painIntensity?: T;
+        painSince?: T;
+        injuries?: T;
+        injuriesDetail?: T;
+        wounds?: T;
+        woundsDetail?: T;
+        inflammation?: T;
+        inflammationDetail?: T;
+        sensitiveAreas?: T;
+        allergyOils?: T;
+        allergyOilsDetail?: T;
+        allergyCreams?: T;
+        allergyCreamsDetail?: T;
+        allergyFragrances?: T;
+        allergyFragrancesDetail?: T;
+        allergyLatex?: T;
+        allergyLatexDetail?: T;
+        allergyHeat?: T;
+        allergyHeatDetail?: T;
+        avoidProducts?: T;
+        skinObservations?: T;
+        pressure?: T;
+        precautions?: T;
+        postpone?: T;
+        postponeDetail?: T;
+        sessionNotes?: T;
+        consent?: T;
+        guardianName?: T;
       };
   prescription?:
     | T

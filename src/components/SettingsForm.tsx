@@ -7,6 +7,30 @@ import { AppSelect } from './AppSelect'
 import { TimePicker } from './TimePicker'
 import { updateClinicSettings, updateMyPractitionerProfile } from '@/app/(frontend)/dashboard/settings/actions'
 import { CURRENCIES, TIMEZONES, PRACTICE_TYPES, WEEKDAYS } from '@/lib/constants'
+import { PROFILES, type PracticeProfile } from '@/lib/profiles'
+
+/** Shrink an uploaded logo to ≤ 640 px and encode it as a compact data URL. */
+async function logoDataUrl(file: File): Promise<string> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error('No se pudo leer la imagen.'))
+      i.src = url
+    })
+    const scale = Math.min(1, 640 / Math.max(img.naturalWidth, img.naturalHeight))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(img.naturalWidth * scale)
+    canvas.height = Math.round(img.naturalHeight * scale)
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+    // WebP keeps transparency and is small; browsers without a WebP encoder fall back to PNG.
+    const webp = canvas.toDataURL('image/webp', 0.88)
+    return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png')
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
 import { IconCheck, IconBuilding, IconCalendar, IconClock, IconStethoscope } from './icons'
 
 export type SettingsInitial = {
@@ -22,7 +46,8 @@ export type SettingsInitial = {
   timezone: string
   taxId: string
   practiceType: 'individual' | 'clinic'
-  consultTemplate: 'general' | 'nutrition'
+  consultTemplate: PracticeProfile
+  logo: string
   onlineBookingEnabled: boolean
   onlineRequestsEnabled: boolean
 }
@@ -124,6 +149,7 @@ export function SettingsForm({
         taxId: form.taxId || undefined,
         practiceType: form.practiceType,
         consultTemplate: form.consultTemplate,
+        logo: form.logo || null,
         onlineBookingEnabled: booking.enabled,
         onlineRequestsEnabled: booking.requests,
         appointmentDurationMins: Number(form.appointmentDurationMins) || 20,
@@ -186,16 +212,48 @@ export function SettingsForm({
               options={PRACTICE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
             />
           </Field>
-          <Field label="Formato de consulta" hint="«Nutrición» agrega antropometría, laboratorio y la hoja de seguimiento.">
+          <Field label="Perfil del consultorio" hint={PROFILES.find((p) => p.value === form.consultTemplate)?.hint}>
             <AppSelect
               value={form.consultTemplate}
               onChange={(v) => set('consultTemplate', v)}
-              options={[
-                { value: 'general', label: 'General' },
-                { value: 'nutrition', label: 'Nutrición' },
-              ]}
+              options={PROFILES.map((p) => ({ value: p.value, label: p.label }))}
             />
           </Field>
+          <div className="sm:col-span-2">
+            <Field label="Logo" hint="Aparece en el menú, la página de reservas y los documentos impresos. PNG, JPG o WebP.">
+              <div className="flex flex-wrap items-center gap-3">
+                {form.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.logo} alt="Logo del consultorio" className="h-16 w-auto rounded-md border border-border bg-white p-1" />
+                ) : (
+                  <span className="text-sm text-muted-foreground">Sin logo</span>
+                )}
+                <label className="cursor-pointer rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-canvas">
+                  {form.logo ? 'Cambiar' : 'Subir logo'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      e.target.value = ''
+                      if (!file) return
+                      try {
+                        set('logo', await logoDataUrl(file))
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'No se pudo leer la imagen.')
+                      }
+                    }}
+                  />
+                </label>
+                {form.logo && (
+                  <button type="button" onClick={() => set('logo', '')} className="text-sm font-medium text-red hover:underline">
+                    Quitar
+                  </button>
+                )}
+              </div>
+            </Field>
+          </div>
         </div>
       </Section>
 

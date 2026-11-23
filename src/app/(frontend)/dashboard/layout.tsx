@@ -24,6 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <Sidebar
       clinicName={tenant?.name ?? 'Consultorio'}
+      clinicLogo={tenant?.logo}
       userName={user.name}
       role={user.role}
       practitioner={isPractitioner(user)}

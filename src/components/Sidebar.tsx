@@ -62,6 +62,7 @@ export function navFor(role: string, individual: boolean) {
 
 export function Sidebar({
   clinicName,
+  clinicLogo,
   userName,
   role,
   practitioner = false,
@@ -69,6 +70,8 @@ export function Sidebar({
   children,
 }: {
   clinicName: string
+  /** Data-URL logo shown in place of the clinic's name card. */
+  clinicLogo?: string | null
   userName: string
   role: string
   /** The user sees patients (doctor, or an owner who practises). */
@@ -115,8 +118,15 @@ export function Sidebar({
             <span className="font-display text-lg font-bold tracking-[-.02em]">{APP_NAME}</span>
           </Link>
           <div className="mx-2.5 mb-3.5 rounded-[10px] border border-[#e3e7e7] bg-[#f4f6f6] px-3 py-2.5">
-            <div className="text-[10px] font-semibold tracking-[.12em] text-[#6b7577] uppercase">Consultorio</div>
-            <div className="mt-0.5 truncate text-[13px] font-semibold">{clinicName}</div>
+            {clinicLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clinicLogo} alt={clinicName} title={clinicName} className="mx-auto max-h-16 w-auto" />
+            ) : (
+              <>
+                <div className="text-[10px] font-semibold tracking-[.12em] text-[#6b7577] uppercase">Consultorio</div>
+                <div className="mt-0.5 truncate text-[13px] font-semibold">{clinicName}</div>
+              </>
+            )}
           </div>
           <nav className="flex flex-col gap-1">{tabs.map(sideItem)}</nav>
           {admin.length > 0 && (

@@ -1,7 +1,9 @@
 import type { CollectionConfig, Field } from 'payload'
 import { GOOD_BAD, NUTRITION_FIELDS, YES_NO } from '@/lib/nutrition'
 import { APIError } from 'payload'
-import { tenantScoped, denyAll, visitsWriteAccess, getTenantID, clinicalReadField } from '@/access'
+import { tenantScoped, denyAll, visitsCreateAccess, visitsUpdateAccess, getTenantID, clinicalReadField, massageField } from '@/access'
+import { MASSAGE_FIELDS, YES_NO_OPTIONS } from '@/lib/massage'
+import { ALL_FORMATS, FORMAT_SHORT } from '@/lib/profiles'
 import { auditVisits } from '@/hooks/audit'
 import { forceTenant } from '@/hooks/tenant'
 import {
@@ -33,8 +35,8 @@ export const Visits: CollectionConfig = {
   admin: { useAsTitle: 'diagnosis', defaultColumns: ['visitDate', 'patient', 'doctor', 'diagnosis'] },
   access: {
     read: tenantScoped,
-    create: visitsWriteAccess,
-    update: visitsWriteAccess,
+    create: visitsCreateAccess,
+    update: visitsUpdateAccess,
     delete: denyAll, // clinical history is the product — never hard-delete
   },
   timestamps: true,
@@ -98,6 +100,14 @@ export const Visits: CollectionConfig = {
     ],
     beforeChange: [
       forceTenant,
+      // Therapists record massage sheets only: whatever the client sends, their
+      // visits are `massage` and never carry the medical narrative or a prescription.
+      ({ data, req }) => {
+        if (req.user?.role !== 'therapist') return data
+        data.format = 'massage'
+        for (const k of ['symptoms', 'physicalExam', 'notes', 'nutrition', 'prescription', 'labOrders', 'vitals']) delete data[k]
+        return data
+      },
       ({ data, req, operation }) => {
         if (operation === 'create' && req.user) data.createdBy = req.user.id
         return data
@@ -218,10 +228,7 @@ export const Visits: CollectionConfig = {
       name: 'format',
       type: 'select',
       label: 'Formato',
-      options: [
-        { label: 'General', value: 'general' },
-        { label: 'Nutrición', value: 'nutrition' },
-      ],
+      options: ALL_FORMATS.map((f) => ({ label: FORMAT_SHORT[f], value: f })),
     },
     // Nutrition template (clinics with settings.consultTemplate = 'nutrition').
     // Field list lives in src/lib/nutrition.ts; clinical roles only, like the exam.
@@ -237,6 +244,25 @@ export const Visits: CollectionConfig = {
           return { name: f.key, type: 'select', label, options: f.kind === 'yesno' ? YES_NO : GOOD_BAD }
         }
         return f.long ? { name: f.key, type: 'textarea', label } : { name: f.key, type: 'text', label }
+      }),
+    },
+    // Massage session sheet (format = 'massage'). Field list lives in
+    // src/lib/massage.ts; readable by clinical roles and therapists, not reception.
+    {
+      name: 'massage',
+      type: 'group',
+      label: 'Ficha de masajes',
+      access: { read: massageField, create: massageField, update: massageField },
+      fields: MASSAGE_FIELDS.flatMap((f): Field[] => {
+        let field: Field
+        if (f.kind === 'multi') field = { name: f.key, type: 'select', hasMany: true, label: f.label, options: f.options! }
+        else if (f.kind === 'yesno') field = { name: f.key, type: 'select', label: f.label, options: YES_NO_OPTIONS }
+        else if (f.kind === 'select') field = { name: f.key, type: 'select', label: f.label, options: f.options! }
+        else if (f.kind === 'number') field = { name: f.key, type: 'number', label: f.label, min: f.min, max: f.max }
+        else if (f.kind === 'check') field = { name: f.key, type: 'checkbox', label: f.label }
+        else if (f.kind === 'long') field = { name: f.key, type: 'textarea', label: f.label }
+        else field = { name: f.key, type: 'text', label: f.label } // text, date (YYYY-MM-DD)
+        return f.detail ? [field, { name: `${f.key}Detail`, type: 'text', label: `${f.label} — ${f.detail}` }] : [field]
       }),
     },
     {

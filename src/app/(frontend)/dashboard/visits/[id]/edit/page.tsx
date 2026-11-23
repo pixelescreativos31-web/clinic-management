@@ -3,12 +3,14 @@ import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { VisitForm, type VisitInitial } from '@/components/VisitForm'
 import { backgroundLine } from '@/lib/clinical'
-import { isClinical } from '@/lib/practice'
+import { canRecordVisits, isTherapist } from '@/lib/practice'
+import { formatsFor, asFormat, practiceProfile } from '@/lib/profiles'
+import { massageToForm } from '@/lib/massage'
 import { formatDateTime } from '@/lib/format'
 import { AppHeader, AppContent } from '@/components/AppHeader'
 import { frequentDiagnoses } from '@/lib/clinical'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
-import { isNutritionPractice, nutritionToForm } from '@/lib/nutrition'
+import { nutritionToForm } from '@/lib/nutrition'
 import type { Patient, User, Visit } from '@/payload-types'
 
 const relId = (v: unknown): string =>
@@ -19,7 +21,7 @@ const str = (v: unknown): string => (v == null ? '' : String(v))
 /** Amend a recorded consultation (clinical roles only; every edit is audited). */
 export default async function EditVisitPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, tenant } = await requireDashboardSession()
-  if (!isClinical(user)) redirect('/dashboard')
+  if (!canRecordVisits(user)) redirect('/dashboard')
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)!
   const { id } = await params
@@ -31,6 +33,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
     notFound()
   }
   if (relId(visit.tenant) !== String(tenantID)) notFound()
+  if (isTherapist(user) && visit.format !== 'massage') redirect('/dashboard')
 
   const patient = visit.patient as Patient
   const v = visit.vitals ?? {}
@@ -64,16 +67,15 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
       instructions: r.instructions ?? '',
     })),
     nutrition: nutritionToForm(visit.nutrition),
+    massage: massageToForm(visit.massage),
     // Older visits have no stored format: infer it from saved nutrition data.
     format:
-      visit.format === 'nutrition' || visit.format === 'general'
-        ? visit.format
-        : Object.values(visit.nutrition ?? {}).some((x) => x != null && x !== '')
-          ? 'nutrition'
-          : isNutritionPractice(tenant)
-            ? 'nutrition'
-            : 'general',
+      asFormat(visit.format) ??
+      (Object.values(visit.nutrition ?? {}).some((x) => x != null && x !== '') || practiceProfile(tenant) === 'nutrition' ? 'nutrition' : 'general'),
   }
+  // Offer the clinic's formats, plus the visit's own if the profile changed since.
+  const formats = [...formatsFor(tenant, user)]
+  if (!formats.includes(initial.format!)) formats.push(initial.format!)
 
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
   return (
@@ -89,7 +91,8 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
           allergies={patient?.allergies}
           background={backgroundLine(patient)}
           initial={initial}
-          defaultFormat={isNutritionPractice(tenant) ? 'nutrition' : 'general'}
+          formats={formats}
+          defaultFormat={formats[0]}
           frequentDiagnoses={await frequentDiagnoses(payload, String(tenantID), relId(visit.doctor as User))}
           baseDate={new Date(visit.visitDate).toLocaleDateString('en-CA', { timeZone: tz })}
         />

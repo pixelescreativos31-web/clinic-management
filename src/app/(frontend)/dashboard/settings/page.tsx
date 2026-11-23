@@ -2,6 +2,7 @@ import { requireDashboardSession, requireRole } from '@/lib/auth'
 import { PageTitle } from '@/components/primitives'
 import { SettingsForm } from '@/components/SettingsForm'
 import { appBaseUrl } from '@/lib/email'
+import { asProfile } from '@/lib/profiles'
 import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_CLOSE_TIME,
@@ -33,7 +34,8 @@ export default async function SettingsPage() {
           timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
           taxId: t?.taxId ?? '',
           practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
-          consultTemplate: t?.settings?.consultTemplate === 'nutrition' ? 'nutrition' : 'general',
+          consultTemplate: asProfile(t?.settings?.consultTemplate),
+          logo: t?.logo ?? '',
           onlineBookingEnabled: t?.settings?.onlineBookingEnabled !== false,
           onlineRequestsEnabled: t?.settings?.onlineRequestsEnabled === true,
         }}

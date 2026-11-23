@@ -11,7 +11,7 @@ import { minutesInTz } from '@/lib/availability'
 import { DEFAULT_TIMEZONE, type AppointmentStatus } from '@/lib/constants'
 import { APP_NAME } from '@/lib/brand'
 import { apptStatusStyle, avatarTint, initialsOf } from '@/lib/apptStatus'
-import { isClinical, isPractitioner, practitionerWhere } from '@/lib/practice'
+import { canRecordVisits, isPractitioner, practitionerWhere } from '@/lib/practice'
 import { AppHeader, AppContent } from '@/components/AppHeader'
 import { NextPatientCard, QuickActions, type NextPatient } from '@/components/HomeBoard'
 import { IconCheck } from '@/components/icons'
@@ -141,7 +141,7 @@ export default async function DashboardHome({ searchParams }: { searchParams?: P
         )}
 
         <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-          <NextPatientCard next={next} clinical={isClinical(user)} />
+          <NextPatientCard next={next} clinical={canRecordVisits(user)} />
 
           <div className="col-span-full grid grid-cols-3 gap-2.5">
             {[

@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { formToNutrition, type NutritionFormState } from '@/lib/nutrition'
+import { formToMassage, massageServicesLine, type MassageFormState } from '@/lib/massage'
+import { asFormat, type ConsultFormat } from '@/lib/profiles'
 
 export type PrescriptionRowInput = {
   medicine: string
@@ -39,7 +41,9 @@ export type VisitInput = {
   followUpDate?: string
   /** Only sent when the consultation uses the nutrition format. */
   nutrition?: NutritionFormState
-  format?: 'general' | 'nutrition'
+  /** Only sent when the visit is a massage session sheet. */
+  massage?: MassageFormState
+  format?: ConsultFormat
 }
 
 const FORBIDDEN = { ok: false as const, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
@@ -65,8 +69,11 @@ function clinicalData(input: Omit<VisitInput, 'appointmentId'>, forUpdate: boole
   // On update an emptied field must be cleared (null), on create simply omitted.
   const empty = forUpdate ? null : undefined
   const txt = (v?: string) => (v && v.trim() ? v : empty)
+  const format = asFormat(input.format)
+  const massage = format === 'massage' ? formToMassage(input.massage, forUpdate) : undefined
   return {
-    chiefComplaint: txt(input.chiefComplaint),
+    // A massage sheet has no free-text complaint: its services are the headline.
+    chiefComplaint: format === 'massage' ? massageServicesLine(massage) || empty : txt(input.chiefComplaint),
     symptoms: txt(input.symptoms),
     physicalExam: txt(input.physicalExam),
     diagnosis: txt(input.diagnosis),
@@ -77,7 +84,8 @@ function clinicalData(input: Omit<VisitInput, 'appointmentId'>, forUpdate: boole
     prescription,
     followUpDate: input.followUpDate || empty,
     nutrition: formToNutrition(input.nutrition, forUpdate),
-    ...(input.format ? { format: input.format === 'nutrition' ? 'nutrition' : 'general' } : {}),
+    ...(massage ? { massage } : {}),
+    ...(format ? { format } : {}),
   }
 }
 

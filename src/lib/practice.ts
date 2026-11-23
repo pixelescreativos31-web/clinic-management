@@ -4,6 +4,10 @@
 // billing, staff) and also appear wherever a doctor is expected (agenda, visits,
 // prescriptions, plan limits). Clinics with several doctors keep working as before.
 //
+// Therapists (masajistas, cosmetólogas) are bookable too — agenda, public booking,
+// their own session sheets — but they are not doctors: they never count toward the
+// plan's doctor cap and never read the medical history (see isClinical).
+//
 // Pure module (types only from payload) so client components can import it.
 
 import type { Where } from 'payload'
@@ -11,29 +15,44 @@ import type { Where } from 'payload'
 type UserLike = { role?: string | null; practitioner?: boolean | null } | null | undefined
 type TenantLike = { practiceType?: string | null } | null | undefined
 
-/** Does this user see patients (bookable, can author visits/prescriptions)? */
+/** Does this user see patients (bookable, appears in the agenda)? */
 export function isPractitioner(user: UserLike): boolean {
   if (!user) return false
-  return user.role === 'doctor' || (user.role === 'owner' && user.practitioner === true)
+  return user.role === 'doctor' || user.role === 'therapist' || (user.role === 'owner' && user.practitioner === true)
 }
 
-/** May this user write clinical records (visits)? Owners always could in Matab. */
+/** A doctor (or practising owner) — what the plan's doctor cap counts. */
+export function isDoctor(user: UserLike): boolean {
+  return isPractitioner(user) && user?.role !== 'therapist'
+}
+
+export function isTherapist(user: UserLike): boolean {
+  return user?.role === 'therapist'
+}
+
+/** May this user read and write the medical record (history, exam, prescriptions)? */
 export function isClinical(user: UserLike): boolean {
   return user?.role === 'doctor' || user?.role === 'owner'
 }
 
-/** Payload `where` selecting a tenant's practitioners (doctors + practising owner). */
+/** May this user record sessions/consultations at all (clinical roles + therapists)? */
+export function canRecordVisits(user: UserLike): boolean {
+  return isClinical(user) || isTherapist(user)
+}
+
+const PRACTISING_OWNER: Where = { and: [{ role: { equals: 'owner' } }, { practitioner: { equals: true } }] }
+
+/** Payload `where` selecting a tenant's bookable staff (doctors, therapists, practising owner). */
 export function practitionerWhere(tenantID: string): Where {
   return {
-    and: [
-      { tenant: { equals: tenantID } },
-      {
-        or: [
-          { role: { equals: 'doctor' } },
-          { and: [{ role: { equals: 'owner' } }, { practitioner: { equals: true } }] },
-        ],
-      },
-    ],
+    and: [{ tenant: { equals: tenantID } }, { or: [{ role: { in: ['doctor', 'therapist'] } }, PRACTISING_OWNER] }],
+  }
+}
+
+/** Payload `where` selecting a tenant's doctors only — the plan's doctor cap. */
+export function doctorWhere(tenantID: string): Where {
+  return {
+    and: [{ tenant: { equals: tenantID } }, { or: [{ role: { equals: 'doctor' } }, PRACTISING_OWNER] }],
   }
 }
 
