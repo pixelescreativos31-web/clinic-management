@@ -4,14 +4,16 @@ import { getTenantID } from '@/access'
 import { VisitForm, type VisitInitial } from '@/components/VisitForm'
 import { backgroundLine } from '@/lib/clinical'
 import { canRecordVisits, isTherapist } from '@/lib/practice'
-import { formatsFor, asFormat, practiceProfile } from '@/lib/profiles'
+import { formatsFor, asFormat, practiceProfile, type ConsultFormat } from '@/lib/profiles'
 import { massageToForm } from '@/lib/massage'
+import { kgToLb, METRICS } from '@/lib/program'
+import { programContext } from '@/lib/programData'
 import { formatDateTime } from '@/lib/format'
 import { AppHeader, AppContent } from '@/components/AppHeader'
 import { frequentDiagnoses } from '@/lib/clinical'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { nutritionToForm } from '@/lib/nutrition'
-import type { Patient, User, Visit } from '@/payload-types'
+import type { Patient, Program, User, Visit } from '@/payload-types'
 
 const relId = (v: unknown): string =>
   v && typeof v === 'object' && 'id' in (v as Record<string, unknown>) ? String((v as { id: unknown }).id) : String(v)
@@ -74,8 +76,27 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
       (Object.values(visit.nutrition ?? {}).some((x) => x != null && x !== '') || practiceProfile(tenant) === 'nutrition' ? 'nutrition' : 'general'),
   }
   // Offer the clinic's formats, plus the visit's own if the profile changed since.
-  const formats = [...formatsFor(tenant, user)]
+  // A programme control stays a control (its week and programme are fixed).
+  let formats: ConsultFormat[] = [...formatsFor(tenant, user)].filter((f) => f !== 'program')
   if (!formats.includes(initial.format!)) formats.push(initial.format!)
+  let program
+  if (visit.program) {
+    const enrolment = visit.program as Program
+    program = await programContext({ payload, user }, enrolment, { id: String(visit.id), week: visit.programWeek ?? 0 })
+    formats = ['program']
+    initial.format = 'program'
+    const body = (visit.body ?? {}) as Record<string, unknown>
+    initial.program = {
+      week: String(visit.programWeek ?? 0),
+      weight: v.weightKg ? String(kgToLb(v.weightKg)) : '',
+      weightUnit: 'lb',
+      height: str(v.heightCm),
+      heightUnit: 'cm',
+      body: Object.fromEntries(
+        [...METRICS.filter((m) => m.group === 'composition' || m.group === 'measures').map((m) => m.key), 'muscleMassUnit'].map((k) => [k, str(body[k])]),
+      ),
+    }
+  }
 
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
   return (
@@ -93,6 +114,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
           initial={initial}
           formats={formats}
           defaultFormat={formats[0]}
+          program={program}
           frequentDiagnoses={await frequentDiagnoses(payload, String(tenantID), relId(visit.doctor as User))}
           baseDate={new Date(visit.visitDate).toLocaleDateString('en-CA', { timeZone: tz })}
         />

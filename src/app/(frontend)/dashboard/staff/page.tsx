@@ -5,6 +5,7 @@ import { DEFAULT_CURRENCY, WEEKDAYS } from '@/lib/constants'
 import { windowOf, formatWindow } from '@/lib/availability'
 import type { User } from '@/payload-types'
 import { isPractitioner } from '@/lib/practice'
+import { profileFormats } from '@/lib/profiles'
 
 function availabilitySummary(u: User): string {
   const type = (u.availabilityType as string) || 'regular'
@@ -37,6 +38,7 @@ export default async function StaffPage() {
     role: u.role,
     phone: u.phone,
     specialty: u.specialty,
+    defaultFormat: u.defaultFormat ?? '',
     consultationFee: u.consultationFee,
     active: u.active !== false,
     availability: isPractitioner(u) ? availabilitySummary(u) : null,
@@ -46,5 +48,8 @@ export default async function StaffPage() {
     availableTo: u.availableTo || '17:00',
   }))
 
-  return <StaffManager staff={staff} currency={session.tenant?.settings?.currency || DEFAULT_CURRENCY} />
+  // Templates a doctor can default to: the profile's, minus massage (therapists) and
+  // the programme (opened automatically for enrolled patients).
+  const formatOptions = profileFormats(session.tenant).filter((f) => f !== 'massage' && f !== 'program')
+  return <StaffManager staff={staff} currency={session.tenant?.settings?.currency || DEFAULT_CURRENCY} formatOptions={formatOptions} />
 }

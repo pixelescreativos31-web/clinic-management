@@ -8,7 +8,9 @@ import { StartConsultationButton } from '@/components/StartConsultationButton'
 import { GENDER_LABELS, MARITAL_STATUSES, PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
 import { nutritionLines, NUTRITION_GROUP_LABELS, type NutritionGroup } from '@/lib/nutrition'
 import { massageAlerts, massageLines, massageServicesLine, MASSAGE_GROUP_LABELS, type MassageGroup } from '@/lib/massage'
-import { practiceProfile } from '@/lib/profiles'
+import { hasProgram, practiceProfile } from '@/lib/profiles'
+import { ProgramPanel } from '@/components/ProgramPanel'
+import { bodyLine, DEFAULT_PROGRAM_NAME } from '@/lib/program'
 import { NutritionFollowUp } from '@/components/NutritionFollowUp'
 import { canRecordVisits, isClinical } from '@/lib/practice'
 import { vitalsLine } from '@/lib/clinical'
@@ -21,9 +23,10 @@ const HISTORY_PAGE_SIZE = 15
 
 const fmtCedula = (d: string) => (d.length === 11 ? `${d.slice(0, 3)}-${d.slice(3, 10)}-${d.slice(10)}` : d)
 
-type TabKey = 'historia' | 'timeline' | 'appointments' | 'invoices'
-const ALL_TABS: { key: TabKey; label: string; clinicalOnly?: boolean }[] = [
+type TabKey = 'historia' | 'programa' | 'timeline' | 'appointments' | 'invoices'
+const ALL_TABS: { key: TabKey; label: string; clinicalOnly?: boolean; doctorsOnly?: boolean }[] = [
   { key: 'historia', label: 'Historia clínica', clinicalOnly: true },
+  { key: 'programa', label: 'Programa', doctorsOnly: true },
   { key: 'timeline', label: 'Resumen' },
   { key: 'appointments', label: 'Citas' },
   { key: 'invoices', label: 'Facturas' },
@@ -35,14 +38,27 @@ const FREQ_LABEL: Record<string, string> = Object.fromEntries(
 
 const BACKGROUND_FIELDS: { key: keyof NonNullable<Patient['history']>; label: string }[] = [
   { key: 'chronicConditions', label: 'Enfermedades crónicas' },
-  { key: 'personal', label: 'Patológicos personales' },
+  { key: 'childhood', label: 'Patologías de la niñez' },
+  { key: 'personal', label: 'Patologías de la adultez' },
   { key: 'surgical', label: 'Quirúrgicos' },
-  { key: 'family', label: 'Familiares' },
+  { key: 'familyMother', label: 'Familiares — Madre' },
+  { key: 'familyFather', label: 'Familiares — Padre' },
+  { key: 'familySiblings', label: 'Familiares — Hermanos' },
+  { key: 'family', label: 'Familiares — Otros' },
   { key: 'medications', label: 'Medicamentos actuales' },
   { key: 'habits', label: 'Hábitos' },
   { key: 'gynecoObstetric', label: 'Gineco-obstétricos' },
   { key: 'vaccines', label: 'Vacunas' },
+  { key: 'otherFindings', label: 'Otros antecedentes y hallazgos' },
 ]
+
+/** "E 2 · A 0 · P 1 · C 1" when any E-A-P-C count is recorded. */
+function eapcLine(h: Patient['history']): string | null {
+  const o = h?.obstetric
+  if (!o || [o.pregnancies, o.abortions, o.births, o.cesareans].every((x) => x == null)) return null
+  const f = (x?: number | null) => (x == null ? '—' : x)
+  return `E ${f(o.pregnancies)} · A ${f(o.abortions)} · P ${f(o.births)} · C ${f(o.cesareans)}`
+}
 
 /** Labelled free-text block inside a consultation card (skips empty values). */
 function Block({ label, value }: { label: string; value?: string | null }) {
@@ -60,7 +76,7 @@ export default async function PatientProfile({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ hp?: string; tab?: string }>
+  searchParams: Promise<{ hp?: string; tab?: string; program?: string }>
 }) {
   const { user, tenant } = await requireDashboardSession()
   const payload = await getPayloadClient()
@@ -72,7 +88,9 @@ export default async function PatientProfile({
   // Therapists see the record tab too, but only their massage sheets reach them
   // readable (field-level access hides the medical narrative).
   const recorder = canRecordVisits(user)
-  const TABS = ALL_TABS.filter((t) => recorder || !t.clinicalOnly)
+  const TABS = ALL_TABS.filter((t) => (t.doctorsOnly ? clinical && hasProgram(tenant) : recorder || !t.clinicalOnly)).map((t) =>
+    t.key === 'programa' ? { ...t, label: tenant?.settings?.programName?.trim() || DEFAULT_PROGRAM_NAME } : t,
+  )
   const tab: TabKey = TABS.some((t) => t.key === sp.tab) ? (sp.tab as TabKey) : TABS[0].key
 
   let patient: Patient
@@ -136,6 +154,7 @@ export default async function PatientProfile({
       : null
   const visits = (visitsRes?.docs ?? []) as Visit[]
   const background = BACKGROUND_FIELDS.filter((f) => patient.history?.[f.key])
+  const eapc = patient.gender === 'female' ? eapcLine(patient.history) : null
   const tabHref = (key: TabKey) => `/dashboard/patients/${id}?tab=${key}`
 
   const age = patient.ageYears ?? (patient.dateOfBirth ? ageFromDOB(patient.dateOfBirth) : null)
@@ -283,10 +302,11 @@ export default async function PatientProfile({
                   Editar
                 </Link>
               </div>
-              {background.length === 0 ? (
+              {background.length === 0 && !eapc ? (
                 <p className="px-5 py-4 text-sm text-muted-foreground">Sin antecedentes registrados.</p>
               ) : (
                 <dl className="grid gap-4 px-5 py-4 sm:grid-cols-2">
+                  {eapc && <Block label="E-A-P-C" value={eapc} />}
                   {background.map((f) => (
                     <Block key={f.key} label={f.label} value={patient.history?.[f.key] as string} />
                   ))}
@@ -306,6 +326,41 @@ export default async function PatientProfile({
             ) : (
               shownVisits.map((v) => {
                 const vl = vitalsLine(v.vitals)
+                if (v.format === 'program') {
+                  const bl = bodyLine(v.body)
+                  return (
+                    <Card key={v.id} className="overflow-hidden">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/25 px-5 py-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold">
+                            <span className="me-1.5 rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">Programa</span>
+                            {v.chiefComplaint || 'Control'}
+                          </div>
+                          <div className="tabular text-xs text-muted-foreground">
+                            {formatDateTime(v.visitDate, tenant)}
+                            {(v.doctor as User)?.name ? ` · ${(v.doctor as User).name}` : ''}
+                          </div>
+                        </div>
+                        <div className="flex gap-3 text-xs font-medium">
+                          <Link href={`/dashboard/visits/${v.id}/edit`} className="text-primary hover:underline">
+                            Editar
+                          </Link>
+                          <Link href={tabHref('programa')} className="text-primary hover:underline">
+                            Ver seguimiento
+                          </Link>
+                        </div>
+                      </div>
+                      <dl className="flex flex-col gap-3 px-5 py-4">
+                        {vl && <Block label="Signos vitales" value={vl} />}
+                        {bl && <Block label="Composición y medidas" value={bl} />}
+                        {(v.prescription?.length ?? 0) > 0 && <Block label="Receta" value={v.prescription!.map((r) => r.medicine).join('\n')} />}
+                        <Block label="Plan e indicaciones" value={v.treatmentPlan} />
+                        <Block label="Notas del control" value={v.notes} />
+                        {v.followUpDate && <Block label="Próximo control" value={formatDate(v.followUpDate, tenant)} />}
+                      </dl>
+                    </Card>
+                  )
+                }
                 if (v.format === 'massage') {
                   const alerts = massageAlerts(v.massage)
                   return (
@@ -403,6 +458,10 @@ export default async function PatientProfile({
               })
             )}
           </>
+        )}
+
+        {tab === 'programa' && (
+          <ProgramPanel payload={payload} user={user} tenant={tenant} patientId={String(patient.id)} selected={sp.program} />
         )}
 
         {/* Timeline tab — merged chronological feed */}

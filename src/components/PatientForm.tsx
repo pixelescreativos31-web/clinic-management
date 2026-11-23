@@ -35,6 +35,12 @@ function formatCedula(raw: string): string {
   return `${d.slice(0, 3)}-${d.slice(3, 10)}-${d.slice(10)}`
 }
 
+/** '' → null; otherwise a whole number 0–30 (out-of-range input is dropped). */
+const countOrNull = (v: string): number | null => {
+  const n = Number(v.trim())
+  return v.trim() !== '' && Number.isInteger(n) && n >= 0 && n <= 30 ? n : null
+}
+
 export function PatientForm({
   patientId,
   initial,
@@ -106,6 +112,17 @@ export function PatientForm({
                 habits: form.hxHabits,
                 gynecoObstetric: form.hxGyneco,
                 vaccines: form.hxVaccines,
+                childhood: form.hxChildhood,
+                familyMother: form.hxFamilyMother,
+                familyFather: form.hxFamilyFather,
+                familySiblings: form.hxFamilySiblings,
+                otherFindings: form.hxOther,
+                obstetric: {
+                  pregnancies: countOrNull(form.obE),
+                  abortions: countOrNull(form.obA),
+                  births: countOrNull(form.obP),
+                  cesareans: countOrNull(form.obC),
+                },
               },
             }
           : {}),
@@ -263,7 +280,10 @@ export function PatientForm({
       {clinical && (
         <Section title="Antecedentes" hint="Solo visibles para el personal clínico.">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Patológicos personales">
+            <Field label="Patologías de la niñez">
+              <textarea className={textareaClass} rows={2} {...text('hxChildhood')} />
+            </Field>
+            <Field label="Patologías de la adultez">
               <textarea className={textareaClass} rows={2} {...text('hxPersonal')} />
             </Field>
             <Field label="Enfermedades crónicas">
@@ -272,7 +292,16 @@ export function PatientForm({
             <Field label="Quirúrgicos">
               <textarea className={textareaClass} rows={2} {...text('hxSurgical')} />
             </Field>
-            <Field label="Familiares">
+            <Field label="Familiares — Madre">
+              <textarea className={textareaClass} rows={2} {...text('hxFamilyMother')} />
+            </Field>
+            <Field label="Familiares — Padre">
+              <textarea className={textareaClass} rows={2} {...text('hxFamilyFather')} />
+            </Field>
+            <Field label="Familiares — Hermanos">
+              <textarea className={textareaClass} rows={2} {...text('hxFamilySiblings')} />
+            </Field>
+            <Field label="Familiares — Otros">
               <textarea className={textareaClass} rows={2} {...text('hxFamily')} />
             </Field>
             <Field label="Medicamentos actuales">
@@ -282,13 +311,30 @@ export function PatientForm({
               <textarea className={textareaClass} rows={2} {...text('hxHabits')} placeholder="Tabaco, alcohol, actividad física" />
             </Field>
             {form.gender === 'female' && (
-              <Field label="Gineco-obstétricos">
-                <textarea className={textareaClass} rows={2} {...text('hxGyneco')} placeholder="G P C A, FUM, método anticonceptivo" />
-              </Field>
+              <>
+                <Field label="E · A · P · C" hint="Embarazos, abortos, partos y cesáreas.">
+                  <div className="grid grid-cols-4 gap-2">
+                    {(['obE', 'obA', 'obP', 'obC'] as const).map((k, i) => (
+                      <label key={k} className="flex flex-col items-center gap-1">
+                        <span className="text-xs font-semibold text-muted-foreground">{'EAPC'[i]}</span>
+                        <input className={`${inputClass} text-center`} inputMode="numeric" maxLength={2} {...text(k)} />
+                      </label>
+                    ))}
+                  </div>
+                </Field>
+                <Field label="Gineco-obstétricos (otros)">
+                  <textarea className={textareaClass} rows={2} {...text('hxGyneco')} placeholder="FUM, método anticonceptivo…" />
+                </Field>
+              </>
             )}
             <Field label="Vacunas">
               <textarea className={textareaClass} rows={2} {...text('hxVaccines')} />
             </Field>
+            <div className="sm:col-span-2">
+              <Field label="Otros antecedentes y hallazgos actuales">
+                <textarea className={textareaClass} rows={4} {...text('hxOther')} />
+              </Field>
+            </div>
           </div>
         </Section>
       )}

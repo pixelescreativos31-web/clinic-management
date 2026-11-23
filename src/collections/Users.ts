@@ -207,6 +207,19 @@ export const Users: CollectionConfig = {
       admin: { condition: (data) => isPractitioner(data) },
     },
     {
+      // The record template this professional opens a consultation with (when the
+      // clinic's profile offers it). A patient in an active programme overrides it.
+      name: 'defaultFormat',
+      type: 'select',
+      label: 'Ficha por defecto',
+      options: [
+        { label: 'Consulta general', value: 'general' },
+        { label: 'Nutrición', value: 'nutrition' },
+        { label: 'Ficha de masajes', value: 'massage' },
+      ],
+      admin: { condition: (data) => isPractitioner(data) },
+    },
+    {
       // DR: exequátur; elsewhere: medical licence / registration number. Printed on
       // prescriptions.
       name: 'licenseNumber',

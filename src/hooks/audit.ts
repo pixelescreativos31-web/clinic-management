@@ -201,3 +201,33 @@ export const auditVisits: CollectionAfterChangeHook = async ({ doc, previousDoc,
   }
   return doc
 }
+
+// ---- Programmes (episodes of care) & progress photos ----
+const PROGRAM_STATUS: Record<string, string> = { active: 'activo', completed: 'completado', cancelled: 'suspendido' }
+
+export const auditPrograms: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
+  const base = { targetCollection: 'programs', targetId: String(doc.id), tenantID: relID(doc.tenant) }
+  const patient = await nameOf(req, 'patients', doc.patient, 'un paciente')
+  if (operation === 'create') {
+    await logAudit(req, { ...base, action: 'program.enrolled', summary: `${patient} inscrito(a) en ${doc.name}` })
+  } else if (operation === 'update' && previousDoc) {
+    const fields = changedKeys(previousDoc, doc, new Set(['updatedAt', 'createdAt', 'id', 'tenant', 'patient', 'createdBy']))
+    if (!fields.length) return doc
+    const status = previousDoc.status !== doc.status ? ` · ${PROGRAM_STATUS[doc.status] ?? doc.status}` : ''
+    await logAudit(req, { ...base, action: 'program.updated', summary: `${doc.name} de ${patient} actualizado${status}`, meta: { fields } })
+  }
+  return doc
+}
+
+export const auditProgramPhotos: CollectionAfterChangeHook = async ({ doc, operation, req }) => {
+  if (operation !== 'create' && (operation as string) !== 'delete') return doc
+  const patient = await nameOf(req, 'patients', doc.patient, 'un paciente')
+  await logAudit(req, {
+    targetCollection: 'progressPhotos',
+    targetId: String(doc.id),
+    tenantID: relID(doc.tenant),
+    action: operation === 'create' ? 'photo.added' : 'photo.deleted',
+    summary: `Foto de evolución ${operation === 'create' ? 'agregada' : 'eliminada'} (${patient}, semana ${doc.week})`,
+  })
+  return doc
+}

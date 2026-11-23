@@ -179,14 +179,32 @@ export const Patients: CollectionConfig = {
       // patient's demographics but never reads or edits their medical history.
       access: { read: clinicalReadField, create: clinicalReadField, update: clinicalReadField },
       fields: [
-        { name: 'personal', type: 'textarea', label: 'Antecedentes patológicos personales' },
+        { name: 'childhood', type: 'textarea', label: 'Patologías de la niñez' },
+        { name: 'personal', type: 'textarea', label: 'Patologías de la adultez (patológicos personales)' },
         { name: 'chronicConditions', type: 'textarea', label: 'Enfermedades crónicas' },
         { name: 'surgical', type: 'textarea', label: 'Antecedentes quirúrgicos' },
-        { name: 'family', type: 'textarea', label: 'Antecedentes familiares' },
+        // Family history by relative (programme requirement), plus a free field.
+        { name: 'familyMother', type: 'textarea', label: 'Antecedentes familiares — Madre' },
+        { name: 'familyFather', type: 'textarea', label: 'Antecedentes familiares — Padre' },
+        { name: 'familySiblings', type: 'textarea', label: 'Antecedentes familiares — Hermanos' },
+        { name: 'family', type: 'textarea', label: 'Antecedentes familiares — Otros' },
         { name: 'medications', type: 'textarea', label: 'Medicamentos actuales' },
         { name: 'habits', type: 'textarea', label: 'Hábitos (tabaco, alcohol, actividad física)' },
         { name: 'gynecoObstetric', type: 'textarea', label: 'Antecedentes gineco-obstétricos' },
+        // E-A-P-C: embarazos, abortos, partos, cesáreas (one numeric box each).
+        {
+          name: 'obstetric',
+          type: 'group',
+          label: 'E-A-P-C',
+          fields: [
+            { name: 'pregnancies', type: 'number', min: 0, max: 30, label: 'Embarazos (E)' },
+            { name: 'abortions', type: 'number', min: 0, max: 30, label: 'Abortos (A)' },
+            { name: 'births', type: 'number', min: 0, max: 30, label: 'Partos (P)' },
+            { name: 'cesareans', type: 'number', min: 0, max: 30, label: 'Cesáreas (C)' },
+          ],
+        },
         { name: 'vaccines', type: 'textarea', label: 'Vacunas' },
+        { name: 'otherFindings', type: 'textarea', label: 'Otros antecedentes y hallazgos actuales' },
       ],
     },
     { name: 'notes', type: 'textarea', label: 'Notas' },

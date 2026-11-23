@@ -3,7 +3,8 @@ import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { Card, EmptyState } from '@/components/primitives'
 import { IconCheck } from '@/components/icons'
-import { formatsFor } from '@/lib/profiles'
+import { formatsFor, initialFormat } from '@/lib/profiles'
+import { activeProgram, programContext } from '@/lib/programData'
 import { canRecordVisits } from '@/lib/practice'
 import { massageToForm } from '@/lib/massage'
 import type { Visit } from '@/payload-types'
@@ -120,6 +121,9 @@ export default async function NewVisitPage({
       }
     }
   }
+  // Patient in an active programme: the consultation opens on its next control.
+  const enrolled = formats.includes('program') ? await activeProgram({ payload, user }, relId(patient)) : null
+  const program = enrolled ? await programContext({ payload, user }, enrolled) : undefined
   const apptDate = new Date(appt.start).toLocaleDateString('en-CA', { timeZone: tz })
   return (
     <>
@@ -130,7 +134,8 @@ export default async function NewVisitPage({
           allergies={patient?.allergies}
           background={backgroundLine(patient)}
           formats={formats}
-          defaultFormat={formats[0]}
+          defaultFormat={initialFormat(formats, { activeProgram: Boolean(program), userDefault: user.defaultFormat })}
+          program={program}
           massagePrefill={massagePrefill}
           frequentDiagnoses={await frequentDiagnoses(payload, String(tenantID), doctorId)}
           // The consultation is dated when it's saved (Visits hook), so follow-up

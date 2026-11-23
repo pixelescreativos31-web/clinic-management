@@ -16,6 +16,7 @@ import { Visits } from './collections/Visits'
 import { Invoices } from './collections/Invoices'
 import { AuditLogs } from './collections/AuditLogs'
 import { BookingRequests } from './collections/BookingRequests'
+import { Programs, ProgressPhotos } from './collections/Programs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -35,7 +36,7 @@ export default buildConfig({
     supportedLanguages: { es, en },
     fallbackLanguage: 'es',
   },
-  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests],
+  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests, Programs, ProgressPhotos],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

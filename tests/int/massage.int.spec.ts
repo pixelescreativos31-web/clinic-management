@@ -54,7 +54,7 @@ describe('massage sheet helpers', () => {
 describe('practice profiles', () => {
   const aesthetic = { settings: { consultTemplate: 'aesthetic' } }
   it('maps profiles to formats, defaulting unknown values to general', () => {
-    expect(profileFormats(aesthetic)).toEqual(['general', 'nutrition', 'massage'])
+    expect(profileFormats(aesthetic)).toEqual(['general', 'nutrition', 'program', 'massage'])
     expect(profileFormats({ settings: { consultTemplate: 'nutrition' } })[0]).toBe('nutrition')
     expect(practiceProfile({ settings: { consultTemplate: 'bogus' } })).toBe('general')
     expect(practiceProfile(null)).toBe('general')

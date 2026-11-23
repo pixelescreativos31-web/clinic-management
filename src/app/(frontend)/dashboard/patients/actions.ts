@@ -86,6 +86,12 @@ export type PatientInput = {
     habits?: string
     gynecoObstetric?: string
     vaccines?: string
+    childhood?: string
+    familyMother?: string
+    familyFather?: string
+    familySiblings?: string
+    otherFindings?: string
+    obstetric?: { pregnancies?: number | null; abortions?: number | null; births?: number | null; cesareans?: number | null }
   }
 }
 
@@ -115,7 +121,14 @@ function toData(input: PatientInput) {
     referredBy: input.referredBy || null,
     insurance: clean(input.insurance),
     emergencyContact: clean(input.emergencyContact),
-    ...(input.history ? { history: clean(input.history) } : {}),
+    ...(input.history
+      ? {
+          history: {
+            ...clean({ ...input.history, obstetric: undefined }),
+            obstetric: input.history.obstetric ?? { pregnancies: null, abortions: null, births: null, cesareans: null },
+          },
+        }
+      : {}),
   }
 }
 

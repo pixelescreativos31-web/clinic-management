@@ -35,6 +35,7 @@ export default async function SettingsPage() {
           taxId: t?.taxId ?? '',
           practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
           consultTemplate: asProfile(t?.settings?.consultTemplate),
+          programName: t?.settings?.programName ?? '',
           logo: t?.logo ?? '',
           onlineBookingEnabled: t?.settings?.onlineBookingEnabled !== false,
           onlineRequestsEnabled: t?.settings?.onlineRequestsEnabled === true,

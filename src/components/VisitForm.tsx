@@ -16,6 +16,7 @@ import { recordVisit, updateVisit, type PrescriptionRowInput, type VisitInput } 
 import { EMPTY_MASSAGE, type MassageFormState } from '@/lib/massage'
 import { FORMAT_SHORT, type ConsultFormat } from '@/lib/profiles'
 import { MassageSheet } from './MassageSheet'
+import { formHeightCm, formWeightKg, ProgramControl, type ProgramContext, type ProgramFormState } from './ProgramControl'
 
 export type VisitFormat = ConsultFormat
 
@@ -33,6 +34,7 @@ export type VisitInitial = {
   nutrition?: NutritionFormState
   massage?: MassageFormState
   format?: VisitFormat
+  program?: ProgramFormState
 }
 
 type VitalKey = 'bpSystolic' | 'bpDiastolic' | 'pulse' | 'respiratoryRate' | 'temperatureC' | 'oxygenSaturation' | 'weightKg' | 'heightCm' | 'glucoseMgDl'
@@ -123,6 +125,7 @@ export function VisitForm({
   defaultFormat = 'general',
   formats = ['general', 'nutrition'],
   massagePrefill,
+  program,
   frequentDiagnoses = [],
   baseDate,
   returnHref = '/dashboard/appointments',
@@ -140,6 +143,8 @@ export function VisitForm({
   formats?: VisitFormat[]
   /** Previous massage sheet's answers, to pre-fill a new one. */
   massagePrefill?: MassageFormState
+  /** The patient's active programme (enables the «Programa» format). */
+  program?: ProgramContext
   /** The doctor's most frequent diagnoses, offered as one-tap chips. */
   frequentDiagnoses?: string[]
   /** YYYY-MM-DD the consultation happens (follow-up chips count from here). */
@@ -153,6 +158,19 @@ export function VisitForm({
   const [format, setFormat] = useState<VisitFormat>(initial?.format ?? defaultFormat)
   const nutri = format === 'nutrition'
   const isMassage = format === 'massage'
+  const isProgram = format === 'program' && Boolean(program)
+  const offered = formats.filter((f) => f !== 'program' || program)
+  const [prog, setProg] = useState<ProgramFormState>(
+    () =>
+      initial?.program ?? {
+        week: program ? String(program.suggestedWeek) : '',
+        weight: initial?.vitals.weightKg ?? '',
+        weightUnit: 'lb',
+        height: initial?.vitals.heightCm || (program?.heightCm ? String(program.heightCm) : ''),
+        heightUnit: 'cm',
+        body: {},
+      },
+  )
   const [massage, setMassage] = useState<MassageFormState>(initial?.massage ?? massagePrefill ?? EMPTY_MASSAGE)
 
   const [chiefComplaint, setChiefComplaint] = useState(initial?.chiefComplaint ?? '')
@@ -203,6 +221,15 @@ export function VisitForm({
         setError('Elija al menos un servicio.')
         return
       }
+    } else if (isProgram) {
+      if (formWeightKg(prog) == null) {
+        setError('Registre el peso del control.')
+        return
+      }
+      if (!/^\d+$/.test(prog.week)) {
+        setError('Indique el número de semana.')
+        return
+      }
     } else if (!chiefComplaint.trim() || !diagnosis.trim()) {
       setError('Complete el motivo de consulta y el diagnóstico.')
       return
@@ -219,7 +246,10 @@ export function VisitForm({
         treatmentPlan,
         labOrders: [labChips.join(', '), labNote.trim()].filter(Boolean).join('\n'),
         notes,
-        vitals: Object.fromEntries(VITALS.map((v) => [v.key, num(vitals[v.key])])),
+        vitals: {
+          ...Object.fromEntries(VITALS.map((v) => [v.key, num(vitals[v.key])])),
+          ...(isProgram ? { weightKg: formWeightKg(prog) ?? undefined, heightCm: formHeightCm(prog) ?? undefined } : {}),
+        },
         prescription: rows
           .filter((r) => r.medicine.trim())
           .map((r) => ({ ...r, durationDays: r.durationDays ? Number(r.durationDays) : undefined })),
@@ -227,6 +257,7 @@ export function VisitForm({
         format,
         ...(nutri ? { nutrition } : {}),
         ...(isMassage ? { massage } : {}),
+        ...(isProgram && program ? { programId: program.programId, programWeek: Number(prog.week), body: prog.body } : {}),
       }
       const res = visitId ? await updateVisit(visitId, data) : await recordVisit({ appointmentId: appointmentId!, ...data })
       if (!res.ok) {
@@ -234,9 +265,14 @@ export function VisitForm({
         setError(res.message)
         return
       }
-      if (printTab) printTab.location.href = isMassage ? `/print/ficha/${res.data.id}` : `/print/prescription/${res.data.id}`
-      const saved = isMassage ? 'Ficha guardada' : 'Consulta guardada'
-      const msg = encodeURIComponent(print ? `${saved} · imprimiendo ${isMassage ? 'ficha' : 'receta'}` : saved)
+      if (printTab)
+        printTab.location.href = isMassage
+          ? `/print/ficha/${res.data.id}`
+          : isProgram && program
+            ? `/print/programa/${program.programId}`
+            : `/print/prescription/${res.data.id}`
+      const saved = isMassage ? 'Ficha guardada' : isProgram ? 'Control guardado' : 'Consulta guardada'
+      const msg = encodeURIComponent(print ? `${saved} · imprimiendo ${isMassage ? 'ficha' : isProgram ? 'seguimiento' : 'receta'}` : saved)
       if (visitId && 'patientId' in res.data) router.push(`/dashboard/patients/${res.data.patientId}?tab=historia`)
       else router.push(`${returnHref}${returnHref.includes('?') ? '&' : '?'}ok=${msg}`)
       router.refresh()
@@ -255,10 +291,10 @@ export function VisitForm({
       )}
       {background && <p className="px-1 text-xs leading-relaxed text-[#6b7577]">{background}</p>}
 
-      {formats.length > 1 && (
+      {offered.length > 1 && (
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-[#6b7577]">Formato:</span>
-        {formats.map((f) => (
+        {offered.map((f) => (
           <button
             key={f}
             type="button"
@@ -277,7 +313,22 @@ export function VisitForm({
 
       {isMassage && <MassageSheet value={massage} onChange={setMassage} prefilled={!initial?.massage && Boolean(massagePrefill)} />}
 
+      {isProgram && program && (
+        <ProgramControl
+          ctx={program}
+          value={prog}
+          onChange={setProg}
+          vitals={vitals}
+          setVital={(k, v) => setV(k, v)}
+          notes={notes}
+          setNotes={setNotes}
+          editing={Boolean(visitId)}
+        />
+      )}
+
       {!isMassage && (
+      <>
+      {!isProgram && (
       <>
       {/* Required */}
       <div className="flex flex-col gap-2.5 rounded-[14px] border border-[#e3e7e7] bg-white p-3.5">
@@ -400,6 +451,9 @@ export function VisitForm({
         />
         <textarea rows={2} value={physicalExam} onChange={(e) => setPhysicalExam(e.target.value)} placeholder="Examen físico…" aria-label="Examen físico" className={AREA} />
       </Section>
+
+      </>
+      )}
 
       {/* Prescription */}
       <Section title="Receta" hint={`${rxCount} medicamento${rxCount === 1 ? '' : 's'}`} open={open.rx} onToggle={() => toggle('rx')}>
@@ -549,7 +603,9 @@ export function VisitForm({
             ))}
           </div>
         )}
-        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas privadas (no se imprimen)" aria-label="Notas privadas" className={AREA} />
+        {!isProgram && (
+          <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas privadas (no se imprimen)" aria-label="Notas privadas" className={AREA} />
+        )}
       </Section>
       </>
       )}
@@ -570,7 +626,7 @@ export function VisitForm({
             className="flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-xl bg-[#0d6e60] p-3.5 text-[15px] font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,110,96,.6)]"
           >
             {pending && <Spinner />}
-            {visitId ? 'Guardar cambios' : isMassage ? 'Guardar ficha' : 'Guardar consulta'}
+            {visitId ? 'Guardar cambios' : isMassage ? 'Guardar ficha' : isProgram ? 'Guardar control' : 'Guardar consulta'}
           </button>
           <button
             type="button"

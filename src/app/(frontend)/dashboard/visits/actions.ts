@@ -6,6 +6,7 @@ import { toActionError, type ActionResult } from '@/lib/errors'
 import { formToNutrition, type NutritionFormState } from '@/lib/nutrition'
 import { formToMassage, massageServicesLine, type MassageFormState } from '@/lib/massage'
 import { asFormat, type ConsultFormat } from '@/lib/profiles'
+import { METRICS, parseMetric } from '@/lib/program'
 
 export type PrescriptionRowInput = {
   medicine: string
@@ -44,6 +45,26 @@ export type VisitInput = {
   /** Only sent when the visit is a massage session sheet. */
   massage?: MassageFormState
   format?: ConsultFormat
+  /** Programme control: the enrolment and its week (blank = next week). */
+  programId?: string
+  programWeek?: number
+  /** Body composition and measurements, as typed (strings). */
+  body?: Record<string, string>
+}
+
+/** Programme body metrics: form strings → numbers (blank → null on update). */
+function bodyData(body: Record<string, string> | undefined, forUpdate: boolean) {
+  if (!body) return undefined
+  const out: Record<string, number | string | null> = {}
+  for (const m of METRICS.filter((x) => x.group === 'composition' || x.group === 'measures')) {
+    const v = parseMetric(body[m.key], m.min, m.max)
+    if (v !== undefined) out[m.key] = v
+    else if (forUpdate) out[m.key] = null
+  }
+  const unit = body.muscleMassUnit
+  if (unit === 'kg' || unit === 'lb' || unit === '%') out.muscleMassUnit = unit
+  else if (forUpdate) out.muscleMassUnit = null
+  return out
 }
 
 const FORBIDDEN = { ok: false as const, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
@@ -71,9 +92,20 @@ function clinicalData(input: Omit<VisitInput, 'appointmentId'>, forUpdate: boole
   const txt = (v?: string) => (v && v.trim() ? v : empty)
   const format = asFormat(input.format)
   const massage = format === 'massage' ? formToMassage(input.massage, forUpdate) : undefined
+  const program =
+    format === 'program'
+      ? {
+          ...(!forUpdate && input.programId ? { program: input.programId } : {}),
+          ...(input.programWeek != null && Number.isInteger(input.programWeek) && input.programWeek >= 0 ? { programWeek: input.programWeek } : {}),
+          body: bodyData(input.body, forUpdate),
+        }
+      : {}
   return {
+    ...program,
     // A massage sheet has no free-text complaint: its services are the headline.
-    chiefComplaint: format === 'massage' ? massageServicesLine(massage) || empty : txt(input.chiefComplaint),
+    // A programme control is titled by the server («Impulso Vital · Semana 3»).
+    chiefComplaint:
+      format === 'massage' ? massageServicesLine(massage) || empty : format === 'program' ? txt(input.chiefComplaint) ?? undefined : txt(input.chiefComplaint),
     symptoms: txt(input.symptoms),
     physicalExam: txt(input.physicalExam),
     diagnosis: txt(input.diagnosis),

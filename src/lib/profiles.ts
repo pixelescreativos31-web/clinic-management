@@ -8,12 +8,13 @@
 
 import { isTherapist } from './practice'
 
-export type ConsultFormat = 'general' | 'nutrition' | 'massage'
+export type ConsultFormat = 'general' | 'nutrition' | 'massage' | 'program'
 
 export const FORMAT_LABELS: Record<ConsultFormat, string> = {
   general: 'Consulta general',
   nutrition: 'Nutrición',
   massage: 'Ficha de masajes',
+  program: 'Control del programa',
 }
 
 /** Short label for chips and badges. */
@@ -21,6 +22,7 @@ export const FORMAT_SHORT: Record<ConsultFormat, string> = {
   general: 'General',
   nutrition: 'Nutrición',
   massage: 'Masajes',
+  program: 'Programa',
 }
 
 export type PracticeProfile = 'general' | 'nutrition' | 'aesthetic'
@@ -35,14 +37,14 @@ export const PROFILES: { value: PracticeProfile; label: string; hint: string; fo
   {
     value: 'nutrition',
     label: 'Nutrición',
-    hint: 'Agrega antropometría, laboratorio y la hoja de seguimiento de peso.',
-    formats: ['nutrition', 'general'],
+    hint: 'Antropometría, laboratorio, hoja de seguimiento y programa de control de peso.',
+    formats: ['nutrition', 'general', 'program'],
   },
   {
     value: 'aesthetic',
     label: 'Estética y spa',
-    hint: 'Consulta médica, nutrición y la ficha técnica de masajes con consentimiento.',
-    formats: ['general', 'nutrition', 'massage'],
+    hint: 'Consulta médica, nutrición, programa de control de peso y ficha de masajes con consentimiento.',
+    formats: ['general', 'nutrition', 'program', 'massage'],
   },
 ]
 
@@ -75,4 +77,19 @@ export function hasFormat(tenant: TenantLike, format: ConsultFormat): boolean {
 
 export function asFormat(value: unknown): ConsultFormat | null {
   return ALL_FORMATS.includes(value as ConsultFormat) ? (value as ConsultFormat) : null
+}
+
+/** Does the clinic run a follow-up programme (enrolment + weekly controls)? */
+export const hasProgram = (tenant: TenantLike) => hasFormat(tenant, 'program')
+
+/**
+ * Format a new consultation opens with. A patient in an active programme starts on
+ * its control; otherwise the professional's own default (if the clinic offers it),
+ * else the profile's first format. `program` is only offered with an active programme.
+ */
+export function initialFormat(available: ConsultFormat[], opts: { activeProgram: boolean; userDefault?: string | null }): ConsultFormat {
+  if (opts.activeProgram && available.includes('program')) return 'program'
+  const own = asFormat(opts.userDefault)
+  if (own && own !== 'program' && available.includes(own)) return own
+  return available.find((f) => f !== 'program') ?? available[0]
 }

@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
   // Self-contained server bundle for the Docker image (see Dockerfile).
   output: 'standalone',
   poweredByHeader: false,
+  // Progress photos go through a server action (resized to ≤1600 px in the
+  // browser, usually < 1 MB); allow headroom over the 1 MB default.
+  experimental: { serverActions: { bodySizeLimit: '10mb' } },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

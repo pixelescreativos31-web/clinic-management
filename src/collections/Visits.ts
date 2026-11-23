@@ -4,6 +4,7 @@ import { APIError } from 'payload'
 import { tenantScoped, denyAll, visitsCreateAccess, visitsUpdateAccess, getTenantID, clinicalReadField, massageField } from '@/access'
 import { MASSAGE_FIELDS, YES_NO_OPTIONS } from '@/lib/massage'
 import { ALL_FORMATS, FORMAT_SHORT } from '@/lib/profiles'
+import { METRICS, weekLabel } from '@/lib/program'
 import { auditVisits } from '@/hooks/audit'
 import { forceTenant } from '@/hooks/tenant'
 import {
@@ -100,12 +101,56 @@ export const Visits: CollectionConfig = {
     ],
     beforeChange: [
       forceTenant,
+      // Programme controls: tied to the patient's own programme in this clinic,
+      // numbered by week (0 = initial evaluation) with no duplicate week.
+      async ({ data, req, operation, originalDoc }) => {
+        const format = data.format ?? originalDoc?.format
+        if (format !== 'program' || req.user?.role === 'therapist') {
+          if (operation === 'create') {
+            data.program = null
+            data.programWeek = null
+          }
+          return data
+        }
+        const programID = relID(data.program ?? originalDoc?.program)
+        if (!programID) {
+          throw new APIError('Inscriba al paciente en el programa antes de registrar un control.', 400, { code: ERROR_CODES.VALIDATION })
+        }
+        const program = await req.payload.findByID({ collection: 'programs', id: programID, depth: 0, overrideAccess: true, req }).catch(() => null)
+        const tenantID = relID(data.tenant ?? originalDoc?.tenant)
+        const patientID = relID(data.patient ?? originalDoc?.patient)
+        if (!program || relID(program.tenant) !== tenantID || relID(program.patient) !== patientID) {
+          throw new APIError('Ese programa no corresponde a este paciente.', 400, { code: ERROR_CODES.VALIDATION })
+        }
+        if (operation === 'create' && program.status !== 'active') {
+          throw new APIError('El programa está cerrado; reactívelo para agregar controles.', 400, { code: ERROR_CODES.VALIDATION })
+        }
+        let week = data.programWeek ?? originalDoc?.programWeek
+        const siblings = await req.payload.find({
+          collection: 'visits',
+          where: { program: { equals: programID } },
+          depth: 0,
+          limit: 1000,
+          pagination: false,
+          overrideAccess: true,
+          req,
+        })
+        const others = siblings.docs.filter((d) => String(d.id) !== String(originalDoc?.id ?? ''))
+        if (week == null) week = others.length ? Math.max(...others.map((d) => d.programWeek ?? 0)) + 1 : 0
+        if (others.some((d) => d.programWeek === week)) {
+          throw new APIError(`Ya existe el control de ${weekLabel(week).toLowerCase()}.`, 409, { code: ERROR_CODES.VALIDATION })
+        }
+        data.program = programID
+        data.programWeek = week
+        if (!data.chiefComplaint && !originalDoc?.chiefComplaint) data.chiefComplaint = `${program.name} · ${weekLabel(week)}`
+        return data
+      },
       // Therapists record massage sheets only: whatever the client sends, their
       // visits are `massage` and never carry the medical narrative or a prescription.
       ({ data, req }) => {
         if (req.user?.role !== 'therapist') return data
         data.format = 'massage'
-        for (const k of ['symptoms', 'physicalExam', 'notes', 'nutrition', 'prescription', 'labOrders', 'vitals']) delete data[k]
+        for (const k of ['symptoms', 'physicalExam', 'notes', 'nutrition', 'prescription', 'labOrders', 'vitals', 'program', 'programWeek', 'body']) delete data[k]
         return data
       },
       ({ data, req, operation }) => {
@@ -246,6 +291,38 @@ export const Visits: CollectionConfig = {
         return f.long ? { name: f.key, type: 'textarea', label } : { name: f.key, type: 'text', label }
       }),
     },
+    // Programme control (format = 'program'): the episode it belongs to and its
+    // week number. Weight, height, TA, FC and FR are the regular vitals above.
+    {
+      name: 'program',
+      type: 'relationship',
+      relationTo: 'programs',
+      index: true,
+      label: 'Programa',
+      access: { update: () => false },
+    },
+    { name: 'programWeek', type: 'number', min: 0, max: 520, label: 'Semana del programa' },
+    {
+      name: 'body',
+      type: 'group',
+      label: 'Composición y medidas corporales',
+      access: { read: clinicalReadField },
+      fields: [
+        ...METRICS.filter((m) => m.group === 'composition' || m.group === 'measures').map(
+          (m): Field => ({ name: m.key, type: 'number', min: m.min, max: m.max, label: m.unit ? `${m.label} (${m.unit})` : m.label }),
+        ),
+        {
+          name: 'muscleMassUnit',
+          type: 'select',
+          label: 'Unidad de masa muscular',
+          options: [
+            { label: 'kg', value: 'kg' },
+            { label: 'lb', value: 'lb' },
+            { label: '%', value: '%' },
+          ],
+        },
+      ],
+    },
     // Massage session sheet (format = 'massage'). Field list lives in
     // src/lib/massage.ts; readable by clinical roles and therapists, not reception.
     {
@@ -302,5 +379,6 @@ export const Visits: CollectionConfig = {
   indexes: [
     { fields: ['tenant', 'patient', 'visitDate'] },
     { fields: ['tenant', 'appointment'], unique: true },
+    { fields: ['program', 'programWeek'] },
   ],
 }

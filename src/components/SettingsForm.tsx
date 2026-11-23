@@ -47,6 +47,7 @@ export type SettingsInitial = {
   taxId: string
   practiceType: 'individual' | 'clinic'
   consultTemplate: PracticeProfile
+  programName: string
   logo: string
   onlineBookingEnabled: boolean
   onlineRequestsEnabled: boolean
@@ -149,6 +150,7 @@ export function SettingsForm({
         taxId: form.taxId || undefined,
         practiceType: form.practiceType,
         consultTemplate: form.consultTemplate,
+        programName: form.programName,
         logo: form.logo || null,
         onlineBookingEnabled: booking.enabled,
         onlineRequestsEnabled: booking.requests,
@@ -219,6 +221,11 @@ export function SettingsForm({
               options={PROFILES.map((p) => ({ value: p.value, label: p.label }))}
             />
           </Field>
+          {PROFILES.find((p) => p.value === form.consultTemplate)?.formats.includes('program') && (
+            <Field label="Nombre del programa de control de peso" hint="Así aparece en el expediente y en la hoja impresa.">
+              <input className={inputClass} value={form.programName} maxLength={60} placeholder="Programa de control de peso" onChange={(e) => set('programName', e.target.value)} />
+            </Field>
+          )}
           <div className="sm:col-span-2">
             <Field label="Logo" hint="Aparece en el menú, la página de reservas y los documentos impresos. PNG, JPG o WebP.">
               <div className="flex flex-wrap items-center gap-3">

@@ -58,6 +58,10 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# Uploaded files (progress photos). Mount a volume here so they survive redeploys.
+RUN mkdir -p /app/media && chown nextjs:nodejs /app/media
+ENV MEDIA_DIR /app/media
+
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

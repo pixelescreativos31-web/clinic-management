@@ -75,6 +75,8 @@ export interface Config {
     invoices: Invoice;
     auditLogs: AuditLog;
     bookingRequests: BookingRequest;
+    programs: Program;
+    progressPhotos: ProgressPhoto;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -90,6 +92,8 @@ export interface Config {
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     auditLogs: AuditLogsSelect<false> | AuditLogsSelect<true>;
     bookingRequests: BookingRequestsSelect<false> | BookingRequestsSelect<true>;
+    programs: ProgramsSelect<false> | ProgramsSelect<true>;
+    progressPhotos: ProgressPhotosSelect<false> | ProgressPhotosSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -192,6 +196,10 @@ export interface Tenant {
      */
     consultTemplate?: ('general' | 'nutrition' | 'aesthetic') | null;
     /**
+     * Para perfiles con programa (Nutrición, Estética y spa).
+     */
+    programName?: string | null;
+    /**
      * Los pacientes agendan desde el enlace público, dentro del horario de cada médico.
      */
     onlineBookingEnabled?: boolean | null;
@@ -222,6 +230,7 @@ export interface User {
   verifyTokenExp?: string | null;
   practitioner?: boolean | null;
   specialty?: string | null;
+  defaultFormat?: ('general' | 'nutrition' | 'massage') | null;
   licenseNumber?: string | null;
   /**
    * En la moneda del consultorio. Se usa al facturar.
@@ -303,14 +312,25 @@ export interface Patient {
    */
   allergies?: string | null;
   history?: {
+    childhood?: string | null;
     personal?: string | null;
     chronicConditions?: string | null;
     surgical?: string | null;
+    familyMother?: string | null;
+    familyFather?: string | null;
+    familySiblings?: string | null;
     family?: string | null;
     medications?: string | null;
     habits?: string | null;
     gynecoObstetric?: string | null;
+    obstetric?: {
+      pregnancies?: number | null;
+      abortions?: number | null;
+      births?: number | null;
+      cesareans?: number | null;
+    };
     vaccines?: string | null;
+    otherFindings?: string | null;
   };
   notes?: string | null;
   updatedAt: string;
@@ -379,7 +399,7 @@ export interface Visit {
     heightCm?: number | null;
     glucoseMgDl?: number | null;
   };
-  format?: ('general' | 'nutrition' | 'massage') | null;
+  format?: ('general' | 'nutrition' | 'massage' | 'program') | null;
   nutrition?: {
     constipation?: ('yes' | 'no') | null;
     waterIntake?: ('good' | 'poor') | null;
@@ -409,6 +429,21 @@ export interface Visit {
     changes?: string | null;
     exercise?: string | null;
     diet?: string | null;
+  };
+  program?: (string | null) | Program;
+  programWeek?: number | null;
+  body?: {
+    muscleMass?: number | null;
+    bodyFatPct?: number | null;
+    bodyWaterPct?: number | null;
+    waistCm?: number | null;
+    chestCm?: number | null;
+    hipCm?: number | null;
+    armRightCm?: number | null;
+    armLeftCm?: number | null;
+    legRightCm?: number | null;
+    legLeftCm?: number | null;
+    muscleMassUnit?: ('kg' | 'lb' | '%') | null;
   };
   massage?: {
     services?:
@@ -507,6 +542,24 @@ export interface Visit {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "programs".
+ */
+export interface Program {
+  id: string;
+  tenant: string | Tenant;
+  patient: string | Patient;
+  name: string;
+  status: 'active' | 'completed' | 'cancelled';
+  startDate: string;
+  endDate?: string | null;
+  goal?: string | null;
+  responsible?: (string | null) | User;
+  createdBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "invoices".
  */
 export interface Invoice {
@@ -578,7 +631,11 @@ export interface AuditLog {
     | 'patient.created'
     | 'patient.updated'
     | 'visit.created'
-    | 'visit.updated';
+    | 'visit.updated'
+    | 'program.enrolled'
+    | 'program.updated'
+    | 'photo.added'
+    | 'photo.deleted';
   targetCollection: string;
   targetId: string;
   /**
@@ -615,6 +672,31 @@ export interface BookingRequest {
   status: 'pending' | 'handled' | 'dismissed';
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "progressPhotos".
+ */
+export interface ProgressPhoto {
+  id: string;
+  tenant: string | Tenant;
+  program: string | Program;
+  patient: string | Patient;
+  week: number;
+  view: 'front' | 'rightProfile' | 'leftProfile' | 'back';
+  takenAt: string;
+  uploadedBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -671,6 +753,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'bookingRequests';
         value: string | BookingRequest;
+      } | null)
+    | ({
+        relationTo: 'programs';
+        value: string | Program;
+      } | null)
+    | ({
+        relationTo: 'progressPhotos';
+        value: string | ProgressPhoto;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -747,6 +837,7 @@ export interface TenantsSelect<T extends boolean = true> {
         currency?: T;
         timezone?: T;
         consultTemplate?: T;
+        programName?: T;
         onlineBookingEnabled?: T;
         onlineRequestsEnabled?: T;
       };
@@ -768,6 +859,7 @@ export interface UsersSelect<T extends boolean = true> {
   verifyTokenExp?: T;
   practitioner?: T;
   specialty?: T;
+  defaultFormat?: T;
   licenseNumber?: T;
   consultationFee?: T;
   bookingServices?:
@@ -840,14 +932,27 @@ export interface PatientsSelect<T extends boolean = true> {
   history?:
     | T
     | {
+        childhood?: T;
         personal?: T;
         chronicConditions?: T;
         surgical?: T;
+        familyMother?: T;
+        familyFather?: T;
+        familySiblings?: T;
         family?: T;
         medications?: T;
         habits?: T;
         gynecoObstetric?: T;
+        obstetric?:
+          | T
+          | {
+              pregnancies?: T;
+              abortions?: T;
+              births?: T;
+              cesareans?: T;
+            };
         vaccines?: T;
+        otherFindings?: T;
       };
   notes?: T;
   updatedAt?: T;
@@ -936,6 +1041,23 @@ export interface VisitsSelect<T extends boolean = true> {
         changes?: T;
         exercise?: T;
         diet?: T;
+      };
+  program?: T;
+  programWeek?: T;
+  body?:
+    | T
+    | {
+        muscleMass?: T;
+        bodyFatPct?: T;
+        bodyWaterPct?: T;
+        waistCm?: T;
+        chestCm?: T;
+        hipCm?: T;
+        armRightCm?: T;
+        armLeftCm?: T;
+        legRightCm?: T;
+        legLeftCm?: T;
+        muscleMassUnit?: T;
       };
   massage?:
     | T
@@ -1084,6 +1206,47 @@ export interface BookingRequestsSelect<T extends boolean = true> {
   status?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "programs_select".
+ */
+export interface ProgramsSelect<T extends boolean = true> {
+  tenant?: T;
+  patient?: T;
+  name?: T;
+  status?: T;
+  startDate?: T;
+  endDate?: T;
+  goal?: T;
+  responsible?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "progressPhotos_select".
+ */
+export interface ProgressPhotosSelect<T extends boolean = true> {
+  tenant?: T;
+  program?: T;
+  patient?: T;
+  week?: T;
+  view?: T;
+  takenAt?: T;
+  uploadedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

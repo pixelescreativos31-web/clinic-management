@@ -226,6 +226,13 @@ export const Tenants: CollectionConfig = {
           admin: { description: 'Define qué fichas e historias clínicas usa el consultorio.' },
         },
         {
+          // Each clinic names its weight-management programme (Fénix: «Impulso Vital»).
+          name: 'programName',
+          type: 'text',
+          label: 'Nombre del programa de control de peso',
+          admin: { description: 'Para perfiles con programa (Nutrición, Estética y spa).' },
+        },
+        {
           name: 'onlineBookingEnabled',
           type: 'checkbox',
           defaultValue: true,

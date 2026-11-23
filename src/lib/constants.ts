@@ -204,6 +204,11 @@ export const AUDIT_ACTIONS = [
   { value: 'patient.updated', label: 'Expediente de paciente editado' },
   { value: 'visit.created', label: 'Consulta registrada' },
   { value: 'visit.updated', label: 'Consulta editada' },
+  // Follow-up programmes (episode of care) and their progress photos.
+  { value: 'program.enrolled', label: 'Paciente inscrito en programa' },
+  { value: 'program.updated', label: 'Programa actualizado' },
+  { value: 'photo.added', label: 'Foto de evolución agregada' },
+  { value: 'photo.deleted', label: 'Foto de evolución eliminada' },
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]['value']
 

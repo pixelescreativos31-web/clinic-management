@@ -1,5 +1,6 @@
 'use client'
 
+import { FORMAT_LABELS, type ConsultFormat } from '@/lib/profiles'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { btnPrimary, btnGhost, inputClass, Card, RoleBadge, PageTitle, Avatar, Field, Th, Td, Spinner } from './primitives'
@@ -19,6 +20,7 @@ export type StaffRow = {
   role: string
   phone?: string | null
   specialty?: string | null
+  defaultFormat?: string
   consultationFee?: number | null
   active: boolean
   availability?: string | null
@@ -35,13 +37,14 @@ const EMPTY_FORM = {
   role: 'receptionist',
   phone: '',
   specialty: '',
+  defaultFormat: '',
   consultationFee: '',
   availabilityType: 'regular',
   availableFrom: '09:00',
   availableTo: '17:00',
 }
 
-export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency: string }) {
+export function StaffManager({ staff, currency, formatOptions = [] }: { staff: StaffRow[]; currency: string; formatOptions?: ConsultFormat[] }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +76,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
       role: s.role,
       phone: s.phone || '',
       specialty: s.specialty || '',
+      defaultFormat: s.defaultFormat || '',
       consultationFee: s.consultationFee != null ? String(s.consultationFee) : '',
       availabilityType: s.availabilityType || 'regular',
       availableFrom: s.availableFrom || '09:00',
@@ -97,6 +101,7 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
         role: form.role as 'doctor' | 'therapist' | 'receptionist' | 'owner',
         phone: form.phone || undefined,
         specialty: form.specialty || undefined,
+        defaultFormat: form.defaultFormat,
         consultationFee: form.consultationFee ? Number(form.consultationFee) : undefined,
         availabilityType: form.availabilityType,
         availableDays: days,
@@ -175,6 +180,18 @@ export function StaffManager({ staff, currency }: { staff: StaffRow[]; currency:
               <>
                 <Field label="Especialidad"><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder={form.role === 'therapist' ? 'Masajista' : 'Medicina general'} /></Field>
                 <Field label={`${form.role === 'therapist' ? 'Tarifa por sesión' : 'Tarifa de consulta'} (${currency})`}><input className={inputClass} inputMode="numeric" value={form.consultationFee} onChange={(e) => set('consultationFee', e.target.value)} /></Field>
+                {form.role === 'doctor' && formatOptions.length > 1 && (
+                  <Field label="Ficha por defecto" hint="Con qué ficha abre sus consultas. Pacientes en el programa abren su control.">
+                    <select className={inputClass} value={form.defaultFormat} onChange={(e) => set('defaultFormat', e.target.value)}>
+                      <option value="">Según el perfil del consultorio</option>
+                      {formatOptions.map((f) => (
+                        <option key={f} value={f}>
+                          {FORMAT_LABELS[f]}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
               </>
             )}
           </div>

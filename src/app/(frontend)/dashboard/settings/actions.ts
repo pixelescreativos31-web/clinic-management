@@ -15,6 +15,7 @@ export type ClinicSettingsInput = {
   taxId?: string
   practiceType?: 'individual' | 'clinic'
   consultTemplate?: string
+  programName?: string
   /** Data URL; null removes it, undefined leaves it unchanged. */
   logo?: string | null
   onlineBookingEnabled?: boolean
@@ -70,6 +71,7 @@ export async function updateClinicSettings(
           currency: input.currency,
           timezone: input.timezone,
           consultTemplate: asProfile(input.consultTemplate),
+          programName: input.programName?.trim().slice(0, 60) || null,
           onlineBookingEnabled: input.onlineBookingEnabled !== false,
           onlineRequestsEnabled: input.onlineRequestsEnabled === true,
         },

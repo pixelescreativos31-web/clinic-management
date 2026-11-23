@@ -33,6 +33,15 @@ export type PatientInitial = {
   hxHabits: string
   hxGyneco: string
   hxVaccines: string
+  hxChildhood: string
+  hxFamilyMother: string
+  hxFamilyFather: string
+  hxFamilySiblings: string
+  hxOther: string
+  obE: string
+  obA: string
+  obP: string
+  obC: string
 }
 
 export const EMPTY_PATIENT: PatientInitial = {
@@ -67,6 +76,15 @@ export const EMPTY_PATIENT: PatientInitial = {
   hxHabits: '',
   hxGyneco: '',
   hxVaccines: '',
+  hxChildhood: '',
+  hxFamilyMother: '',
+  hxFamilyFather: '',
+  hxFamilySiblings: '',
+  hxOther: '',
+  obE: '',
+  obA: '',
+  obP: '',
+  obC: '',
 }
 
 /** Map a stored patient document onto the form's flat string state. */
@@ -99,6 +117,12 @@ export function patientToInitial(p: {
     habits?: string | null
     gynecoObstetric?: string | null
     vaccines?: string | null
+    childhood?: string | null
+    familyMother?: string | null
+    familyFather?: string | null
+    familySiblings?: string | null
+    otherFindings?: string | null
+    obstetric?: { pregnancies?: number | null; abortions?: number | null; births?: number | null; cesareans?: number | null } | null
   } | null
 }): PatientInitial {
   const h = p.history ?? {}
@@ -134,5 +158,14 @@ export function patientToInitial(p: {
     hxHabits: h.habits ?? '',
     hxGyneco: h.gynecoObstetric ?? '',
     hxVaccines: h.vaccines ?? '',
+    hxChildhood: h.childhood ?? '',
+    hxFamilyMother: h.familyMother ?? '',
+    hxFamilyFather: h.familyFather ?? '',
+    hxFamilySiblings: h.familySiblings ?? '',
+    hxOther: h.otherFindings ?? '',
+    obE: h.obstetric?.pregnancies != null ? String(h.obstetric.pregnancies) : '',
+    obA: h.obstetric?.abortions != null ? String(h.obstetric.abortions) : '',
+    obP: h.obstetric?.births != null ? String(h.obstetric.births) : '',
+    obC: h.obstetric?.cesareans != null ? String(h.obstetric.cesareans) : '',
   }
 }
