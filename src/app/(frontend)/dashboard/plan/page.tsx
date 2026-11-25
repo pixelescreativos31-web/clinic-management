@@ -4,6 +4,7 @@ import { PageTitle } from '@/components/primitives'
 import { PlanPanel } from '@/components/PlanPanel'
 import { asPlan } from '@/lib/plans'
 import { doctorWhere } from '@/lib/practice'
+import { getUsageSummary } from '@/lib/usage'
 
 export default async function PlanPage() {
   const session = await requireDashboardSession()
@@ -14,7 +15,7 @@ export default async function PlanPage() {
 
   // Same counting rules as the enforcement hook (src/hooks/planLimit.ts):
   // deactivated doctors don't count toward the cap.
-  const [doctors, patients] = await Promise.all([
+  const [doctors, patients, metered] = await Promise.all([
     payload.count({
       collection: 'users',
       where: { and: [doctorWhere(String(tenant.id)), { active: { not_equals: false } }] },
@@ -25,6 +26,8 @@ export default async function PlanPage() {
       where: { tenant: { equals: tenant.id } },
       overrideAccess: true,
     }),
+    // Metered quotas (B1): current month in the clinic's timezone + storage total.
+    getUsageSummary(payload, tenant.id),
   ])
 
   return (
@@ -36,6 +39,7 @@ export default async function PlanPage() {
         plan={asPlan(tenant.plan)}
         doctorCount={doctors.totalDocs}
         patientCount={patients.totalDocs}
+        metered={{ period: metered.period, used: metered.used }}
         pendingRequest={
           tenant.upgradeRequest?.requestedPlan
             ? {

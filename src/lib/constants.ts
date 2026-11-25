@@ -220,6 +220,9 @@ export const ERROR_CODES = {
   TENANT_PENDING: 'TENANT_PENDING',
   USER_INACTIVE: 'USER_INACTIVE',
   PLAN_LIMIT: 'PLAN_LIMIT',
+  // B1 — a metered action (WhatsApp, AI study…) over its plan quota. Soft cap:
+  // only that action is refused; records stay editable.
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
   FORBIDDEN: 'FORBIDDEN',
   VALIDATION: 'VALIDATION',
   // v3 — self-serve onboarding

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
-import { PLAN_LIMITS } from '@/lib/plans'
+import { isPlan } from '@/lib/plans'
 
 /**
  * Owner asks for a plan change (v3 spec §5). No billing — this just stamps
@@ -23,7 +23,7 @@ export async function requestUpgrade(
   if (!tenantID) {
     return { ok: false, code: 'FORBIDDEN', message: 'Su usuario no está vinculado a ningún consultorio.' }
   }
-  if (!(requestedPlan in PLAN_LIMITS)) {
+  if (!isPlan(requestedPlan)) {
     return { ok: false, code: 'VALIDATION', message: 'Seleccione un plan válido.' }
   }
 

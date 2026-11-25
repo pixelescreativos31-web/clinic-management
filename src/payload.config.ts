@@ -17,6 +17,7 @@ import { Invoices } from './collections/Invoices'
 import { AuditLogs } from './collections/AuditLogs'
 import { BookingRequests } from './collections/BookingRequests'
 import { Programs, ProgressPhotos } from './collections/Programs'
+import { UsageCounters } from './collections/UsageCounters'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -36,7 +37,7 @@ export default buildConfig({
     supportedLanguages: { es, en },
     fallbackLanguage: 'es',
   },
-  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests, Programs, ProgressPhotos],
+  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests, Programs, ProgressPhotos, UsageCounters],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -75,6 +76,18 @@ export default buildConfig({
       }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create uniq_active_slot index')
+    }
+
+    // One usage counter per (tenant, period, resource): recordUsage's $inc upsert
+    // relies on it to turn a racing double insert into a retryable E11000. Mongoose
+    // autoIndex creates it too, but not under hot reload — so make sure here.
+    try {
+      await payload.db.collections?.usageCounters?.collection.createIndex(
+        { tenant: 1, period: 1, resource: 1 },
+        { unique: true },
+      )
+    } catch (err) {
+      payload.logger.error({ err }, 'Failed to create usageCounters unique index')
     }
   },
 })
