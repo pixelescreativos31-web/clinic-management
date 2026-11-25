@@ -210,6 +210,10 @@ export interface Tenant {
      * Permite pedir una cita fuera de los horarios publicados; el consultorio la revisa.
      */
     onlineRequestsEnabled?: boolean | null;
+    security?: {
+      require2faAll?: boolean | null;
+      twoFactorGraceUntil?: string | null;
+    };
   };
   updatedAt: string;
   createdAt: string;
@@ -231,6 +235,26 @@ export interface User {
   emailVerified?: boolean | null;
   verifyTokenHash?: string | null;
   verifyTokenExp?: string | null;
+  twoFactorEnabled?: boolean | null;
+  twoFactor?: {
+    secretEnc?: string | null;
+    pendingSecretEnc?: string | null;
+    pendingAt?: string | null;
+    backupCodes?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    enabledAt?: string | null;
+    epoch?: number | null;
+    lastUsedStep?: number | null;
+    failedAttempts?: number | null;
+    lockedUntil?: string | null;
+  };
   practitioner?: boolean | null;
   specialtyKey?:
     | (
@@ -666,7 +690,14 @@ export interface AuditLog {
     | 'program.enrolled'
     | 'program.updated'
     | 'photo.added'
-    | 'photo.deleted';
+    | 'photo.deleted'
+    | '2fa.enabled'
+    | '2fa.disabled'
+    | '2fa.reset'
+    | '2fa.backup-regenerated'
+    | '2fa.backup-used'
+    | '2fa.required-changed'
+    | 'password.changed';
   targetCollection: string;
   targetId: string;
   /**
@@ -892,6 +923,12 @@ export interface TenantsSelect<T extends boolean = true> {
         programName?: T;
         onlineBookingEnabled?: T;
         onlineRequestsEnabled?: T;
+        security?:
+          | T
+          | {
+              require2faAll?: T;
+              twoFactorGraceUntil?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;
@@ -909,6 +946,20 @@ export interface UsersSelect<T extends boolean = true> {
   emailVerified?: T;
   verifyTokenHash?: T;
   verifyTokenExp?: T;
+  twoFactorEnabled?: T;
+  twoFactor?:
+    | T
+    | {
+        secretEnc?: T;
+        pendingSecretEnc?: T;
+        pendingAt?: T;
+        backupCodes?: T;
+        enabledAt?: T;
+        epoch?: T;
+        lastUsedStep?: T;
+        failedAttempts?: T;
+        lockedUntil?: T;
+      };
   practitioner?: T;
   specialtyKey?: T;
   specialty?: T;

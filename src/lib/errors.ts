@@ -31,6 +31,10 @@ const MESSAGES: Record<string, string> = {
     'Primero verifique su correo: revise su bandeja de entrada.',
   [ERROR_CODES.VERIFY_TOKEN_INVALID]:
     'Este enlace de verificación no es válido o expiró. Solicite uno nuevo abajo.',
+  // Fase 1 — two-step verification
+  [ERROR_CODES.TWO_FACTOR_REQUIRED]: 'Escriba el código de su app autenticadora.',
+  [ERROR_CODES.TWO_FACTOR_INVALID]: 'Código incorrecto. Revise su app e intente de nuevo.',
+  [ERROR_CODES.TWO_FACTOR_LOCKED]: 'Demasiados códigos incorrectos. Espere 10 minutos e intente de nuevo.',
 }
 
 export type ActionResult<T = unknown> =
@@ -47,7 +51,8 @@ export function toActionError(err: unknown): { code: string; message: string } {
   // "Indique la fecha de nacimiento o la edad."), which beats the generic line.
   const serverMessage = typeof anyErr?.message === 'string' ? anyErr.message : null
   const message =
-    (code === ERROR_CODES.VALIDATION && serverMessage) ||
+    ((code === ERROR_CODES.VALIDATION || code === ERROR_CODES.TWO_FACTOR_INVALID || code === ERROR_CODES.FORBIDDEN) &&
+      serverMessage) ||
     MESSAGES[code] ||
     (serverMessage && code === 'UNKNOWN'
       ? serverMessage

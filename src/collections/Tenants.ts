@@ -255,6 +255,29 @@ export const Tenants: CollectionConfig = {
           label: 'Solicitudes adicionales o de emergencia',
           admin: { description: 'Permite pedir una cita fuera de los horarios publicados; el consultorio la revisa.' },
         },
+        {
+          // Fase 1 — two-step verification policy (spec §10). Written only by
+          // src/lib/twoFactorServer.ts (the Titular's toggle and the grace date).
+          name: 'security',
+          type: 'group',
+          label: 'Seguridad',
+          access: { update: superAdminField },
+          fields: [
+            {
+              name: 'require2faAll',
+              type: 'checkbox',
+              defaultValue: false,
+              label: 'Exigir verificación en dos pasos a todo el equipo',
+            },
+            {
+              // Until this date, a required user without 2FA only sees a reminder.
+              // Missing on clinics that predate 2FA: set to +14 days on first view.
+              name: 'twoFactorGraceUntil',
+              type: 'date',
+              label: 'Plazo para activar la verificación en dos pasos',
+            },
+          ],
+        },
       ],
     },
   ],

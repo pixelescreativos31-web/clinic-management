@@ -1,12 +1,14 @@
 import React from 'react'
 import { requireDashboardSession } from '@/lib/auth'
+import { REQUIREMENT_TEXT, twoFactorRequirement } from '@/lib/twoFactorPolicy'
+import { TwoFactorEnrollScreen, TwoFactorGraceStrip } from '@/components/security/TwoFactorGate'
 import { Sidebar } from '@/components/Sidebar'
 import { ContentFrame } from '@/components/AppHeader'
 import { APP_NAME, SUPPORT_EMAIL } from '@/lib/brand'
 import { isIndividualPractice, isPractitioner } from '@/lib/practice'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, tenant } = await requireDashboardSession()
+  const { user, tenant, twoFactor: gate } = await requireDashboardSession({ twoFactorEnrollment: true })
 
   // Existing sessions of a suspended clinic see a stop screen (spec §8.5).
   if (tenant?.status === 'suspended') {
@@ -21,6 +23,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     )
   }
 
+  // Two-step verification (spec §10): reminder during the grace period, then only
+  // the enrollment screen (pages themselves redirect here via requireDashboardSession).
+  const requirement = twoFactorRequirement(user, tenant)
+  if (gate.kind === 'enroll' && requirement) {
+    return <TwoFactorEnrollScreen email={user.email} reason={REQUIREMENT_TEXT[requirement]} />
+  }
+
   return (
     <Sidebar
       clinicName={tenant?.name ?? 'Consultorio'}
@@ -30,6 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       practitioner={isPractitioner(user)}
       individual={isIndividualPractice(tenant)}
     >
+      {gate.kind === 'grace' && <TwoFactorGraceStrip until={gate.until.toISOString()} daysLeft={gate.daysLeft} />}
       <ContentFrame>{children}</ContentFrame>
     </Sidebar>
   )

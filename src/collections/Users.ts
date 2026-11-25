@@ -10,11 +10,12 @@ import {
   usersReadAccess,
   usersUpdateAccess,
 } from '@/access'
-import { ROLES, ROLE_LABELS, ERROR_CODES, AVAILABILITY_TYPES, WEEKDAYS, ALL_DAYS } from '@/lib/constants'
+import { ROLES, ROLE_LABELS, ERROR_CODES, AVAILABILITY_TYPES, WEEKDAYS, ALL_DAYS, MIN_PASSWORD_LENGTH } from '@/lib/constants'
 import { isDoctor, isPractitioner } from '@/lib/practice'
 import { SPECIALTIES } from '@/lib/specialties'
 import { enforcePlanLimit } from '@/hooks/planLimit'
 import { auditUsers } from '@/hooks/audit'
+import { twoFactorLoginGuard } from '@/hooks/twoFactor'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -38,6 +39,19 @@ export const Users: CollectionConfig = {
   },
   timestamps: true,
   hooks: {
+    // Payload's reset-password (also REST /api/users/reset-password) hashes the new
+    // password without running field validation: enforce the minimum here too.
+    beforeOperation: [
+      ({ args, operation }) => {
+        const pw = (args as { data?: { password?: unknown } })?.data?.password
+        if (operation === 'resetPassword' && typeof pw === 'string' && pw.length < MIN_PASSWORD_LENGTH) {
+          throw new APIError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`, 400, {
+            code: ERROR_CODES.VALIDATION,
+          })
+        }
+        return args
+      },
+    ],
     // Login guard: deactivated staff and suspended clinics cannot log in.
     beforeLogin: [
       async ({ user, req }) => {
@@ -80,11 +94,20 @@ export const Users: CollectionConfig = {
           }
         }
       },
+      // Two-step verification (spec §10): runs after the password was accepted.
+      twoFactorLoginGuard,
     ],
     beforeValidate: [
       ({ data, req, operation, originalDoc }) => {
         if (!data) return data
         const actor = req.user
+
+        // New passwords: at least 10 characters (spec §10). Existing ones keep working.
+        if (typeof data.password === 'string' && data.password.length < MIN_PASSWORD_LENGTH) {
+          throw new APIError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`, 400, {
+            code: ERROR_CODES.VALIDATION,
+          })
+        }
 
         // Role/tenant consistency: superAdmin ⇔ no tenant; everyone else ⇔ tenant set.
         const role = data.role ?? originalDoc?.role
@@ -190,6 +213,33 @@ export const Users: CollectionConfig = {
       type: 'date',
       hidden: true,
       access: { create: superAdminField, read: superAdminField, update: superAdminField },
+    },
+    // Two-step verification (spec §10). The flag is readable (team table, policy);
+    // the group holds secrets and is never readable or writable through the API —
+    // only src/lib/twoFactorServer.ts writes both, with payload.db.
+    {
+      name: 'twoFactorEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Verificación en dos pasos activa',
+      access: { create: () => false, update: () => false },
+    },
+    {
+      name: 'twoFactor',
+      type: 'group',
+      hidden: true,
+      access: { read: () => false, create: () => false, update: () => false },
+      fields: [
+        { name: 'secretEnc', type: 'text' },
+        { name: 'pendingSecretEnc', type: 'text' },
+        { name: 'pendingAt', type: 'date' },
+        { name: 'backupCodes', type: 'json' },
+        { name: 'enabledAt', type: 'date' },
+        { name: 'epoch', type: 'number' },
+        { name: 'lastUsedStep', type: 'number' },
+        { name: 'failedAttempts', type: 'number' },
+        { name: 'lockedUntil', type: 'date' },
+      ],
     },
     // An owner who also sees patients (independent doctor). Practitioner-only
     // fields below show for doctors and for practising owners.

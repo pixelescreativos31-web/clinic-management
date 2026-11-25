@@ -6,7 +6,7 @@
 
 import type { Payload } from 'payload'
 import { APIError } from 'payload'
-import { ERROR_CODES } from './constants'
+import { ERROR_CODES, MIN_PASSWORD_LENGTH } from './constants'
 import { appBaseUrl, sendEmail, type SendEmail } from './email'
 import { APP_NAME } from './brand'
 
@@ -65,8 +65,8 @@ export async function confirmPasswordReset(
       code: ERROR_CODES.RESET_TOKEN_INVALID,
     })
   }
-  if ((password ?? '').length < 8) {
-    throw new APIError('La contraseña debe tener al menos 8 caracteres.', 400, {
+  if ((password ?? '').length < MIN_PASSWORD_LENGTH) {
+    throw new APIError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`, 400, {
       code: ERROR_CODES.VALIDATION,
     })
   }
@@ -75,6 +75,9 @@ export async function confirmPasswordReset(
       collection: 'users',
       data: { token, password },
       overrideAccess: true, // there is no logged-in user; the token IS the credential
+      // The session token Payload signs here is discarded: the user logs in next,
+      // with their 2FA code if they have one (see src/hooks/twoFactor.ts).
+      context: { twoFactor: { passwordReset: true } },
     })
   } catch {
     throw new APIError('Este enlace para restablecer la contraseña no es válido o ya venció.', 400, {

@@ -8,6 +8,7 @@ import type { Payload } from 'payload'
 import { APIError } from 'payload'
 import {
   ERROR_CODES,
+  MIN_PASSWORD_LENGTH,
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_OPEN_TIME,
   DEFAULT_CLOSE_TIME,
@@ -94,7 +95,8 @@ function validate(input: SignupInput): void {
   if (!input.phone?.trim()) throw fail('El teléfono del consultorio es obligatorio.')
   if (!input.ownerName?.trim()) throw fail('Su nombre es obligatorio.')
   if (!EMAIL_RE.test(input.email ?? '')) throw fail('Ingrese un correo electrónico válido.')
-  if ((input.password ?? '').length < 8) throw fail('La contraseña debe tener al menos 8 caracteres.')
+  if ((input.password ?? '').length < MIN_PASSWORD_LENGTH)
+    throw fail(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`)
 }
 
 /**
@@ -169,6 +171,9 @@ export async function signupClinic(
           timezone: input.timezone,
           orgType,
           consultTemplate: profileForSignup(orgType, specialtyKey),
+          // New clinics get no 2FA grace period: the Titular enrolls on first
+          // login (spec §10). Only clinics that predate 2FA get 14 days.
+          security: { twoFactorGraceUntil: new Date().toISOString() },
         },
       } as never,
     })

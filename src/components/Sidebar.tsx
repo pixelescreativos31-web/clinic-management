@@ -48,10 +48,13 @@ export function navFor(role: string, individual: boolean) {
           { href: '/dashboard/plan', label: 'Mi plan' },
         ]
       : []
+  // Everyone manages their own password and two-step verification (spec §10).
+  const cuenta: NavItem[] = [{ href: '/dashboard/security', label: 'Mi seguridad' }]
   const groups: NavGroup[] = [
     { label: 'Clínica', items: clinica },
     { label: 'Dinero', items: dinero },
     ...(admin.length ? [{ label: 'Administrar', items: admin }] : []),
+    { label: 'Mi cuenta', items: cuenta },
   ]
   // Phone bottom bar: the four daily destinations; everything else lives under «Más».
   const tabs = [...clinica, dinero[0]]

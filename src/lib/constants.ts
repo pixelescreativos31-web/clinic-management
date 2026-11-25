@@ -209,6 +209,14 @@ export const AUDIT_ACTIONS = [
   { value: 'program.updated', label: 'Programa actualizado' },
   { value: 'photo.added', label: 'Foto de evolución agregada' },
   { value: 'photo.deleted', label: 'Foto de evolución eliminada' },
+  // Fase 1 — two-step verification (spec §10).
+  { value: '2fa.enabled', label: 'Verificación en dos pasos activada' },
+  { value: '2fa.disabled', label: 'Verificación en dos pasos desactivada' },
+  { value: '2fa.reset', label: 'Verificación en dos pasos restablecida' },
+  { value: '2fa.backup-regenerated', label: 'Códigos de respaldo regenerados' },
+  { value: '2fa.backup-used', label: 'Código de respaldo usado para entrar' },
+  { value: '2fa.required-changed', label: 'Exigencia de verificación en dos pasos cambiada' },
+  { value: 'password.changed', label: 'Contraseña cambiada' },
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]['value']
 
@@ -241,4 +249,11 @@ export const ERROR_CODES = {
   PAYMENT_EXCEEDS_BALANCE: 'PAYMENT_EXCEEDS_BALANCE',
   INVOICE_VOIDED: 'INVOICE_VOIDED',
   INVOICE_LOCKED: 'INVOICE_LOCKED',
+  // Fase 1 — two-step verification
+  TWO_FACTOR_REQUIRED: 'TWO_FACTOR_REQUIRED',
+  TWO_FACTOR_INVALID: 'TWO_FACTOR_INVALID',
+  TWO_FACTOR_LOCKED: 'TWO_FACTOR_LOCKED',
 } as const
+
+/** Minimum length for any NEW password (spec §10). Existing passwords keep working. */
+export const MIN_PASSWORD_LENGTH = 10

@@ -246,6 +246,7 @@ export function StaffManager({
                     ? 'Nueva contraseña (déjela en blanco para conservarla)'
                     : 'Contraseña temporal'
                 }
+                hint="Mínimo 10 caracteres."
               >
                 <input
                   className={inputClass}

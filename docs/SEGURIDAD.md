@@ -95,3 +95,14 @@ Colección `auditLogs` append-only. Nadie, ni siquiera el superadmin, puede crea
 - [ ] Monitoreo de errores (Sentry o similar) **sin** enviar datos clínicos en los eventos.
 - [ ] Revisión de dependencias (`pnpm audit`) y actualización de Payload/Next.
 - [ ] Ejecutar `pnpm test` contra una base de datos de pruebas separada. Hoy las pruebas usan la misma base que el desarrollo y la borran.
+
+## Verificación en dos pasos (spec §10)
+
+- TOTP (RFC 6238, apps tipo Google Authenticator), sin dependencias externas: `src/lib/twoFactor.ts`.
+- El secreto se guarda cifrado (AES-256-GCM) con una clave derivada de `PAYLOAD_SECRET`. **Rotar `PAYLOAD_SECRET` invalida todas las inscripciones**: cada usuario tendría que reactivar (el Titular puede restablecer a su equipo).
+- El guard `beforeLogin` (`src/hooks/twoFactor.ts`) bloquea cualquier login por REST/API sin código; solo el servidor puede marcar el código como verificado.
+- 10 códigos de respaldo de un solo uso (hash sha256); 5 códigos fallidos bloquean 10 min.
+- «Recordar este equipo»: cookie firmada 30 días, ligada al usuario y a una `epoch` que cambia al reactivar o restablecer.
+- Restablecer contraseña por REST cambia la contraseña pero no abre sesión si el usuario tiene 2FA; la app entra después con el código.
+- Obligatoria para Titular; Médicos en planes Plus/Público; todos si la clínica activa «Exigir a todos». Clínicas existentes: 14 días de gracia; después `requireDashboardSession` redirige a `/dashboard/security` en cada página y acción.
+- Conocido: los intentos de login con contraseña correcta y sin código pueden dejar entradas de sesión sin token en `users.sessions`; caducan solas.

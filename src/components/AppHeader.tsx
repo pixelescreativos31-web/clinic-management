@@ -23,6 +23,7 @@ const REDESIGNED: RegExp[] = [
   /^\/dashboard\/settings$/,
   /^\/dashboard\/staff$/,
   /^\/dashboard\/activity$/,
+  /^\/dashboard\/security$/,
   /^\/dashboard\/visits\/new$/,
   /^\/dashboard\/visits\/[^/]+\/edit$/,
   /^\/dashboard\/patients$/,

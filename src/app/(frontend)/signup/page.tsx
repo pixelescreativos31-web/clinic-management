@@ -118,8 +118,8 @@ export default function SignupPage() {
             <Field label="Correo" htmlFor="email">
               <input id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="su@correo.do" className={authInput} />
             </Field>
-            <Field label="Contraseña" htmlFor="password" hint="Mínimo 8 caracteres.">
-              <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)} className={authInput} />
+            <Field label="Contraseña" htmlFor="password" hint="Mínimo 10 caracteres.">
+              <input id="password" name="password" type="password" autoComplete="new-password" required minLength={10} value={form.password} onChange={(e) => set('password', e.target.value)} className={authInput} />
             </Field>
             <button type="submit" className={`${authBtn} mt-1.5`}>
               Continuar

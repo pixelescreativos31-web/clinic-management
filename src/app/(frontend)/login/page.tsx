@@ -28,12 +28,71 @@ function LoginForm() {
   const params = useSearchParams()
   const [email, setEmail] = useState(params.get('email') ?? '')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
+  // Step 2 (spec §10): the password was right and the account has 2FA on.
+  const [needCode, setNeedCode] = useState(false)
 
   useEffect(() => {
     if (state?.ok) {
-      router.push(state.data.role === 'superAdmin' ? '/super' : '/dashboard')
+      router.push(state.data.next ?? (state.data.role === 'superAdmin' ? '/super' : '/dashboard'))
+    } else if (state?.code === 'TWO_FACTOR_REQUIRED') {
+      setNeedCode(true)
     }
   }, [state, router])
+
+  const backToPassword = () => {
+    setNeedCode(false)
+    setCode('')
+    setPassword('')
+  }
+
+  if (needCode) {
+    const codeError = state && !state.ok && state.code !== 'TWO_FACTOR_REQUIRED' ? state.message : null
+    return (
+      <AuthShell>
+        <AuthTitle title="Verificación en dos pasos" />
+        <p className="mt-1 text-sm text-muted-foreground">
+          Escriba el código de 6 dígitos de su app autenticadora. Si no tiene el teléfono, use uno de sus códigos de respaldo.
+        </p>
+        <form action={formAction} className="mt-4 flex flex-col gap-3">
+          <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="password" value={password} />
+          <Field label="Código" htmlFor="code">
+            <input
+              id="code"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              required
+              maxLength={12}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123 456"
+              className={`${authInput} font-mono tracking-[.2em]`}
+            />
+          </Field>
+          <label className="flex min-h-10 items-center gap-2.5 text-sm">
+            <input type="checkbox" name="remember" className="size-4 accent-[var(--color-primary)]" />
+            Recordar este equipo 30 días (no lo marque en una computadora compartida)
+          </label>
+
+          {codeError && <FormError>{codeError}</FormError>}
+
+          <button type="submit" className={`${authBtn} mt-1.5`} disabled={pending || !code.trim()}>
+            {pending && <Spinner />}
+            {pending ? 'Verificando…' : 'Verificar y entrar'}
+          </button>
+        </form>
+        <button type="button" onClick={backToPassword} className={`${authBtn2} mt-2`}>
+          Volver
+        </button>
+        <p className="mt-4 text-[13px] text-muted-foreground">
+          ¿Perdió el teléfono y no tiene códigos de respaldo? Pida al Titular de su clínica que restablezca su verificación. Si usted es el Titular, escriba a soporte.
+        </p>
+      </AuthShell>
+    )
+  }
 
   const quickFill = (demoEmail: string) => {
     setEmail(demoEmail)
@@ -106,7 +165,7 @@ function LoginForm() {
           />
         </Field>
 
-        {state && !state.ok && <FormError>{state.message}</FormError>}
+        {state && !state.ok && state.message && <FormError>{state.message}</FormError>}
 
         <button type="submit" className={`${authBtn} mt-1.5`} disabled={pending}>
           {pending && <Spinner />}

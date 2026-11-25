@@ -50,14 +50,14 @@ function ResetForm() {
 
           <form action={formAction} className="mt-4 flex flex-col gap-3">
             <input type="hidden" name="token" value={token} />
-            <Field label="Contraseña nueva" htmlFor="password" hint="Mínimo 8 caracteres.">
+            <Field label="Contraseña nueva" htmlFor="password" hint="Mínimo 10 caracteres.">
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={10}
                 className={authInput}
               />
             </Field>
@@ -68,7 +68,7 @@ function ResetForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={10}
                 className={authInput}
               />
             </Field>
