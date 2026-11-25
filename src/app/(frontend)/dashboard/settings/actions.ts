@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asProfile } from '@/lib/profiles'
+import { asOrgType, asSpecialty } from '@/lib/specialties'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
@@ -14,6 +15,7 @@ export type ClinicSettingsInput = {
   country?: string
   taxId?: string
   practiceType?: 'individual' | 'clinic'
+  orgType?: string
   consultTemplate?: string
   programName?: string
   /** Data URL; null removes it, undefined leaves it unchanged. */
@@ -71,6 +73,7 @@ export async function updateClinicSettings(
           currency: input.currency,
           timezone: input.timezone,
           consultTemplate: asProfile(input.consultTemplate),
+          ...(asOrgType(input.orgType) ? { orgType: asOrgType(input.orgType) } : {}),
           programName: input.programName?.trim().slice(0, 60) || null,
           onlineBookingEnabled: input.onlineBookingEnabled !== false,
           onlineRequestsEnabled: input.onlineRequestsEnabled === true,
@@ -86,6 +89,8 @@ export async function updateClinicSettings(
 
 export type PractitionerProfileInput = {
   practitioner: boolean
+  /** Clinical specialty (catalogue key); blank = the clinic's base profile. */
+  specialtyKey?: string
   specialty?: string
   licenseNumber?: string
   consultationFee?: number
@@ -126,6 +131,7 @@ export async function updateMyPractitionerProfile(
         ...(input.practitioner
           ? {
               specialty: input.specialty || null,
+              specialtyKey: asSpecialty(input.specialtyKey),
               licenseNumber: input.licenseNumber || null,
               consultationFee: input.consultationFee ?? null,
               availabilityType: 'regular',

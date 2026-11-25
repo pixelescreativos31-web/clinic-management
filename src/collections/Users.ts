@@ -11,7 +11,8 @@ import {
   usersUpdateAccess,
 } from '@/access'
 import { ROLES, ROLE_LABELS, ERROR_CODES, AVAILABILITY_TYPES, WEEKDAYS, ALL_DAYS } from '@/lib/constants'
-import { isPractitioner } from '@/lib/practice'
+import { isDoctor, isPractitioner } from '@/lib/practice'
+import { SPECIALTIES } from '@/lib/specialties'
 import { enforcePlanLimit } from '@/hooks/planLimit'
 import { auditUsers } from '@/hooks/audit'
 
@@ -201,6 +202,16 @@ export const Users: CollectionConfig = {
       admin: { condition: (data) => data?.role === 'owner' },
     },
     {
+      // Clinical specialty from the catalogue (src/lib/specialties.ts). Decides the
+      // clinical sheets this doctor records; blank = the clinic's base profile.
+      name: 'specialtyKey',
+      type: 'select',
+      label: 'Especialidad (ficha clínica)',
+      options: SPECIALTIES.map((x) => ({ label: x.label, value: x.key })),
+      admin: { condition: (data) => isDoctor(data) },
+    },
+    {
+      // Free-text title printed on the letterhead («Oftalmóloga · Retina»).
       name: 'specialty',
       type: 'text',
       label: 'Especialidad',

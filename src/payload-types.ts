@@ -191,6 +191,7 @@ export interface Tenant {
       | 'America/Costa_Rica'
       | 'America/Panama'
       | 'Europe/Madrid';
+    orgType?: ('consultorio' | 'estetica' | 'especialidades' | 'policlinica' | 'hospital') | null;
     /**
      * Define qué fichas e historias clínicas usa el consultorio.
      */
@@ -229,6 +230,34 @@ export interface User {
   verifyTokenHash?: string | null;
   verifyTokenExp?: string | null;
   practitioner?: boolean | null;
+  specialtyKey?:
+    | (
+        | 'general'
+        | 'internal'
+        | 'family'
+        | 'nutrition'
+        | 'aesthetic'
+        | 'ophthalmology'
+        | 'dentistry'
+        | 'obgyn'
+        | 'pediatrics'
+        | 'dermatology'
+        | 'physiotherapy'
+        | 'mentalHealth'
+        | 'cardiology'
+        | 'endocrinology'
+        | 'neurology'
+        | 'plasticSurgery'
+        | 'orthopedics'
+        | 'ent'
+        | 'gastro'
+        | 'urology'
+        | 'pulmonology'
+        | 'podiatry'
+        | 'optometry'
+        | 'occupational'
+      )
+    | null;
   specialty?: string | null;
   defaultFormat?: ('general' | 'nutrition' | 'massage') | null;
   licenseNumber?: string | null;
@@ -836,6 +865,7 @@ export interface TenantsSelect<T extends boolean = true> {
         closeTime?: T;
         currency?: T;
         timezone?: T;
+        orgType?: T;
         consultTemplate?: T;
         programName?: T;
         onlineBookingEnabled?: T;
@@ -858,6 +888,7 @@ export interface UsersSelect<T extends boolean = true> {
   verifyTokenHash?: T;
   verifyTokenExp?: T;
   practitioner?: T;
+  specialtyKey?: T;
   specialty?: T;
   defaultFormat?: T;
   licenseNumber?: T;

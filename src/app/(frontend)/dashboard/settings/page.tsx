@@ -3,6 +3,7 @@ import { PageTitle } from '@/components/primitives'
 import { SettingsForm } from '@/components/SettingsForm'
 import { appBaseUrl } from '@/lib/email'
 import { asProfile } from '@/lib/profiles'
+import { orgTypeOf } from '@/lib/specialties'
 import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_CLOSE_TIME,
@@ -34,6 +35,7 @@ export default async function SettingsPage() {
           timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
           taxId: t?.taxId ?? '',
           practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
+          orgType: orgTypeOf(t),
           consultTemplate: asProfile(t?.settings?.consultTemplate),
           programName: t?.settings?.programName ?? '',
           logo: t?.logo ?? '',
@@ -43,6 +45,7 @@ export default async function SettingsPage() {
         bookingUrl={t?.slug ? `${appBaseUrl()}/agendar/${t.slug}` : null}
         profile={{
           practitioner: u.practitioner === true,
+          specialtyKey: u.specialtyKey ?? '',
           specialty: u.specialty ?? '',
           licenseNumber: u.licenseNumber ?? '',
           consultationFee: u.consultationFee != null ? String(u.consultationFee) : '',

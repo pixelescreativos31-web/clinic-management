@@ -1,12 +1,15 @@
-// Practice profiles. A clinic picks one profile (stored in the tenant's
-// `settings.consultTemplate` for backwards compatibility) and the profile decides
-// which consultation formats — clinical-record templates — its staff can use.
-// A new specialty (ophthalmology, dentistry…) is a new format module like
-// nutrition.ts / massage.ts plus one entry here.
+// Practice profiles. A clinic picks one base profile (stored in the tenant's
+// `settings.consultTemplate` for backwards compatibility); it decides the formats —
+// clinical-record templates — of staff who have no specialty of their own. A doctor
+// with a specialty (user.specialtyKey, see ./specialties) records that specialty's
+// formats instead, so one clinic can host an ophthalmologist and a pediatrician.
+// A new specialty sheet is a field-list module (like massage.ts, built on ./sheet)
+// plus its format here and its entry in ./specialties.
 //
 // Pure module so client components can import it.
 
 import { isTherapist } from './practice'
+import { specialtyByKey } from './specialties'
 
 export type ConsultFormat = 'general' | 'nutrition' | 'massage' | 'program'
 
@@ -51,7 +54,7 @@ export const PROFILES: { value: PracticeProfile; label: string; hint: string; fo
 export const ALL_FORMATS = Object.keys(FORMAT_LABELS) as ConsultFormat[]
 
 type TenantLike = { settings?: { consultTemplate?: string | null } | null } | null | undefined
-type UserLike = { role?: string | null } | null | undefined
+type UserLike = { role?: string | null; specialtyKey?: string | null } | null | undefined
 
 export function asProfile(value: unknown): PracticeProfile {
   return PROFILES.some((p) => p.value === value) ? (value as PracticeProfile) : 'general'
@@ -65,10 +68,18 @@ export function profileFormats(tenant: TenantLike): ConsultFormat[] {
   return PROFILES.find((p) => p.value === practiceProfile(tenant))!.formats
 }
 
-/** Formats this user may record in this clinic. Therapists only fill session sheets. */
+/**
+ * Formats this user may record in this clinic. Therapists only fill session sheets;
+ * a doctor with a specialty records that specialty's formats; everyone else follows
+ * the clinic's base profile. The weight-management programme is a clinic-level
+ * service, so its control is only offered where the clinic's profile runs one.
+ */
 export function formatsFor(tenant: TenantLike, user: UserLike): ConsultFormat[] {
   if (isTherapist(user)) return ['massage']
-  return profileFormats(tenant)
+  const specialty = specialtyByKey(user?.specialtyKey)
+  if (!specialty) return profileFormats(tenant)
+  const clinicProgram = hasProgram(tenant)
+  return specialty.formats.filter((f) => f !== 'program' || clinicProgram)
 }
 
 export function hasFormat(tenant: TenantLike, format: ConsultFormat): boolean {

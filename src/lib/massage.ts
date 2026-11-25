@@ -1,25 +1,15 @@
 // Massage session sheet ("Ficha técnica del cliente · evaluación y consentimiento
 // para masajes"), adapted from the paper form clinics already use. One field list
 // drives the Payload schema, the form, server-side normalisation and the read-only
-// views — adding a question here is the only change needed. Pure module.
+// views (via the generic engine in ./sheet) — adding a question here is the only
+// change needed. Pure module.
 
-export type MassageKind = 'multi' | 'yesno' | 'select' | 'text' | 'long' | 'number' | 'date' | 'check'
+import { YES_NO_OPTIONS, emptySheet, formToSheet, opts, sheetKeys, sheetLines, sheetToForm, type SheetFieldDef, type SheetFormState, type SheetKind, type SheetValues } from './sheet'
+
+export type MassageKind = SheetKind
 export type MassageGroup = 'servicio' | 'salud' | 'lesiones' | 'alergias' | 'evaluacion' | 'consentimiento'
 
-export type MassageFieldDef = {
-  key: string
-  label: string
-  kind: MassageKind
-  group: MassageGroup
-  options?: { value: string; label: string }[]
-  /** yes/no questions with a free-text "details" field stored as `${key}Detail`. */
-  detail?: string
-  min?: number
-  max?: number
-  placeholder?: string
-}
-
-const opts = (...labels: [string, string][]) => labels.map(([value, label]) => ({ value, label }))
+export type MassageFieldDef = SheetFieldDef<MassageGroup>
 
 export const MASSAGE_SERVICES = opts(
   ['relaxing', 'Masaje relajante'],
@@ -125,86 +115,26 @@ export const MASSAGE_FIELDS: MassageFieldDef[] = [
 export const CONSENT_TEXT =
   'Declaro que la información suministrada en esta ficha es verdadera, completa y actualizada. Me comprometo a informar al personal sobre cualquier cambio en mi estado de salud, medicamento, embarazo, dolor, lesión, alergia o sensibilidad antes y durante cada sesión. Comprendo que los masajes y tratamientos ofrecidos son servicios de bienestar y/o estética; no sustituyen una evaluación, diagnóstico ni tratamiento médico, fisioterapéutico o de rehabilitación. Entiendo que pueden presentarse molestias temporales, sensibilidad, enrojecimiento o moretones, dependiendo del tipo de técnica y de mi condición individual. No se me ha garantizado un resultado específico. Autorizo al profesional a detener o modificar la sesión si presenta dolor, irritación, reacción adversa o si considera que continuar no es seguro. Entiendo que ciertos procedimientos, especialmente los postoperatorios, requieren autorización y orientación del médico tratante. Confirmo que pude hacer preguntas, que recibí explicación del servicio y que doy mi consentimiento voluntario. Puedo retirar mi consentimiento o solicitar que la sesión se detenga en cualquier momento.'
 
-export const YES_NO_OPTIONS = opts(['yes', 'Sí'], ['no', 'No'])
+export { YES_NO_OPTIONS }
 
 /** Every stored key, including the `…Detail` companions of yes/no questions. */
-export const MASSAGE_KEYS: string[] = MASSAGE_FIELDS.flatMap((f) => (f.detail ? [f.key, `${f.key}Detail`] : [f.key]))
+export const MASSAGE_KEYS: string[] = sheetKeys(MASSAGE_FIELDS)
 
 /** Form state: strings everywhere, string[] for multi-selects, 'yes' | '' for checks. */
-export type MassageFormState = Record<string, string | string[]>
-export type MassageValues = Record<string, unknown>
+export type MassageFormState = SheetFormState
+export type MassageValues = SheetValues
 
-export const EMPTY_MASSAGE: MassageFormState = Object.fromEntries(
-  MASSAGE_FIELDS.flatMap((f) => {
-    const base: [string, string | string[]][] = [[f.key, f.kind === 'multi' ? [] : '']]
-    return f.detail ? [...base, [`${f.key}Detail`, '']] : base
-  }),
-)
+export const EMPTY_MASSAGE: MassageFormState = emptySheet(MASSAGE_FIELDS)
 
 /** Stored document → form state. */
-export function massageToForm(stored: MassageValues | null | undefined): MassageFormState {
-  const s = stored ?? {}
-  const out: MassageFormState = { ...EMPTY_MASSAGE }
-  for (const f of MASSAGE_FIELDS) {
-    const v = s[f.key]
-    if (f.kind === 'multi') out[f.key] = Array.isArray(v) ? v.map(String) : []
-    else if (f.kind === 'check') out[f.key] = v === true ? 'yes' : ''
-    else if (f.kind === 'date') out[f.key] = typeof v === 'string' ? v.slice(0, 10) : ''
-    else out[f.key] = v == null ? '' : String(v)
-    if (f.detail) out[`${f.key}Detail`] = s[`${f.key}Detail`] == null ? '' : String(s[`${f.key}Detail`])
-  }
-  return out
-}
+export const massageToForm = (stored: MassageValues | null | undefined): MassageFormState => sheetToForm(MASSAGE_FIELDS, stored)
 
 /**
  * Form state → stored values. Blank fields become null on update and are dropped on
  * create; option values outside the list are dropped rather than failing the save.
  */
-export function formToMassage(form: MassageFormState | undefined, forUpdate: boolean): MassageValues | undefined {
-  if (!form) return undefined
-  const out: MassageValues = {}
-  const blank = (key: string) => {
-    if (forUpdate) out[key] = null
-  }
-  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
-  for (const f of MASSAGE_FIELDS) {
-    const raw = form[f.key]
-    if (f.kind === 'multi') {
-      const allowed = new Set(f.options!.map((o) => o.value))
-      const vals = (Array.isArray(raw) ? raw : []).filter((v) => allowed.has(v))
-      if (vals.length || forUpdate) out[f.key] = vals
-    } else if (f.kind === 'check') {
-      if (raw === 'yes') out[f.key] = true
-      else if (forUpdate) out[f.key] = false
-    } else if (f.kind === 'number') {
-      const n = Number(str(raw).replace(',', '.'))
-      if (str(raw) && Number.isFinite(n) && n >= (f.min ?? -Infinity) && n <= (f.max ?? Infinity)) out[f.key] = n
-      else blank(f.key)
-    } else if (f.kind === 'yesno' || f.kind === 'select') {
-      const opts = f.kind === 'yesno' ? YES_NO_OPTIONS : f.options!
-      const v = str(raw)
-      if (opts.some((o) => o.value === v)) out[f.key] = v
-      else blank(f.key)
-    } else if (f.kind === 'date') {
-      const v = str(raw)
-      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) out[f.key] = v
-      else blank(f.key)
-    } else {
-      const v = str(raw)
-      if (v) out[f.key] = v.slice(0, 4000)
-      else blank(f.key)
-    }
-    if (f.detail) {
-      const d = str(form[`${f.key}Detail`])
-      if (d) out[`${f.key}Detail`] = d.slice(0, 1000)
-      else blank(`${f.key}Detail`)
-    }
-  }
-  return forUpdate || Object.keys(out).length ? out : undefined
-}
-
-const optionLabel = (f: MassageFieldDef, v: string) =>
-  (f.kind === 'yesno' ? YES_NO_OPTIONS : f.options ?? []).find((o) => o.value === v)?.label ?? v
+export const formToMassage = (form: MassageFormState | undefined, forUpdate: boolean): MassageValues | undefined =>
+  formToSheet(MASSAGE_FIELDS, form, forUpdate)
 
 /** "Masaje reductor, Drenaje linfático manual" — the session's headline. */
 export function massageServicesLine(v: MassageValues | null | undefined): string {
@@ -219,26 +149,11 @@ export function massageServicesLine(v: MassageValues | null | undefined): string
  * Health questions answered «No» are skipped so the card shows only what matters.
  */
 export function massageLines(v: MassageValues | null | undefined, group: MassageGroup): { label: string; value: string }[] {
-  const lines: { label: string; value: string }[] = []
-  for (const f of MASSAGE_FIELDS.filter((x) => x.group === group)) {
-    const raw = v?.[f.key]
-    if (f.key === 'services' || f.key === 'servicesOther') continue // headline
-    if (raw == null || raw === '' || (Array.isArray(raw) && !raw.length)) continue
-    let value: string
-    if (f.kind === 'multi') value = (raw as string[]).map((x) => optionLabel(f, x)).join(', ')
-    else if (f.kind === 'check') {
-      if (raw !== true) continue
-      value = 'Sí'
-    } else if (f.kind === 'yesno') {
-      if (raw === 'no' && group !== 'evaluacion') continue
-      value = optionLabel(f, String(raw))
-    } else if (f.kind === 'select') value = optionLabel(f, String(raw))
-    else if (f.kind === 'date') value = String(raw).slice(0, 10).split('-').reverse().join('/')
-    else value = String(raw)
-    const detail = f.detail ? v?.[`${f.key}Detail`] : null
-    lines.push({ label: f.label, value: detail ? `${value} — ${detail}` : value })
-  }
-  return lines
+  return sheetLines(
+    MASSAGE_FIELDS.filter((f) => f.group === group && f.key !== 'services' && f.key !== 'servicesOther'), // services = headline
+    v,
+    (f, raw) => f.kind === 'yesno' && raw === 'no' && group !== 'evaluacion',
+  )
 }
 
 /** Health/allergy flags answered «Sí» — shown as a warning before each session. */

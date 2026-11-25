@@ -1,6 +1,7 @@
 'use server'
 
 import { asFormat } from '@/lib/profiles'
+import { asSpecialty } from '@/lib/specialties'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
@@ -19,6 +20,8 @@ type StaffInput = {
   role: 'doctor' | 'therapist' | 'receptionist' | 'owner'
   phone?: string
   specialty?: string
+  /** Clinical specialty (catalogue key) — doctors only. */
+  specialtyKey?: string
   defaultFormat?: string
   consultationFee?: number
   availabilityType?: string
@@ -48,6 +51,7 @@ export async function createStaff(input: StaffInput): Promise<ActionResult<{ id:
         phone: input.phone || undefined,
         specialty: bookable ? input.specialty : undefined,
         defaultFormat: input.role === 'doctor' ? asFormat(input.defaultFormat) ?? undefined : undefined,
+        specialtyKey: input.role === 'doctor' ? asSpecialty(input.specialtyKey) ?? undefined : undefined,
         consultationFee: bookable ? input.consultationFee : undefined,
         availabilityType: bookable ? input.availabilityType || 'regular' : undefined,
         availableDays: bookable ? input.availableDays : undefined,
@@ -93,7 +97,9 @@ export async function updateStaff(id: string, input: StaffUpdateInput): Promise<
         role: input.role,
         phone: input.phone || null,
         specialty: isDoctor ? input.specialty || null : keep,
-        ...(input.role === 'doctor' ? { defaultFormat: asFormat(input.defaultFormat) } : {}),
+        ...(input.role === 'doctor' ? { defaultFormat: asFormat(input.defaultFormat), specialtyKey: asSpecialty(input.specialtyKey) } : {}),
+        // A doctor turned therapist/receptionist loses the clinical specialty.
+        ...(input.role === 'therapist' || input.role === 'receptionist' ? { specialtyKey: null } : {}),
         consultationFee: isDoctor ? (input.consultationFee ?? null) : keep,
         availabilityType: isDoctor ? input.availabilityType || 'regular' : undefined,
         availableDays: isDoctor ? input.availableDays : undefined,

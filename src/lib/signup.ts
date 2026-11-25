@@ -16,6 +16,7 @@ import {
 import { wallTimeToUTC } from './reports'
 import { emailEnabled } from './email'
 import { createVerificationToken } from './verification'
+import { asOrgType, asSpecialty, orgTypeDef, profileForSignup, specialtyLabel } from './specialties'
 
 export type SignupInput = {
   clinicName: string
@@ -29,6 +30,10 @@ export type SignupInput = {
   password: string
   /** `individual` (default): the owner is the practice's doctor. */
   practiceType?: 'individual' | 'clinic'
+  /** Macro profile; when given it decides practiceType and the base profile. */
+  orgType?: string
+  /** The owner's clinical specialty (independent practice only). */
+  specialtyKey?: string
   specialty?: string
   licenseNumber?: string
 }
@@ -125,7 +130,12 @@ export async function signupClinic(
   }
 
   const slug = await uniqueSlug(payload, input.clinicName)
-  const individual = (input.practiceType ?? 'individual') === 'individual'
+  // Two-axis onboarding: the org type decides individual vs clinic and the clinic's
+  // base profile; an independent doctor's specialty decides their clinical sheets.
+  const orgType = asOrgType(input.orgType) ?? ((input.practiceType ?? 'individual') === 'individual' ? 'consultorio' : 'especialidades')
+  const individual = orgTypeDef(orgType).practiceType === 'individual'
+  const specialtyKey = individual ? asSpecialty(input.specialtyKey) : null
+  const specialtyTitle = input.specialty?.trim() || (specialtyKey ? specialtyLabel(specialtyKey) : '')
 
   // The clinic + its owner are the atomic unit — both or neither (a tenant with no
   // owner is unusable; an owner with no tenant is an orphan). Mirrors createClinic.
@@ -157,6 +167,8 @@ export async function signupClinic(
           closeTime: DEFAULT_CLOSE_TIME,
           currency: input.currency,
           timezone: input.timezone,
+          orgType,
+          consultTemplate: profileForSignup(orgType, specialtyKey),
         },
       } as never,
     })
@@ -176,7 +188,8 @@ export async function signupClinic(
         ...(individual
           ? {
               practitioner: true,
-              specialty: input.specialty?.trim() || undefined,
+              specialty: specialtyTitle || undefined,
+              specialtyKey: specialtyKey ?? undefined,
               licenseNumber: input.licenseNumber?.trim() || undefined,
               availabilityType: 'regular',
               availableDays: ['mon', 'tue', 'wed', 'thu', 'fri'],

@@ -6,6 +6,7 @@ import { windowOf, formatWindow } from '@/lib/availability'
 import type { User } from '@/payload-types'
 import { isPractitioner } from '@/lib/practice'
 import { profileFormats } from '@/lib/profiles'
+import { orgTypeOf } from '@/lib/specialties'
 
 function availabilitySummary(u: User): string {
   const type = (u.availabilityType as string) || 'regular'
@@ -39,6 +40,7 @@ export default async function StaffPage() {
     phone: u.phone,
     specialty: u.specialty,
     defaultFormat: u.defaultFormat ?? '',
+    specialtyKey: u.specialtyKey ?? '',
     consultationFee: u.consultationFee,
     active: u.active !== false,
     availability: isPractitioner(u) ? availabilitySummary(u) : null,
@@ -51,5 +53,5 @@ export default async function StaffPage() {
   // Templates a doctor can default to: the profile's, minus massage (therapists) and
   // the programme (opened automatically for enrolled patients).
   const formatOptions = profileFormats(session.tenant).filter((f) => f !== 'massage' && f !== 'program')
-  return <StaffManager staff={staff} currency={session.tenant?.settings?.currency || DEFAULT_CURRENCY} formatOptions={formatOptions} />
+  return <StaffManager staff={staff} currency={session.tenant?.settings?.currency || DEFAULT_CURRENCY} formatOptions={formatOptions} orgType={orgTypeOf(session.tenant)} />
 }

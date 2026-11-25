@@ -39,7 +39,7 @@ export function AppSelect({
       onValueChange={(v) => onChange((v as string) ?? '')}
       disabled={disabled}
     >
-      <SelectTrigger className={cn('h-10 w-full rounded-md', className)}>
+      <SelectTrigger className={cn('h-10 w-full rounded-md', className)} title={options.find((o) => o.value === value)?.label}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

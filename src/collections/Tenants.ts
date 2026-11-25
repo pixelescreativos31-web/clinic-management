@@ -13,6 +13,7 @@ import {
 } from '@/lib/constants'
 import { PLANS, planLabel } from '@/lib/plans'
 import { PROFILES } from '@/lib/profiles'
+import { ORG_TYPES } from '@/lib/specialties'
 
 /** Logos are stored inline as a small data URL (resized client-side, ≤ 300 KB). */
 export const MAX_LOGO_CHARS = 400_000
@@ -214,6 +215,14 @@ export const Tenants: CollectionConfig = {
           options: TIMEZONES.map((t) => ({ label: t.label, value: t.value })),
           label: 'Zona horaria',
           admin: { description: 'Todas las horas se muestran en esta zona horaria.' },
+        },
+        {
+          // Macro profile (src/lib/specialties.ts). Blank on older clinics: derived
+          // from practiceType + profile by orgTypeOf().
+          name: 'orgType',
+          type: 'select',
+          options: ORG_TYPES.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Tipo de organización',
         },
         {
           name: 'consultTemplate',

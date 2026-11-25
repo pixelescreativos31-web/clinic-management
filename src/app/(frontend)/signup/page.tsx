@@ -9,6 +9,10 @@ import { AppSelect } from '@/components/AppSelect'
 import { IconCheck } from '@/components/icons'
 import { COUNTRY_DEFAULTS, DEFAULT_COUNTRY, CURRENCIES, TIMEZONES } from '@/lib/constants'
 import { APP_NAME } from '@/lib/brand'
+import { ORG_TYPES, orgTypeDef, specialtiesFor, type OrgType } from '@/lib/specialties'
+
+// Hospitals are quoted and set up by us (plan institucional), not self-serve.
+const SIGNUP_ORG_TYPES = ORG_TYPES.filter((o) => o.value !== 'hospital')
 
 const PROMISES = ['Listo en un minuto', 'Datos de ejemplo para explorar', 'Plan de prueba gratis, sin tarjeta']
 
@@ -32,7 +36,8 @@ export default function SignupPage() {
     ownerName: '',
     email: '',
     password: '',
-    practiceType: 'individual' as 'individual' | 'clinic',
+    orgType: 'consultorio' as OrgType,
+    specialtyKey: 'general',
     specialty: '',
     licenseNumber: '',
     company: '', // honeypot
@@ -48,7 +53,7 @@ export default function SignupPage() {
   const submit = () => {
     setError(null)
     start(async () => {
-      const res = await signupAction({ ...form, startedAt })
+      const res = await signupAction({ ...form, practiceType: orgTypeDef(form.orgType).practiceType, startedAt })
       if (res.ok) setDone({ verifyEmail: res.data.verifyEmail })
       else setError(res.message)
     })
@@ -138,23 +143,20 @@ export default function SignupPage() {
             }}
             className="mt-8 flex flex-col gap-4"
           >
-            <Field label="¿Cómo trabaja?">
-              <div className="grid grid-cols-2 gap-2" role="radiogroup">
-                {([
-                  { value: 'individual', title: 'Médico independiente', hint: 'Usted atiende; puede sumar una asistente' },
-                  { value: 'clinic', title: 'Clínica', hint: 'Varios médicos en el mismo lugar' },
-                ] as const).map((o) => (
+            <Field label="¿Qué tipo de práctica tiene?" hint="Adaptamos las fichas, la agenda y el plan a su tipo de práctica. Puede cambiarlo luego en Configuración.">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup">
+                {SIGNUP_ORG_TYPES.map((o) => (
                   <button
                     key={o.value}
                     type="button"
                     role="radio"
-                    aria-checked={form.practiceType === o.value}
-                    onClick={() => set('practiceType', o.value)}
+                    aria-checked={form.orgType === o.value}
+                    onClick={() => set('orgType', o.value)}
                     className={`rounded-lg border px-3 py-2.5 text-start transition-colors ${
-                      form.practiceType === o.value ? 'border-primary bg-secondary/60 ring-1 ring-primary/30' : 'border-border bg-card hover:border-primary/40'
+                      form.orgType === o.value ? 'border-primary bg-secondary/60 ring-1 ring-primary/30' : 'border-border bg-card hover:border-primary/40'
                     }`}
                   >
-                    <span className="block text-[13px] font-semibold">{o.title}</span>
+                    <span className="block text-[13px] font-semibold">{o.label}</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">{o.hint}</span>
                   </button>
                 ))}
@@ -193,11 +195,24 @@ export default function SignupPage() {
                 <Field label="Su nombre" htmlFor="ownerName">
                   <input id="ownerName" name="ownerName" required value={form.ownerName} onChange={(e) => set('ownerName', e.target.value)} placeholder="Dra. Carmen Rosario" className={inputClass} />
                 </Field>
-                {form.practiceType === 'individual' && (
+                {orgTypeDef(form.orgType).practiceType === 'individual' && (
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Especialidad" htmlFor="specialty">
-                      <input id="specialty" name="specialty" value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder="Medicina interna" className={inputClass} />
+                    <div className="col-span-2">
+                    <Field
+                      label="Especialidad"
+                      hint={
+                        specialtiesFor(form.orgType).find((x) => x.key === form.specialtyKey)?.ready === false
+                          ? 'Su ficha especializada está en camino; mientras tanto usa la consulta general.'
+                          : 'Define la ficha clínica que usará.'
+                      }
+                    >
+                      <AppSelect
+                        value={form.specialtyKey}
+                        onChange={(v) => set('specialtyKey', v)}
+                        options={specialtiesFor(form.orgType).map((x) => ({ value: x.key, label: x.ready ? x.label : `${x.label} (pronto)` }))}
+                      />
                     </Field>
+                    </div>
                     <Field label="Exequátur" htmlFor="licenseNumber" hint="Se imprime en sus recetas.">
                       <input id="licenseNumber" name="licenseNumber" value={form.licenseNumber} onChange={(e) => set('licenseNumber', e.target.value)} placeholder="12345-06" className={inputClass} />
                     </Field>

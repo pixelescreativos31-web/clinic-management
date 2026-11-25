@@ -8,6 +8,7 @@ import { TimePicker } from './TimePicker'
 import { updateClinicSettings, updateMyPractitionerProfile } from '@/app/(frontend)/dashboard/settings/actions'
 import { CURRENCIES, TIMEZONES, PRACTICE_TYPES, WEEKDAYS } from '@/lib/constants'
 import { PROFILES, type PracticeProfile } from '@/lib/profiles'
+import { ORG_TYPES, orgTypeDef, specialtiesFor, specialtyByKey, type OrgType } from '@/lib/specialties'
 
 /** Shrink an uploaded logo to ≤ 640 px and encode it as a compact data URL. */
 async function logoDataUrl(file: File): Promise<string> {
@@ -46,6 +47,7 @@ export type SettingsInitial = {
   timezone: string
   taxId: string
   practiceType: 'individual' | 'clinic'
+  orgType: OrgType
   consultTemplate: PracticeProfile
   programName: string
   logo: string
@@ -55,6 +57,7 @@ export type SettingsInitial = {
 
 export type ProfileInitial = {
   practitioner: boolean
+  specialtyKey: string
   specialty: string
   licenseNumber: string
   consultationFee: string
@@ -149,6 +152,7 @@ export function SettingsForm({
         country: form.country || undefined,
         taxId: form.taxId || undefined,
         practiceType: form.practiceType,
+        orgType: form.orgType,
         consultTemplate: form.consultTemplate,
         programName: form.programName,
         logo: form.logo || null,
@@ -163,6 +167,7 @@ export function SettingsForm({
       if (!res.ok) return setError(res.message)
       const prof = await updateMyPractitionerProfile({
         practitioner: profile.practitioner,
+        specialtyKey: profile.specialtyKey,
         specialty: profile.specialty || undefined,
         licenseNumber: profile.licenseNumber || undefined,
         consultationFee: profile.consultationFee === '' ? undefined : Number(profile.consultationFee),
@@ -207,6 +212,20 @@ export function SettingsForm({
           <Field label="RNC (opcional)" hint="Se imprime en los recibos.">
             <input className={inputClass} value={form.taxId} onChange={(e) => set('taxId', e.target.value)} />
           </Field>
+          <div className="sm:col-span-2">
+            <Field label="Tipo de organización" hint={orgTypeDef(form.orgType).hint}>
+              <AppSelect
+                value={form.orgType}
+                onChange={(v) => {
+                  // Picking a type suggests its practice type and base profile; both stay editable.
+                  const def = orgTypeDef(v as OrgType)
+                  setSaved(false)
+                  setForm((f) => ({ ...f, orgType: def.value, practiceType: def.practiceType, consultTemplate: def.profile }))
+                }}
+                options={ORG_TYPES.map((o) => ({ value: o.value, label: o.label }))}
+              />
+            </Field>
+          </div>
           <Field label="Tipo de práctica" hint="«Médico independiente» simplifica la agenda y el menú.">
             <AppSelect
               value={form.practiceType}
@@ -214,7 +233,7 @@ export function SettingsForm({
               options={PRACTICE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
             />
           </Field>
-          <Field label="Perfil del consultorio" hint={PROFILES.find((p) => p.value === form.consultTemplate)?.hint}>
+          <Field label="Perfil base del consultorio" hint={`${PROFILES.find((p) => p.value === form.consultTemplate)?.hint ?? ''} Aplica al personal sin especialidad asignada.`}>
             <AppSelect
               value={form.consultTemplate}
               onChange={(v) => set('consultTemplate', v)}
@@ -363,8 +382,25 @@ export function SettingsForm({
         </label>
         {profile.practitioner && (
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <Field label="Especialidad">
-              <input className={inputClass} value={profile.specialty} onChange={(e) => setP('specialty', e.target.value)} placeholder="Medicina interna" />
+            <Field
+              label="Especialidad (ficha clínica)"
+              hint={
+                profile.specialtyKey && specialtyByKey(profile.specialtyKey)?.ready === false
+                  ? 'Su ficha especializada está en camino; mientras tanto usa la consulta general.'
+                  : 'Define las fichas que usa en sus consultas.'
+              }
+            >
+              <AppSelect
+                value={profile.specialtyKey}
+                onChange={(v) => setP('specialtyKey', v)}
+                options={[
+                  { value: '', label: 'Según el perfil del consultorio' },
+                  ...specialtiesFor(form.orgType).map((x) => ({ value: x.key, label: x.ready ? x.label : `${x.label} (pronto)` })),
+                ]}
+              />
+            </Field>
+            <Field label="Título en la receta" hint="Texto libre, p. ej. «Oftalmóloga · Retina».">
+              <input className={inputClass} value={profile.specialty} onChange={(e) => setP('specialty', e.target.value)} placeholder={specialtyByKey(profile.specialtyKey)?.label || 'Medicina interna'} />
             </Field>
             <Field label="Exequátur / registro">
               <input className={inputClass} value={profile.licenseNumber} onChange={(e) => setP('licenseNumber', e.target.value)} />

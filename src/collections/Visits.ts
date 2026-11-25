@@ -2,8 +2,9 @@ import type { CollectionConfig, Field } from 'payload'
 import { GOOD_BAD, NUTRITION_FIELDS, YES_NO } from '@/lib/nutrition'
 import { APIError } from 'payload'
 import { tenantScoped, denyAll, visitsCreateAccess, visitsUpdateAccess, getTenantID, clinicalReadField, massageField } from '@/access'
-import { MASSAGE_FIELDS, YES_NO_OPTIONS } from '@/lib/massage'
-import { ALL_FORMATS, FORMAT_SHORT } from '@/lib/profiles'
+import { MASSAGE_FIELDS } from '@/lib/massage'
+import { sheetPayloadFields } from '@/lib/sheet'
+import { ALL_FORMATS, FORMAT_SHORT, formatsFor } from '@/lib/profiles'
 import { METRICS, weekLabel } from '@/lib/program'
 import { auditVisits } from '@/hooks/audit'
 import { forceTenant } from '@/hooks/tenant'
@@ -151,6 +152,26 @@ export const Visits: CollectionConfig = {
         if (req.user?.role !== 'therapist') return data
         data.format = 'massage'
         for (const k of ['symptoms', 'physicalExam', 'notes', 'nutrition', 'prescription', 'labOrders', 'vitals', 'program', 'programWeek', 'body']) delete data[k]
+        return data
+      },
+      // The format must be one this professional may record in this clinic (their
+      // specialty's sheets, else the clinic profile's). Checked on create and when
+      // the format changes, so an old visit in a format the clinic later dropped
+      // stays editable. Super admins and system writes (no user) pass.
+      async ({ data, req, operation, originalDoc }) => {
+        const user = req.user
+        if (!user || user.role === 'superAdmin') return data
+        const format = data.format
+        // Legacy visits have no stored format; the edit page infers one, so the
+        // first save after the upgrade must not be refused.
+        if (format == null || (operation === 'update' && (format === originalDoc?.format || originalDoc?.format == null))) return data
+        const tenantID = relID(data.tenant ?? originalDoc?.tenant)
+        const tenant = tenantID
+          ? await req.payload.findByID({ collection: 'tenants', id: tenantID, depth: 0, overrideAccess: true, req }).catch(() => null)
+          : null
+        if (!formatsFor(tenant, user).includes(format)) {
+          throw new APIError('Ese tipo de ficha no está habilitado para su especialidad o consultorio.', 400, { code: ERROR_CODES.VALIDATION })
+        }
         return data
       },
       ({ data, req, operation }) => {
@@ -330,17 +351,7 @@ export const Visits: CollectionConfig = {
       type: 'group',
       label: 'Ficha de masajes',
       access: { read: massageField, create: massageField, update: massageField },
-      fields: MASSAGE_FIELDS.flatMap((f): Field[] => {
-        let field: Field
-        if (f.kind === 'multi') field = { name: f.key, type: 'select', hasMany: true, label: f.label, options: f.options! }
-        else if (f.kind === 'yesno') field = { name: f.key, type: 'select', label: f.label, options: YES_NO_OPTIONS }
-        else if (f.kind === 'select') field = { name: f.key, type: 'select', label: f.label, options: f.options! }
-        else if (f.kind === 'number') field = { name: f.key, type: 'number', label: f.label, min: f.min, max: f.max }
-        else if (f.kind === 'check') field = { name: f.key, type: 'checkbox', label: f.label }
-        else if (f.kind === 'long') field = { name: f.key, type: 'textarea', label: f.label }
-        else field = { name: f.key, type: 'text', label: f.label } // text, date (YYYY-MM-DD)
-        return f.detail ? [field, { name: `${f.key}Detail`, type: 'text', label: `${f.label} — ${f.detail}` }] : [field]
-      }),
+      fields: sheetPayloadFields(MASSAGE_FIELDS),
     },
     {
       name: 'prescription',

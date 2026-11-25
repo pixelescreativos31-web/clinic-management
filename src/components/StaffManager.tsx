@@ -1,6 +1,7 @@
 'use client'
 
 import { FORMAT_LABELS, type ConsultFormat } from '@/lib/profiles'
+import { specialtiesFor, specialtyByKey, type OrgType } from '@/lib/specialties'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { btnPrimary, btnGhost, inputClass, Card, RoleBadge, PageTitle, Avatar, Field, Th, Td, Spinner } from './primitives'
@@ -20,6 +21,7 @@ export type StaffRow = {
   role: string
   phone?: string | null
   specialty?: string | null
+  specialtyKey?: string
   defaultFormat?: string
   consultationFee?: number | null
   active: boolean
@@ -37,6 +39,7 @@ const EMPTY_FORM = {
   role: 'receptionist',
   phone: '',
   specialty: '',
+  specialtyKey: '',
   defaultFormat: '',
   consultationFee: '',
   availabilityType: 'regular',
@@ -44,7 +47,18 @@ const EMPTY_FORM = {
   availableTo: '17:00',
 }
 
-export function StaffManager({ staff, currency, formatOptions = [] }: { staff: StaffRow[]; currency: string; formatOptions?: ConsultFormat[] }) {
+export function StaffManager({
+  staff,
+  currency,
+  formatOptions = [],
+  orgType = 'consultorio',
+}: {
+  staff: StaffRow[]
+  currency: string
+  /** The clinic profile's formats (staff without a specialty). */
+  formatOptions?: ConsultFormat[]
+  orgType?: OrgType
+}) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -67,6 +81,8 @@ export function StaffManager({ staff, currency, formatOptions = [] }: { staff: S
     setShowForm(true)
   }
 
+  // A doctor with a specialty opens with one of that specialty's formats.
+  const doctorFormats = (specialtyByKey(form.specialtyKey)?.formats ?? formatOptions).filter((f) => f !== 'program')
   const openEdit = (s: StaffRow) => {
     setEditingId(s.id)
     setForm({
@@ -76,6 +92,7 @@ export function StaffManager({ staff, currency, formatOptions = [] }: { staff: S
       role: s.role,
       phone: s.phone || '',
       specialty: s.specialty || '',
+      specialtyKey: s.specialtyKey || '',
       defaultFormat: s.defaultFormat || '',
       consultationFee: s.consultationFee != null ? String(s.consultationFee) : '',
       availabilityType: s.availabilityType || 'regular',
@@ -101,6 +118,7 @@ export function StaffManager({ staff, currency, formatOptions = [] }: { staff: S
         role: form.role as 'doctor' | 'therapist' | 'receptionist' | 'owner',
         phone: form.phone || undefined,
         specialty: form.specialty || undefined,
+        specialtyKey: form.specialtyKey,
         defaultFormat: form.defaultFormat,
         consultationFee: form.consultationFee ? Number(form.consultationFee) : undefined,
         availabilityType: form.availabilityType,
@@ -178,13 +196,36 @@ export function StaffManager({ staff, currency, formatOptions = [] }: { staff: S
             <Field label="Teléfono (opcional)"><input className={inputClass} value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
             {(form.role === 'doctor' || form.role === 'therapist') && (
               <>
-                <Field label="Especialidad"><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder={form.role === 'therapist' ? 'Masajista' : 'Medicina general'} /></Field>
+                <Field label={form.role === 'doctor' ? 'Título en la receta' : 'Especialidad'}><input className={inputClass} value={form.specialty} onChange={(e) => set('specialty', e.target.value)} placeholder={form.role === 'therapist' ? 'Masajista' : 'Medicina general'} /></Field>
                 <Field label={`${form.role === 'therapist' ? 'Tarifa por sesión' : 'Tarifa de consulta'} (${currency})`}><input className={inputClass} inputMode="numeric" value={form.consultationFee} onChange={(e) => set('consultationFee', e.target.value)} /></Field>
-                {form.role === 'doctor' && formatOptions.length > 1 && (
+                {form.role === 'doctor' && (
+                  <Field
+                    label="Especialidad (ficha clínica)"
+                    hint={specialtyByKey(form.specialtyKey)?.ready === false ? 'Su ficha especializada está en camino; mientras tanto usa la consulta general.' : 'Define las fichas que usa en sus consultas.'}
+                  >
+                    <select
+                      className={inputClass}
+                      value={form.specialtyKey}
+                      onChange={(e) => {
+                        const key = e.target.value
+                        const next = specialtyByKey(key)?.formats ?? formatOptions
+                        setForm((f) => ({ ...f, specialtyKey: key, defaultFormat: next.includes(f.defaultFormat as ConsultFormat) ? f.defaultFormat : '' }))
+                      }}
+                    >
+                      <option value="">Según el perfil del consultorio</option>
+                      {specialtiesFor(orgType).map((x) => (
+                        <option key={x.key} value={x.key}>
+                          {x.ready ? x.label : `${x.label} (pronto)`}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+                {form.role === 'doctor' && doctorFormats.length > 1 && (
                   <Field label="Ficha por defecto" hint="Con qué ficha abre sus consultas. Pacientes en el programa abren su control.">
                     <select className={inputClass} value={form.defaultFormat} onChange={(e) => set('defaultFormat', e.target.value)}>
                       <option value="">Según el perfil del consultorio</option>
-                      {formatOptions.map((f) => (
+                      {doctorFormats.map((f) => (
                         <option key={f} value={f}>
                           {FORMAT_LABELS[f]}
                         </option>

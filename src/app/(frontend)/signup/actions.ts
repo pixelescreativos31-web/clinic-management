@@ -62,6 +62,8 @@ export async function signupAction(
       email: input.email,
       password: input.password,
       practiceType: input.practiceType === 'clinic' ? 'clinic' : 'individual',
+      orgType: input.orgType,
+      specialtyKey: input.specialtyKey,
       specialty: input.specialty,
       licenseNumber: input.licenseNumber,
     })
