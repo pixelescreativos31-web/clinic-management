@@ -8,7 +8,6 @@ import { AppSelect } from './AppSelect'
 import { DatePicker } from './DatePicker'
 import { TimePicker } from './TimePicker'
 import { Checkbox } from '@/components/ui/checkbox'
-import { IconSearch, IconCheck, IconX } from './icons'
 import { searchPatients, createPatient, findByPhone, type PatientHit } from '@/app/(frontend)/dashboard/patients/actions'
 import { bookAppointment, availableDoctorsAt, type DoctorAvailabilityHit } from '@/app/(frontend)/dashboard/appointments/actions'
 
@@ -16,21 +15,19 @@ export type DoctorOption = { id: string; name: string; tag: string; note: string
 
 function TagChip({ tag }: { tag: string }) {
   if (tag === 'onCall')
-    return <span className="rounded-full bg-blue-soft px-2 py-px text-[10px] font-medium text-blue">De guardia</span>
+    return <span className="rounded-[6px] bg-blue-soft px-2 py-0.5 text-xs font-semibold text-blue">De guardia</span>
   if (tag === 'byAppointment')
-    return <span className="rounded-full bg-amber-soft px-2 py-px text-[10px] font-medium text-amber">Previa cita</span>
+    return <span className="rounded-[6px] bg-amber-soft px-2 py-0.5 text-xs font-semibold text-amber">Previa cita</span>
   return null
 }
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <section className="border-b border-border px-6 py-5 last:border-0">
-      <div className="mb-3.5 flex items-center gap-2.5">
-        <span className="flex size-5 items-center justify-center rounded-full bg-primary-soft text-[11px] font-semibold text-primary">
-          {n}
-        </span>
-        <h2 className="text-[13px] font-semibold">{title}</h2>
-      </div>
+      <h2 className="mb-3.5 text-[15px] font-semibold">
+        <span className="me-1.5 text-muted-foreground tabular-nums">{n}.</span>
+        {title}
+      </h2>
       {children}
     </section>
   )
@@ -138,10 +135,7 @@ export function BookingForm({
   if (success) {
     return (
       <Card className="p-8 text-center">
-        <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
-          <IconCheck size={22} />
-        </span>
-        <h2 className="mt-4 text-lg font-semibold">Cita registrada</h2>
+        <h2 className="text-[17px] font-semibold">Cita registrada</h2>
         {success.token ? (
           <p className="mt-2 text-sm text-muted-foreground">
             Paciente sin cita registrado: se atiende por orden de llegada.
@@ -170,7 +164,7 @@ export function BookingForm({
       {/* 1. Patient */}
       <Step n={1} title="Paciente">
         {selected ? (
-          <div className="flex items-center gap-3 rounded-lg border border-primary/25 bg-primary-soft/60 px-3 py-2.5">
+          <div className="flex items-center gap-3 rounded-[10px] border border-line-3 px-3 py-2.5">
             <Avatar name={selected.name} size="sm" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{selected.name}</div>
@@ -178,26 +172,23 @@ export function BookingForm({
             </div>
             <button
               type="button"
-              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-ink"
-              title="Cambiar paciente"
+              className="shrink-0 text-[13px] font-medium text-primary hover:underline"
               onClick={() => setSelected(null)}
             >
-              <IconX size={14} />
+              Cambiar
             </button>
           </div>
         ) : (
           <>
-            <div className="relative">
-              <IconSearch size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-faint" />
-              <input
-                className={`${inputClass} ps-9`}
-                placeholder="Buscar por nombre, teléfono o n.º de expediente…"
-                value={query}
-                onChange={(e) => runSearch(e.target.value)}
-              />
-            </div>
+            <input
+              className={inputClass}
+              placeholder="Buscar por nombre, teléfono o n.º de expediente…"
+              aria-label="Buscar paciente"
+              value={query}
+              onChange={(e) => runSearch(e.target.value)}
+            />
             {hits.length > 0 && (
-              <ul className="mt-1.5 divide-y divide-border overflow-hidden rounded-lg border border-border">
+              <ul className="mt-1.5 divide-y divide-[#f0eeec] overflow-hidden rounded-[10px] border border-border">
                 {hits.map((h) => (
                   <li key={h.id}>
                     <button
@@ -214,14 +205,14 @@ export function BookingForm({
               </ul>
             )}
             <button type="button" className="mt-2.5 text-[13px] font-medium text-primary hover:underline" onClick={() => setShowAdd((s) => !s)}>
-              {showAdd ? '− Ocultar registro rápido' : '+ Nuevo paciente'}
+              {showAdd ? 'Ocultar registro rápido' : 'Nuevo paciente'}
             </button>
             {showAdd && (
-              <div className="mt-2 flex flex-col gap-2.5 rounded-lg border border-border bg-canvas/50 p-3.5">
+              <div className="mt-2 flex flex-col gap-2.5 rounded-[10px] border border-border bg-background p-3.5">
                 <input className={inputClass} placeholder="Nombre completo" value={pName} onChange={(e) => setPName(e.target.value)} />
                 <input className={inputClass} placeholder="Teléfono" value={pPhone} onChange={(e) => checkPhone(e.target.value)} />
                 {dupes.length > 0 && (
-                  <div className="rounded-md border border-amber/25 bg-amber-soft px-3 py-2 text-xs text-amber">
+                  <div className="rounded-[10px] border border-amber px-3 py-2 text-[13px] text-amber">
                     {dupes.length === 1 ? 'Ya hay 1 paciente con este número:' : `Ya hay ${dupes.length} pacientes con este número:`}{' '}
                     {dupes.map((d, i) => (
                       <button key={d.id} type="button" className="font-medium underline" onClick={() => { setSelected(d); setShowAdd(false) }}>
@@ -266,8 +257,8 @@ export function BookingForm({
       {/* 3. Doctor — skipped entirely when the practice has a single doctor. */}
       {doctors.length > 1 && (
       <Step n={3} title="Médico">
-        <div className="mb-3 flex items-center justify-between gap-3 rounded-lg bg-canvas px-3.5 py-2.5">
-          <span className="text-xs text-muted-foreground">¿No sabe quién está disponible a esa hora?</span>
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-[10px] bg-sunken px-3.5 py-2.5">
+          <span className="text-[13px] text-muted-foreground">¿No sabe quién está disponible a esa hora?</span>
           <button
             type="button"
             className="shrink-0 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
@@ -287,12 +278,12 @@ export function BookingForm({
                 type="button"
                 disabled={!h.free}
                 onClick={() => setDoctorId(h.id)}
-                className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-start transition-colors ${
+                className={`flex min-h-11 items-center gap-3 rounded-[10px] border px-3 py-2 text-start transition-colors ${
                   doctorId === h.id
-                    ? 'border-primary/50 bg-primary-soft/60'
+                    ? 'border-inv bg-card ring-1 ring-inv'
                     : h.free
-                      ? 'border-border bg-surface hover:border-primary/40'
-                      : 'border-border bg-surface opacity-45'
+                      ? 'border-line-3 bg-card hover:border-[#a8a29e]'
+                      : 'border-line-3 bg-card opacity-45'
                 }`}
               >
                 <Avatar name={h.name} size="sm" />
@@ -301,7 +292,7 @@ export function BookingForm({
                   <TagChip tag={h.tag} />
                 </span>
                 <span className={`shrink-0 text-xs font-medium ${h.free ? 'text-primary' : 'text-faint'}`}>
-                  {h.free ? '● Disponible' : 'Ocupado'}
+                  {h.free ? 'Disponible' : 'Ocupado'}
                 </span>
               </button>
             ))}
@@ -332,17 +323,23 @@ export function BookingForm({
         <Field label="Motivo (opcional)">
           <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="Fiebre, seguimiento…" />
         </Field>
-        <label className="mt-3.5 flex cursor-pointer items-center gap-3 rounded-lg border border-border px-3.5 py-2.5 text-sm transition-colors has-data-checked:border-blue/40 has-data-checked:bg-blue-soft/40">
+        <label className="mt-3.5 flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border border-line-3 px-3.5 py-2.5 text-sm transition-colors has-data-checked:border-inv">
           <Checkbox checked={isWalkIn} onCheckedChange={(v) => setIsWalkIn(v === true)} />
           <span>
             <span className="font-medium">Sin cita</span>
-            <span className="block text-xs text-muted-foreground">Queda en espera ahora y recibe un turno</span>
+            <span className="block text-[13px] text-muted-foreground">Queda en espera ahora y recibe un turno</span>
           </span>
         </label>
       </Step>
 
-      <div className="flex items-center justify-between gap-3 bg-canvas/60 px-6 py-4">
-        {error ? <p className="text-sm text-red" role="alert">{error}</p> : <span />}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4">
+        {error ? (
+          <p className="rounded-[10px] border border-amber px-3 py-2 text-sm font-medium text-amber" role="alert">
+            {error}
+          </p>
+        ) : (
+          <span />
+        )}
         <button type="button" className={btnPrimary} disabled={pending || !canSubmit} onClick={submit}>
           {pending && <Spinner />}
           {pending ? 'Agendando…' : isWalkIn ? 'Registrar llegada sin cita' : 'Agendar cita'}

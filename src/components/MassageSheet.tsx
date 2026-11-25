@@ -8,25 +8,26 @@
 import { useState } from 'react'
 import { CONSENT_TEXT, MASSAGE_FIELDS, MASSAGE_GROUP_LABELS, YES_NO_OPTIONS, type MassageFieldDef, type MassageFormState, type MassageGroup } from '@/lib/massage'
 
-const INPUT = 'w-full rounded-[10px] border border-[#e3e7e7] bg-[#fafbfb] px-3 text-base outline-none focus:border-[#0d6e60]'
-const AREA = `${INPUT} resize-none py-[11px]`
-const chip = (on: boolean, dark = false) =>
-  `rounded-full border px-3 py-2 text-[13px] font-semibold ${
-    on ? (dark ? 'border-[#15201e] bg-[#15201e] text-white' : 'border-[#0d6e60] bg-[#0d6e60] text-white') : 'border-[#e3e7e7] bg-white text-[#15201e]'
+// Same look as VisitForm (design_handoff_medira «Consulta»).
+const INPUT = 'w-full min-w-0 rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-base text-[#1c1917] outline-none focus:border-[#0f766e]'
+const AREA = `${INPUT} resize-y py-2.5 leading-normal`
+const FIELD_LABEL = 'text-[13px] font-medium text-[#44403c]'
+const chip = (on: boolean) =>
+  `min-h-10 rounded-[10px] border px-3.5 py-2 text-sm font-medium transition-colors ${
+    on ? 'border-[#1c1917] bg-[#1c1917] text-white' : 'border-[#d6d3d1] bg-white text-[#1c1917] hover:border-[#1c1917]'
   }`
 
 function Section({ title, hint, open, onToggle, children }: { title: string; hint: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[#e3e7e7] bg-white">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[52px] w-full items-center gap-2.5 p-3.5 text-start">
-        <span className="flex-1 text-sm font-semibold">{title}</span>
-        <span className="truncate text-xs text-[#6b7577]">{hint}</span>
-        <span aria-hidden className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f1f3f3] text-xs transition-transform ${open ? 'rotate-180' : ''}`}>
-          ▾
+    <section className="overflow-hidden rounded-xl border border-[#e7e5e4] bg-white">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[52px] w-full items-center justify-between gap-3 px-[18px] py-2.5 text-start">
+        <span className="min-w-0">
+          <span className="text-[15px] font-semibold">{title}</span> <span className="text-[13px] text-[#57534e]">{hint}</span>
         </span>
+        <span className="flex-none text-[13px] font-medium text-[#0f766e]">{open ? 'Ocultar' : 'Mostrar'}</span>
       </button>
-      {open && <div className="flex flex-col gap-2.5 border-t border-[#eef1f1] px-3.5 pt-3 pb-3.5">{children}</div>}
-    </div>
+      {open && <div className="flex flex-col gap-3 px-[18px] pb-[18px]">{children}</div>}
+    </section>
   )
 }
 
@@ -53,7 +54,7 @@ export function MassageSheet({
     if (f.kind === 'multi') {
       return (
         <div key={f.key} className="flex flex-col gap-1.5">
-          <span className="text-[12px] font-semibold text-[#6b7577]">{f.label}</span>
+          <span className={FIELD_LABEL}>{f.label}</span>
           <div className="flex flex-wrap gap-1.5">
             {f.options!.map((o) => {
               const on = list(f.key).includes(o.value)
@@ -90,9 +91,8 @@ export function MassageSheet({
                     aria-pressed={on}
                     aria-label={`${f.label}: ${o.label}`}
                     onClick={() => set(f.key, on ? '' : o.value)}
-                    className={`rounded-full border px-3.5 py-[9px] text-[13px] font-semibold ${
-                      on ? (o.value === 'yes' && f.group !== 'evaluacion' ? 'border-[#b3261e] bg-[#b3261e] text-white' : 'border-[#15201e] bg-[#15201e] text-white') : 'border-[#e3e7e7] bg-white'
-                    }`}
+                    // Red is reserved for allergies (design rule); other answers use ink.
+                    className={on && o.value === 'yes' && f.group === 'alergias' ? 'min-h-10 rounded-[10px] border border-[#b91c1c] bg-[#b91c1c] px-3.5 py-2 text-sm font-medium text-white' : chip(on)}
                   >
                     {o.label}
                   </button>
@@ -106,7 +106,7 @@ export function MassageSheet({
               onChange={(e) => set(`${f.key}Detail`, e.target.value)}
               placeholder={f.detail}
               aria-label={`${f.label} — ${f.detail}`}
-              className={`${INPUT} h-[42px]`}
+              className={`${INPUT} h-11`}
             />
           )}
         </div>
@@ -114,30 +114,30 @@ export function MassageSheet({
     }
     if (f.kind === 'check') {
       return (
-        <label key={f.key} className="flex min-h-11 items-center gap-2.5 text-sm font-semibold">
-          <input type="checkbox" checked={str(f.key) === 'yes'} onChange={(e) => set(f.key, e.target.checked ? 'yes' : '')} className="size-5 accent-[#0d6e60]" />
+        <label key={f.key} className="flex min-h-11 items-center gap-2.5 text-sm font-medium">
+          <input type="checkbox" checked={str(f.key) === 'yes'} onChange={(e) => set(f.key, e.target.checked ? 'yes' : '')} className="size-5 accent-[#0f766e]" />
           {f.label}
         </label>
       )
     }
     if (f.kind === 'long') {
       return (
-        <label key={f.key} className="flex flex-col gap-1">
-          <span className="text-[11px] text-[#6b7577]">{f.label}</span>
+        <label key={f.key} className="flex flex-col gap-1.5">
+          <span className={FIELD_LABEL}>{f.label}</span>
           <textarea rows={2} value={str(f.key)} onChange={(e) => set(f.key, e.target.value)} placeholder={f.placeholder} className={AREA} />
         </label>
       )
     }
     return (
-      <label key={f.key} className="flex flex-col gap-1">
-        <span className="text-[11px] text-[#6b7577]">{f.label}</span>
+      <label key={f.key} className="flex flex-col gap-1.5">
+        <span className={FIELD_LABEL}>{f.label}</span>
         <input
           type={f.kind === 'date' ? 'date' : 'text'}
           inputMode={f.kind === 'number' ? 'numeric' : undefined}
           value={str(f.key)}
           onChange={(e) => set(f.key, e.target.value)}
           placeholder={f.placeholder}
-          className={`${INPUT} h-[46px]`}
+          className={`${INPUT} h-11`}
         />
       </label>
     )
@@ -146,13 +146,13 @@ export function MassageSheet({
   return (
     <>
       {/* Service — always open, it's the session's headline */}
-      <div className="flex flex-col gap-3 rounded-[14px] border border-[#e3e7e7] bg-white p-3.5">
-        <span className="text-[13px] font-semibold">{MASSAGE_GROUP_LABELS.servicio}</span>
+      <section className="flex flex-col gap-3 rounded-xl border border-[#e7e5e4] bg-white px-[18px] py-4">
+        <h3 className="text-[15px] font-semibold">{MASSAGE_GROUP_LABELS.servicio}</h3>
         {fields('servicio').map(renderField)}
-      </div>
+      </section>
 
       {prefilled && (
-        <p className="rounded-[10px] bg-[#e6f1ee] px-3 py-2 text-[13px] text-[#0d6e60]">
+        <p className="rounded-[10px] border border-[#e7e5e4] bg-[#f0eeec] px-3.5 py-2.5 text-[13px] text-[#44403c]">
           Los antecedentes y alergias vienen de la ficha anterior. Confírmelos con el cliente antes de la sesión.
         </p>
       )}
@@ -172,12 +172,12 @@ export function MassageSheet({
         )
       })}
 
-      <div className="flex flex-col gap-2.5 rounded-[14px] border border-[#e3e7e7] bg-white p-3.5">
-        <span className="text-[13px] font-semibold">{MASSAGE_GROUP_LABELS.consentimiento}</span>
-        <p className="max-h-32 overflow-y-auto rounded-[10px] bg-[#f4f6f6] p-3 text-xs leading-relaxed text-[#45504f]">{CONSENT_TEXT}</p>
+      <section className="flex flex-col gap-3 rounded-xl border border-[#e7e5e4] bg-white px-[18px] py-4">
+        <h3 className="text-[15px] font-semibold">{MASSAGE_GROUP_LABELS.consentimiento}</h3>
+        <p className="max-h-32 overflow-y-auto rounded-[10px] bg-[#fafaf7] p-3 text-[13px] leading-relaxed text-[#44403c]">{CONSENT_TEXT}</p>
         {fields('consentimiento').map(renderField)}
-        <p className="text-[11px] text-[#6b7577]">Use «Guardar e imprimir» para imprimir la ficha con las líneas de firma.</p>
-      </div>
+        <p className="text-[13px] text-[#57534e]">Use «Guardar e imprimir» para imprimir la ficha con las líneas de firma.</p>
+      </section>
     </>
   )
 }

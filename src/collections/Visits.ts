@@ -146,6 +146,20 @@ export const Visits: CollectionConfig = {
         if (!data.chiefComplaint && !originalDoc?.chiefComplaint) data.chiefComplaint = `${program.name} · ${weekLabel(week)}`
         return data
       },
+      // Only someone who counts toward the plan's doctor cap may open a consultation.
+      // An owner who doesn't practise is an administrator: letting them author visits
+      // would be an unpaid extra doctor (they are not counted by `doctorWhere`).
+      // Updates stay open so an owner can still correct an existing record.
+      ({ data, req, operation }) => {
+        if (operation === 'create' && req.user?.role === 'owner' && req.user.practitioner !== true) {
+          throw new APIError(
+            'Para registrar consultas, active «Atiendo pacientes» en Configuración → Mi perfil médico.',
+            403,
+            { code: ERROR_CODES.FORBIDDEN },
+          )
+        }
+        return data
+      },
       // Therapists record massage sheets only: whatever the client sends, their
       // visits are `massage` and never carry the medical narrative or a prescription.
       ({ data, req }) => {

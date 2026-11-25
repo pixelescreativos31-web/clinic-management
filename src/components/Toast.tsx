@@ -1,6 +1,7 @@
 'use client'
 
-// Design handoff toast: black pill, 2.6 s, above the phone tab bar.
+// Design handoff toast («Aviso flotante»): ink background, radius 10, slides up
+// (translateY 12px → 0, .2 s), 2.6 s, above the phone tab bar.
 
 import { useCallback, useRef, useState } from 'react'
 
@@ -20,9 +21,12 @@ export function Toast({ message }: { message: string }) {
   return (
     <div
       role="status"
-      className="fixed bottom-24 left-1/2 z-[60] max-w-[calc(100vw-32px)] -translate-x-1/2 truncate rounded-full bg-[#15201e] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,.5)] lg:bottom-7"
+      aria-live="polite"
+      className="fixed bottom-24 left-1/2 z-[60] max-w-[calc(100vw-32px)] -translate-x-1/2 lg:bottom-7"
     >
-      {message}
+      <div className="animate-[md-up_.2s_ease-out] truncate rounded-[10px] bg-[#1c1917] px-4 py-3 text-sm font-medium text-white">
+        {message}
+      </div>
     </div>
   )
 }

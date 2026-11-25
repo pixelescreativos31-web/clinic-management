@@ -15,11 +15,11 @@ export { StatusBadge, AllergyBanner } from './ui-kit'
 
 /** Day Rail status bars share the ui-kit palette (strong tones). */
 export const STATUS_BAR: Record<AppointmentStatus, string> = {
-  scheduled: 'bg-primary',
+  scheduled: 'bg-line-3',
   'checked-in': 'bg-blue',
   completed: 'bg-green-strong',
   cancelled: 'bg-faint',
-  'no-show': 'bg-amber',
+  'no-show': 'bg-inv',
 }
 
 const ROLE_STYLES: Record<string, string> = {
@@ -180,14 +180,14 @@ export const btnDanger = buttonVariants({ variant: 'destructive' })
 export const btnIcon = buttonVariants({ variant: 'outline', size: 'icon' })
 
 export const inputClass = cn(
-  'h-10 w-full min-w-0 rounded-md border border-input bg-card px-3 py-1 text-sm transition-colors duration-150 outline-none',
+  'h-11 w-full min-w-0 rounded-[10px] border border-input bg-card px-3 py-1 text-base md:text-[15px] transition-colors duration-150 outline-none',
   'placeholder:text-muted-foreground',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
   'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
 )
 
 export const textareaClass = cn(
-  'w-full rounded-md border border-input bg-card px-3 py-2 text-sm transition-colors duration-150 outline-none',
+  'w-full rounded-[10px] border border-input bg-card px-3 py-2 text-base md:text-[15px] transition-colors duration-150 outline-none',
   'placeholder:text-muted-foreground',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
   'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
@@ -222,7 +222,7 @@ export function Th({ children, className = '' }: { children?: React.ReactNode; c
   return (
     <th
       className={cn(
-        'h-10 px-3 text-start align-middle text-[11px] font-medium tracking-wide uppercase text-muted-foreground',
+        'h-10 px-3 text-start align-middle text-xs font-medium text-muted-foreground',
         className,
       )}
     >

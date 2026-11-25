@@ -8,25 +8,25 @@ export type StatusStyle = { label: string; bg: string; fg: string }
 export function apptStatusStyle(status: AppointmentStatus, opts: { isWalkIn?: boolean; token?: string | null } = {}): StatusStyle {
   switch (status) {
     case 'scheduled':
-      return { label: 'Programada', bg: '#e6f1ee', fg: '#0d6e60' }
+      return { label: 'Programada', bg: '#f0eeec', fg: '#44403c' }
     case 'checked-in':
       return opts.isWalkIn
-        ? { label: opts.token ? `Sin cita ${opts.token}` : 'Sin cita', bg: '#e9f0f9', fg: '#2563ab' }
-        : { label: 'En sala', bg: '#e9f0f9', fg: '#2563ab' }
+        ? { label: opts.token ? `Sin cita ${opts.token}` : 'Sin cita', bg: '#1d4ed8', fg: '#ffffff' }
+        : { label: 'En sala', bg: '#1d4ed8', fg: '#ffffff' }
     case 'completed':
-      return { label: 'Atendido', bg: '#e8f4ec', fg: '#1a7a50' }
+      return { label: 'Atendida', bg: '#e8f4ec', fg: '#15803d' }
     case 'no-show':
-      return { label: 'No asistió', bg: '#faf3e6', fg: '#b45309' }
+      return { label: 'No asistió', bg: '#1c1917', fg: '#ffffff' }
     default:
-      return { label: 'Cancelada', bg: '#eef1f1', fg: '#6b7577' }
+      return { label: 'Cancelada', bg: '#f0eeec', fg: '#57534e' }
   }
 }
 
 const AVATARS: [string, string][] = [
-  ['#e6f1ee', '#0d6e60'],
-  ['#e9f0f9', '#2563ab'],
+  ['#e6f1ee', '#0f766e'],
+  ['#e9f0f9', '#1d4ed8'],
   ['#faf3e6', '#b45309'],
-  ['#e8f4ec', '#1a7a50'],
+  ['#e8f4ec', '#15803d'],
 ]
 
 /** Stable avatar tint per name. */

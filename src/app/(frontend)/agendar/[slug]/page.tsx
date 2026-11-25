@@ -1,4 +1,4 @@
-// Public booking page — recreated from design_handoff_emr/EMR Agendar.dc.html.
+// Public booking page — design handoff "Flujos · Reserva en línea" (390px column on sunken).
 // No login: the patient picks a service, a day and a free time, leaves name +
 // WhatsApp and gets a confirmed appointment.
 
@@ -70,30 +70,32 @@ export default async function BookingPage({ params }: Props) {
     }
   })
 
-  return (
-    <main className="flex min-h-screen flex-col bg-[#f4f6f6] text-[15px] leading-[1.45] text-[#15201e]">
-      {clinic.logo ? (
-        <header className="flex shrink-0 flex-col items-center gap-1 border-b border-[#e3e7e7] bg-white px-[18px] py-3.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={clinic.logo} alt={clinic.name} className="h-16 w-auto md:h-20" />
-          <span className="text-[12px] text-[#6b7577]">Agenda en línea</span>
-        </header>
-      ) : (
-        <header className="flex shrink-0 items-center gap-2.5 border-b border-[#e3e7e7] bg-white px-[18px] py-3.5">
-          <span aria-hidden className="flex size-[26px] items-center justify-center rounded-[7px] bg-[#0d6e60] text-[13px] font-bold text-white">
-            +
-          </span>
-          <span className="truncate text-[13px] text-[#6b7577]">
-            Agenda en línea · <strong className="font-semibold text-[#15201e]">{clinic.name}</strong>
-          </span>
-        </header>
-      )}
+  const contact = [[clinic.address, clinic.city].filter(Boolean).join(', '), clinic.phone].filter(Boolean).join(' · ')
 
-      <div className="flex-1 px-3.5 pt-3.5 pb-8 md:px-6 md:pt-8 md:pb-12">
+  return (
+    <main className="flex min-h-screen flex-col items-center bg-sunken px-4 pt-[clamp(20px,5vw,56px)] pb-14 text-[15px] leading-[1.45] text-foreground">
+      <div className="w-full max-w-[390px]">
+        {/* Clinic letterhead (handoff "Páginas del paciente") */}
+        <header className="mb-4 flex items-center gap-2.5">
+          {clinic.logo && (
+            <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-border bg-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={clinic.logo} alt="" className="max-h-full max-w-full object-contain" />
+            </span>
+          )}
+          <div className="min-w-0">
+            <div className="truncate font-semibold">{clinic.name}</div>
+            <div className="truncate text-[13px] text-muted-foreground tabular-nums">{contact || 'Agenda en línea'}</div>
+          </div>
+        </header>
+
         {doctors.length === 0 ? (
-          <div className="mx-auto max-w-xl rounded-2xl border border-[#e3e7e7] bg-white p-6 text-center text-sm text-[#6b7577]">
-            Por ahora no hay horarios disponibles en línea. Llame al consultorio
-            {clinic.phone ? ` al ${clinic.phone}` : ''} para agendar.
+          <div className="rounded-[14px] border border-border bg-card p-[clamp(20px,5vw,28px)]">
+            <h1 className="text-[22px] leading-[1.2] font-semibold tracking-[-0.03em]">Reserve su cita</h1>
+            <p className="mt-1.5 text-[15px] text-muted-foreground">
+              Por ahora no hay horarios disponibles en línea. Llame al consultorio
+              {clinic.phone ? ` al ${clinic.phone}` : ''} para agendar.
+            </p>
           </div>
         ) : (
           <PublicBooking
@@ -108,9 +110,8 @@ export default async function BookingPage({ params }: Props) {
             doctors={doctors}
           />
         )}
-        <p className="mx-auto mt-8 max-w-[960px] text-center text-xs text-[#97a09a]">
-          Reservas con {APP_NAME} · Si es una emergencia que pone en riesgo la vida, llame al 911.
-        </p>
+        <p className="mt-3.5 text-center text-xs text-muted-foreground">Enviado con {APP_NAME}</p>
+        <p className="mt-1 text-center text-xs text-muted-foreground">Si es una emergencia que pone en riesgo la vida, llame al 911.</p>
       </div>
     </main>
   )

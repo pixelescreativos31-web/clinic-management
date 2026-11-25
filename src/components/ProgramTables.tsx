@@ -33,32 +33,32 @@ export function WeightChart({ rows }: { rows: Row[] }) {
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Peso de ${first.lb} lb a ${last.lb} lb entre ${weekLabel(first.week)} y ${weekLabel(last.week)}`}>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="#e3e7e7" strokeWidth={1} />
-            <text x={pad.l - 6} y={y(t) + 4} textAnchor="end" fontSize={11} fill="#6b7577">
+            <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="#e7e5e4" strokeWidth={1} />
+            <text x={pad.l - 6} y={y(t) + 4} textAnchor="end" fontSize={11} fill="#57534e">
               {t}
             </text>
           </g>
         ))}
         {pts.map((p) => (
-          <text key={`x${p.week}`} x={x(p.week)} y={H - 8} textAnchor="middle" fontSize={11} fill="#6b7577">
+          <text key={`x${p.week}`} x={x(p.week)} y={H - 8} textAnchor="middle" fontSize={11} fill="#57534e">
             {p.week === 0 ? 'Ini' : `S${p.week}`}
           </text>
         ))}
-        <path d={path} fill="none" stroke="#0d6e60" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path} fill="none" stroke="#0f766e" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {pts.map((p) => (
           <g key={`p${p.week}`}>
-            <circle cx={x(p.week)} cy={y(p.lb)} r={4} fill="#0d6e60" stroke="#fff" strokeWidth={2} />
+            <circle cx={x(p.week)} cy={y(p.lb)} r={4} fill="#0f766e" stroke="#fff" strokeWidth={2} />
             {/* Larger invisible hit target carries the tooltip. */}
             <circle cx={x(p.week)} cy={y(p.lb)} r={12} fill="transparent">
               <title>{`${weekLabel(p.week)} · ${fmtDate(p.date)} · ${p.lb} lb`}</title>
             </circle>
           </g>
         ))}
-        <text x={x(last.week)} y={y(last.lb) - 10} textAnchor="end" fontSize={12} fontWeight={600} fill="#15201e">
+        <text x={x(last.week)} y={y(last.lb) - 10} textAnchor="end" fontSize={12} fontWeight={600} fill="#1c1917">
           {last.lb} lb
         </text>
       </svg>
-      <figcaption className="text-[11px] text-[#6b7577]">Peso (lb) por semana</figcaption>
+      <figcaption className="text-xs text-[#57534e]">Peso (lb) por semana</figcaption>
     </figure>
   )
 }
@@ -67,9 +67,9 @@ export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id:
   const comp = METRICS.filter((m) => m.group === 'composition')
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] border-collapse text-[12px]">
+      <table className="w-full min-w-[760px] border-collapse text-[13px]">
         <thead>
-          <tr className="border-b text-left text-[11px] text-[#6b7577]">
+          <tr className="border-b border-[#e7e5e4] text-left text-xs text-[#57534e]">
             <th className="py-2 pe-2 font-semibold">Semana</th>
             <th className="pe-2 font-semibold">Fecha</th>
             <th className="pe-2 font-semibold">Peso lb (kg)</th>
@@ -89,8 +89,8 @@ export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id:
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className="border-b align-top last:border-0">
-              <td className="py-2 pe-2 font-semibold">{weekLabel(r.week)}</td>
+            <tr key={r.id} className="border-b border-[#f0eeec] align-top last:border-0">
+              <td className="py-2.5 pe-2 font-semibold whitespace-nowrap">{weekLabel(r.week)}</td>
               <td className="tabular pe-2">{fmtDate(r.date)}</td>
               <td className="tabular pe-2">{r.weightKg != null ? `${kgToLb(r.weightKg).toFixed(1)} (${r.weightKg.toFixed(1)})` : '—'}</td>
               <td className="tabular pe-2">{fmtDelta(r.deltaPrev)}</td>
@@ -108,7 +108,7 @@ export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id:
               ))}
               {editHref && (
                 <td className="print:hidden">
-                  <a href={editHref(r.id)} className="font-medium text-[#0d6e60] hover:underline">
+                  <a href={editHref(r.id)} className="font-medium text-[#0f766e] hover:underline">
                     Editar
                   </a>
                 </td>
@@ -124,15 +124,15 @@ export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id:
 /** Measurements by control that recorded any (initial + every 4 weeks, or ad hoc). */
 export function MeasuresTable({ rows }: { rows: Row[] }) {
   const cols = rows.filter((r) => MEASURE_KEYS.some((k) => r[k] != null))
-  if (!cols.length) return <p className="text-sm text-[#6b7577]">Todavía no hay medidas registradas.</p>
+  if (!cols.length) return <p className="text-sm text-[#57534e]">Todavía no hay medidas registradas.</p>
   const measures = METRICS.filter((m) => m.group === 'measures')
   const first = (k: (typeof MEASURE_KEYS)[number]) => cols.find((c) => c[k] != null)?.[k] ?? null
   const latest = (k: (typeof MEASURE_KEYS)[number]) => [...cols].reverse().find((c) => c[k] != null)?.[k] ?? null
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-[12px]">
+      <table className="w-full border-collapse text-[13px]">
         <thead>
-          <tr className="border-b text-left text-[11px] text-[#6b7577]">
+          <tr className="border-b border-[#e7e5e4] text-left text-xs text-[#57534e]">
             <th className="py-2 pe-3 font-semibold">Medida (cm)</th>
             {cols.map((c) => (
               <th key={c.id} className="pe-3 font-semibold">
@@ -150,8 +150,8 @@ export function MeasuresTable({ rows }: { rows: Row[] }) {
             const b = latest(m.key)
             const d = a != null && b != null ? Math.round((b - a) * 10) / 10 : null
             return (
-              <tr key={m.key} className="border-b last:border-0">
-                <td className="py-1.5 pe-3 font-medium">{m.label.replace(' / circunferencia abdominal', '')}</td>
+              <tr key={m.key} className="border-b border-[#f0eeec] last:border-0">
+                <td className="py-2 pe-3 font-medium">{m.label.replace(' / circunferencia abdominal', '')}</td>
                 {cols.map((c) => (
                   <td key={c.id} className="tabular pe-3">
                     {n1(c[m.key])}
@@ -163,7 +163,7 @@ export function MeasuresTable({ rows }: { rows: Row[] }) {
           })}
         </tbody>
       </table>
-      {cols.some((c) => c.week > 0 && !isMeasureWeek(c.week)) && <p className="mt-1 text-[11px] text-[#6b7577]">* Medición fuera del calendario de cada 4 semanas.</p>}
+      {cols.some((c) => c.week > 0 && !isMeasureWeek(c.week)) && <p className="mt-1 text-xs text-[#57534e]">* Medición fuera del calendario de cada 4 semanas.</p>}
     </div>
   )
 }

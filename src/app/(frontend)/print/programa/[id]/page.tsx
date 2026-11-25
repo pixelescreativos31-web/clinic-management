@@ -1,14 +1,13 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { PrintButton } from '@/components/PrintButton'
+import { Letterhead, PrintToolbar, numericDate } from '../../_components/Letterhead'
 import { ControlsTable, MeasuresTable, WeightChart } from '@/components/ProgramTables'
 import { ageFromDOB, formatLongDate } from '@/lib/format'
 import { isClinical } from '@/lib/practice'
 import { bmiLabel, fmtDelta, fmtWeight, weekLabel } from '@/lib/program'
 import { programControls } from '@/lib/programData'
-import { GENDER_LABELS } from '@/lib/constants'
+import { GENDER_LABELS, DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Patient, Program, User } from '@/payload-types'
 
 const relId = (v: unknown): string =>
@@ -63,28 +62,23 @@ export default async function ProgramPrintPage({ params }: { params: Promise<{ i
   const shownBackground = background.filter(([, v]) => v)
 
   return (
-    <main className="mx-auto w-full max-w-[216mm] bg-white px-8 py-8 text-[12px] text-ink print:max-w-none print:p-[10mm]">
+    <main className="mx-auto w-full max-w-[216mm] bg-white px-8 py-8 text-[12px] text-[#1c1917] print:max-w-none print:p-[10mm]">
       <style>{`@page { size: letter; margin: 0; } @media print { html, body { background: #fff; } }`}</style>
 
-      <div className="mb-5 flex items-center justify-between gap-3 print:hidden">
-        <Link href={`/dashboard/patients/${relId(patient)}?tab=programa`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">
-          ‹ Volver al paciente
-        </Link>
-        <PrintButton />
-      </div>
+      <PrintToolbar backHref={`/dashboard/patients/${relId(patient)}?tab=programa`} backLabel="Volver al paciente" />
 
-      <header className="flex items-center justify-between gap-4 border-b-2 border-primary pb-2">
-        {tenant?.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={tenant.logo} alt={tenant.name} className="h-14 w-auto" />
-        ) : (
-          <div className="font-display text-lg font-semibold">{tenant?.name}</div>
-        )}
-        <div className="text-end">
-          <div className="text-[13px] font-bold">{program.name}</div>
-          <div className="text-[10px] text-muted-foreground">Hoja de seguimiento · impresa {formatLongDate(new Date().toISOString(), tenant)}</div>
-        </div>
-      </header>
+      <Letterhead
+        logo={tenant?.logo}
+        name={tenant?.name}
+        details={
+          <>
+            <span className="font-medium text-[#1c1917]">{program.name}</span> · Hoja de seguimiento · impresa{' '}
+            {formatLongDate(new Date().toISOString(), tenant)}
+          </>
+        }
+        doc="Seguimiento"
+        date={numericDate(new Date(), tenant?.settings?.timezone || DEFAULT_TIMEZONE)}
+      />
 
       <section className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-[11px]">
         <div><span className="text-muted-foreground">Paciente: </span><b>{patient?.name}</b> {patient?.mrn ? `(${patient.mrn})` : ''}</div>
@@ -93,12 +87,12 @@ export default async function ProgramPrintPage({ params }: { params: Promise<{ i
         <div><span className="text-muted-foreground">Ingreso: </span>{fmtDate(program.startDate)}{program.endDate ? ` · cierre ${fmtDate(program.endDate)}` : ''}</div>
         <div><span className="text-muted-foreground">Responsable: </span>{(program.responsible as User)?.name ?? '—'}</div>
         <div><span className="text-muted-foreground">Meta: </span>{program.goal || '—'}</div>
-        {patient?.allergies && <div className="col-span-2 font-semibold text-red">Alergias: {patient.allergies}</div>}
+        {patient?.allergies && <div className="col-span-2 font-semibold text-[#b91c1c]">Alergias: {patient.allergies}</div>}
       </section>
 
       {shownBackground.length > 0 && (
         <section className="mt-3">
-          <h2 className="text-[11px] font-bold tracking-wide text-primary uppercase">Antecedentes</h2>
+          <h2 className="text-[12px] font-semibold text-[#1c1917]">Antecedentes</h2>
           <dl className="mt-1 grid grid-cols-2 gap-x-6 gap-y-1 text-[11px]">
             {shownBackground.map(([l, v]) => (
               <div key={l} className={l.startsWith('Otros') ? 'col-span-2' : ''}>
@@ -110,7 +104,7 @@ export default async function ProgramPrintPage({ params }: { params: Promise<{ i
         </section>
       )}
 
-      <section className="mt-3 grid grid-cols-4 gap-2 rounded border border-border p-2 text-[11px]">
+      <section className="mt-3 grid grid-cols-4 gap-2 rounded-lg border border-[#e7e5e4] p-2 text-[11px]">
         <div><div className="text-muted-foreground">Peso inicial</div><b>{fmtWeight(start?.weightKg)}</b></div>
         <div><div className="text-muted-foreground">Peso actual</div><b>{fmtWeight(last?.weightKg)}</b></div>
         <div><div className="text-muted-foreground">Cambio total</div><b>{last && start && last !== start ? fmtDelta(last.deltaStart) : '—'}</b></div>
@@ -124,18 +118,18 @@ export default async function ProgramPrintPage({ params }: { params: Promise<{ i
       )}
 
       <section className="mt-3">
-        <h2 className="text-[11px] font-bold tracking-wide text-primary uppercase">Controles</h2>
+        <h2 className="text-[12px] font-semibold text-[#1c1917]">Controles</h2>
         {rows.length ? <ControlsTable rows={rows} /> : <p className="text-muted-foreground">Sin controles registrados.</p>}
       </section>
 
       <section className="mt-3 break-inside-avoid">
-        <h2 className="text-[11px] font-bold tracking-wide text-primary uppercase">Medidas corporales</h2>
+        <h2 className="text-[12px] font-semibold text-[#1c1917]">Medidas corporales</h2>
         <MeasuresTable rows={rows} />
       </section>
 
       {rows.some((r) => r.notes) && (
         <section className="mt-3">
-          <h2 className="text-[11px] font-bold tracking-wide text-primary uppercase">Notas de los controles</h2>
+          <h2 className="text-[12px] font-semibold text-[#1c1917]">Notas de los controles</h2>
           {rows
             .filter((r) => r.notes)
             .map((r) => (
@@ -147,8 +141,8 @@ export default async function ProgramPrintPage({ params }: { params: Promise<{ i
       )}
 
       <footer className="mt-10 grid grid-cols-2 gap-10 text-center text-[11px]">
-        <div className="border-t border-ink pt-1">Firma del médico</div>
-        <div className="border-t border-ink pt-1">Firma del paciente</div>
+        <div className="border-t border-[#1c1917] pt-1">Firma del médico</div>
+        <div className="border-t border-[#1c1917] pt-1">Firma del paciente</div>
       </footer>
     </main>
   )

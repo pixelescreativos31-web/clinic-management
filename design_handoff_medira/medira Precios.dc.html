@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:#fafaf7;color:#1c1917;font-family:Geist,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:#0f766e;text-decoration:none}
+a:hover{color:#115e59}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div data-screen-label="Precios" style="min-height:100vh;overflow-x:hidden;background:#fafaf7">
+
+<header style="position:sticky;top:0;z-index:40;background:#042f2e;color:#ffffff">
+  <div style="max-width:1160px;margin:0 auto;height:60px;padding:0 20px;display:flex;align-items:center;gap:16px">
+    <a href="medira Inicio.dc.html" style="flex:none;font-size:22px;font-weight:600;letter-spacing:-.04em;color:#ffffff">medira</a>
+    <nav style="flex:1 1 0;min-width:0;height:40px;overflow:hidden;display:{{ navDisplay }};flex-wrap:wrap;justify-content:center;gap:0 4px">
+      <a href="medira Inicio.dc.html#especialidades" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Especialidades</a>
+      <a href="medira Inicio.dc.html#dia" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Producto</a>
+      <a href="medira Inicio.dc.html#seguridad" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Seguridad</a>
+      <a href="#top" style="padding:9px 12px;font-size:15px;font-weight:600;color:#ffffff;line-height:22px">Precios</a>
+      <a href="#faq" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Preguntas</a>
+    </nav>
+    <sc-if value="{{ movil }}" hint-placeholder-val="{{ false }}"><span style="flex:1"></span></sc-if>
+    <sc-if value="{{ escritorio }}" hint-placeholder-val="{{ true }}"><a href="medira Flujos.dc.html#e1" style="flex:none;padding:9px 12px;font-size:15px;color:#ffffff">Entrar</a></sc-if>
+    <a href="medira Flujos.dc.html" style="flex:none;padding:9px 16px;border-radius:10px;background:#ffffff;color:#042f2e;font-size:15px;font-weight:500" style-hover="background:#e7e5e4">Empezar gratis</a>
+    <sc-if value="{{ movil }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toggleMenu }}" style="flex:none;height:44px;padding:0 4px 0 8px;border:0;background:none;color:#ffffff;font:500 15px Geist,sans-serif;cursor:pointer">{{ menuTxt }}</button></sc-if>
+  </div>
+  <sc-if value="{{ menuAbierto }}" hint-placeholder-val="{{ false }}">
+    <nav onClick="{{ toggleMenu }}" style="display:flex;flex-direction:column;padding:4px 20px 16px;border-top:1px solid #134e4a">
+      <a href="medira Inicio.dc.html" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Inicio</a>
+      <a href="medira Inicio.dc.html#especialidades" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Especialidades</a>
+      <a href="medira Inicio.dc.html#dia" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Producto</a>
+      <a href="#comparacion" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Comparación</a>
+      <a href="medira Flujos.dc.html#e1" style="padding:14px 0;font-size:17px;color:#ffffff">Entrar</a>
+    </nav>
+  </sc-if>
+</header>
+
+<section id="top" style="background:#042f2e;color:#ffffff">
+  <div style="max-width:1160px;margin:0 auto;padding:clamp(36px,6vw,80px) 20px 150px;text-align:center">
+    <h1 style="margin:0 auto;max-width:780px;font-weight:500;font-size:clamp(34px,5.6vw,64px);line-height:1.04;letter-spacing:-.04em;text-wrap:balance">Planes con límites claros.</h1>
+    <p style="margin:20px auto 0;max-width:540px;font-size:18px;line-height:1.55;color:#b6d4cf;text-wrap:pretty">Se paga por médico, no por personal ni por paciente. Los planes de pago empiezan con 3 días gratis.</p>
+    <div style="margin-top:28px;position:relative;display:inline-grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:10px;background:#0b3b39;border:1px solid #1f5b57">
+      <span style="position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:8px;background:#ffffff;transform:translateX({{ pillX }});transition:transform .2s ease"></span>
+      <button onClick="{{ setMensual }}" style="position:relative;height:40px;padding:0 18px;border:0;background:none;color:{{ mensualFg }};font:500 15px Geist,sans-serif;cursor:pointer;transition:color .2s">Mensual</button>
+      <button onClick="{{ setAnual }}" style="position:relative;height:40px;padding:0 18px;border:0;background:none;color:{{ anualFg }};font:500 15px Geist,sans-serif;cursor:pointer;transition:color .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px">Anual <span style="padding:2px 8px;border-radius:6px;background:#0f766e;color:#ffffff;font-size:12px;font-weight:600">2 meses gratis</span></button>
+    </div>
+  </div>
+</section>
+<section style="position:relative;max-width:1160px;margin:-150px auto 0;padding:0 20px">
+  <div style="margin:{{ pl.m }};padding:{{ pl.p }};display:{{ pl.display }};overflow-x:{{ pl.ox }};scroll-snap-type:x mandatory;scrollbar-width:none;grid-template-columns:{{ pl.cols }};gap:12px;align-items:stretch">
+    <sc-for list="{{ planes }}" as="p" hint-placeholder-count="4">
+      <div style="flex:{{ pl.flex }};scroll-snap-align:center;display:flex;flex-direction:column;padding:24px 20px 20px;border-radius:12px;border:1px solid {{ p.border }};background:{{ p.bg }};color:{{ p.fg }};transition:transform .2s ease" style-hover="transform:translateY(-4px)">
+        <div style="font-size:15px;font-weight:600;white-space:nowrap">{{ p.nombre }}</div>
+        <div style="margin-top:12px;display:flex;align-items:baseline;gap:4px">
+          <span style="font-size:15px;font-weight:500;color:{{ p.muted }}">{{ p.moneda }}</span>
+          <span style="font-size:{{ p.size }};font-weight:500;line-height:1;letter-spacing:-.05em;font-variant-numeric:tabular-nums">{{ p.monto }}</span>
+        </div>
+        <div style="margin-top:8px;min-height:40px;font-size:13px;line-height:1.5;color:{{ p.muted }};text-wrap:balance">{{ p.unidad }}</div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;font-size:14px;flex:1">
+          <sc-for list="{{ p.items }}" as="it" hint-placeholder-count="5">
+            <div style="padding:10px 0;border-top:1px solid {{ p.rule }}">{{ it }}</div>
+          </sc-for>
+        </div>
+        <a href="#" style="margin-top:20px;display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;font-size:15px;font-weight:500;background:{{ p.btnBg }};color:{{ p.btnFg }};border:1px solid {{ p.btnBorder }}">{{ p.cta }}</a>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 32px;padding:18px 20px;border:1px solid #e7e5e4;border-radius:12px;background:#ffffff;color:#1c1917;text-align:left">
+    <div style="flex:none">
+      <div style="font-size:15px;font-weight:600">Hospital</div>
+      <div style="font-size:13px;color:#57534e">Cotizado · contrato institucional</div>
+    </div>
+    <div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:4px 24px;font-size:14px">
+      <sc-for list="{{ hospitalItems }}" as="it" hint-placeholder-count="3"><span style="white-space:nowrap">{{ it }}</span></sc-for>
+    </div>
+    <a href="medira Sitio.dc.html#hospitales" style="flex:none;display:flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:10px;border:1px solid #d6d3d1;color:#1c1917;font-size:15px;font-weight:500" style-hover="border-color:#1c1917">Pedir demo</a>
+  </div>
+  <p style="margin:16px 0 0;font-size:14px;color:#57534e">Precios en dólares. Gratis no pide tarjeta. Los planes de pago se pueden cancelar durante la prueba sin costo.</p>
+</section>
+
+<section id="comparacion" style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px 0;scroll-margin-top:60px">
+  <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">Comparación completa</h2>
+  <div style="margin-top:28px;border-top:1px solid #d6d3d1;border-bottom:1px solid #d6d3d1;overflow-x:auto">
+    <div style="min-width:900px">
+      <div style="display:grid;grid-template-columns:1.5fr repeat(5,1fr);font-size:14px;font-weight:600">
+        <div style="padding:14px 12px 14px 0"></div>
+        <div style="padding:14px 12px">Gratis</div>
+        <div style="padding:14px 12px;background:#042f2e;color:#ffffff">Médico independiente</div>
+        <div style="padding:14px 12px">Consultorio</div>
+        <div style="padding:14px 12px">Clínica privada</div>
+        <div style="padding:14px 12px">Hospital</div>
+      </div>
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="5">
+        <div style="padding:24px 0 10px;border-top:1px solid #d6d3d1;font-size:17px;font-weight:600;line-height:1.2;color:{{ g.color }}">{{ g.titulo }}</div>
+        <sc-for list="{{ g.filas }}" as="f" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:1.5fr repeat(5,1fr);border-top:1px solid #e7e5e4;font-size:14px">
+            <div style="padding:12px 12px 12px 0;font-weight:500">{{ f.label }}</div>
+            <sc-for list="{{ f.vals }}" as="v" hint-placeholder-count="5">
+              <div style="padding:12px;color:{{ v.color }};background:{{ v.bg }};font-variant-numeric:tabular-nums">{{ v.t }}</div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:32px 56px;align-items:start">
+  <div>
+    <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">Extras sin cambiar de plan</h2>
+    <p style="margin:16px 0 0;max-width:440px;font-size:17px;color:#57534e;text-wrap:pretty">Paquetes de un mes, cobrados una sola vez. Duran hasta agotarse o 90 días.</p>
+    <div style="margin-top:28px;padding:20px 22px;border-radius:12px;background:#ffffff;border:1px solid #e7e5e4">
+      <div style="font-size:24px;line-height:1.1">La atención nunca se bloquea</div>
+      <p style="margin:8px 0 0;font-size:15px;color:#57534e">Al llegar al 80% de una cuota recibe un aviso. Al 100% solo se rechaza esa acción. Ver, editar, imprimir y exportar expedientes funciona siempre.</p>
+    </div>
+  </div>
+  <div style="border-bottom:1px solid #d6d3d1">
+    <sc-for list="{{ extras }}" as="x" hint-placeholder-count="7">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:16px 0;border-top:1px solid #d6d3d1">
+        <span style="font-size:16px">{{ x.t }}</span>
+        <span style="flex:none;font-size:18px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ x.p }}</span>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="faq" style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px;scroll-margin-top:60px">
+  <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">Sobre el cobro</h2>
+  <div style="margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:0 56px">
+    <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="6">
+      <div style="padding:20px 0 24px;border-top:1px solid #d6d3d1">
+        <div style="font-size:18px;font-weight:500;line-height:1.3;letter-spacing:-.015em">{{ q.q }}</div>
+        <p style="margin:10px 0 0;font-size:16px;line-height:1.6;color:#57534e;text-wrap:pretty">{{ q.a }}</p>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<footer style="background:#042f2e;color:#eef3f1;overflow:hidden">
+  <div style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px 0">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:32px">
+      <h2 style="margin:0;max-width:760px;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">¿Hospital o institución <em style="font-style:normal;color:#2dd4bf">pública?</em></h2>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px">
+        <a href="medira Sitio.dc.html#hospitales" style="padding:13px 22px;border-radius:10px;background:#eef3f1;color:#042f2e;font-weight:500" style-hover="background:#ffffff">Pedir demo guiada</a>
+        <a href="medira Inicio.dc.html" style="padding:4px 0;border-bottom:1px solid #eef3f1;color:#eef3f1;font-weight:500" style-hover="color:#2dd4bf;border-color:#2dd4bf">Volver al inicio</a>
+      </div>
+    </div>
+    <div style="margin-top:72px;padding:24px 0 28px;border-top:1px solid #134e4a;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px 32px;font-size:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px 24px">
+        <a href="medira Sitio.dc.html#ayuda" style="color:#a9bdb7" style-hover="color:#ffffff">Centro de ayuda</a>
+        <a href="medira Sitio.dc.html#estado" style="color:#a9bdb7" style-hover="color:#ffffff">Estado del servicio</a>
+        <a href="medira Sitio.dc.html#terminos" style="color:#a9bdb7" style-hover="color:#ffffff">Términos</a>
+        <a href="medira Sitio.dc.html#seguridad" style="color:#a9bdb7" style-hover="color:#ffffff">Privacidad</a>
+        <a href="mailto:soporte@medira.do" style="color:#a9bdb7" style-hover="color:#ffffff">soporte@medira.do</a>
+      </div>
+      <span style="color:#a9bdb7">© 2026 Pixeles Creativos</span>
+    </div>
+  </div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;periodo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Mensual&quot;,&quot;Anual&quot;],&quot;default&quot;:&quot;Mensual&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;destacarPlan&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { anual: null, movil: false, estrecho: false, menu: false };
+  componentDidMount() {
+    this._mq = () => { const movil = window.innerWidth < 760, estrecho = window.innerWidth < 1120; if (movil !== this.state.movil || estrecho !== this.state.estrecho) this.setState({ movil, estrecho, menu: false }); };
+    this._mq(); window.addEventListener('resize', this._mq);
+    if (window.ResizeObserver) { this._ro = new ResizeObserver(this._mq); this._ro.observe(document.documentElement); }
+    requestAnimationFrame(this._mq); this._mqT = setTimeout(this._mq, 400);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._mq); if (this._ro) this._ro.disconnect(); clearTimeout(this._mqT); }
+  renderVals() {
+    const anual = this.state.anual ?? ((this.props.periodo ?? 'Mensual') === 'Anual');
+    const destacar = this.props.destacarPlan ?? true;
+    const movil = this.state.movil;
+    const planes = [
+      { nombre: 'Gratis', m: 0, unidad: 'Para siempre, sin tarjeta', cta: 'Empezar gratis',
+        items: ['1 médico (el dueño)', '50 pacientes en total', 'WhatsApp con enlace manual', '5 estudios, 10 resúmenes con IA', '1 GB de almacenamiento'] },
+      { nombre: 'Médico independiente', m: 34.95, sufM: 'al mes', sufA: 'al año', cta: 'Probar 3 días gratis', hot: true,
+        items: ['1 médico y su asistente', 'Pacientes ilimitados', '500 WhatsApp automáticos/mes', '100 consultas dictadas con IA', '25 GB y logo propio'] },
+      { nombre: 'Consultorio', m: 49.95, sufM: 'al mes', sufA: 'al año', cta: 'Probar 3 días gratis',
+        items: ['Hasta 3 médicos', 'Personal ilimitado', '1,000 WhatsApp automáticos/mes', 'Comprobantes fiscales y ARS', '100 GB y auditoría de 1 año'] },
+      { nombre: 'Clínica privada', m: 14.95, sufM: 'por médico al mes, mínimo 4', sufA: 'por médico al año, mínimo 4', cta: 'Probar 3 días gratis',
+        items: ['Los médicos que pague', 'Personal ilimitado', '2,000 WhatsApp automáticos/mes', 'Varias sucursales y cajas', 'Soporte prioritario'] },
+      { nombre: 'Hospital', cotizado: true, unidad: 'Contrato institucional', cta: 'Pedir demo',
+        items: ['Médicos y cuotas por contrato', 'Exportación a su ERP', 'Auditoría de 5 años', 'Gerente de cuenta'] },
+    ].map((p) => {
+      const hot = !!p.hot && destacar;
+      return {
+        nombre: p.nombre, cta: p.cta, items: p.items,
+        moneda: p.cotizado ? '' : 'US$', monto: p.cotizado ? 'Cotizado' : p.m ? (anual ? p.m * 10 : p.m).toFixed(2) : '0', size: p.cotizado ? '28px' : '36px',
+        unidad: p.unidad ?? (anual ? p.sufA + ' · equivale a US$' + (p.m * 10 / 12).toFixed(2) + '/mes' : p.sufM),
+        bg: hot ? '#042f2e' : '#ffffff', fg: hot ? '#eef3f1' : '#1c1917', border: hot ? '#2b6b65' : '#e7e5e4',
+        muted: hot ? '#a9bdb7' : '#57534e', rule: hot ? '#134e4a' : '#f0eeec',
+        btnBg: hot ? '#2dd4bf' : p.m ? '#1c1917' : 'transparent', btnFg: hot ? '#042f2e' : p.m ? '#ffffff' : '#1c1917',
+        btnBorder: hot ? '#2dd4bf' : p.m ? '#1c1917' : '#d6d3d1',
+      };
+    });
+    const G = [
+      ['Cuenta', '#0f766e', [
+        ['Médicos', '1 (el dueño)', '1', 'Hasta 3', 'Los que pague', 'Contrato'],
+        ['Usuarios de personal', 'Ninguno', '1 (su asistente)', 'Ilimitados', 'Ilimitados', 'Ilimitados'],
+        ['Pacientes', '50 en total', 'Ilimitados', 'Ilimitados', 'Ilimitados', 'Ilimitados'],
+        ['Prueba', 'No', '3 días', '3 días', '3 días', 'Demo guiada'],
+      ]],
+      ['Cuotas mensuales', '#0f766e', [
+        ['WhatsApp automático', 'No (solo enlace manual)', '500/mes', '1,000/mes', '2,000/mes', 'Contrato'],
+        ['Consultas dictadas con IA', '5/mes', '100/mes', '300/mes', '100 por médico/mes', 'Contrato'],
+        ['Estudios con IA', '5/mes', '60/mes', '150/mes', '250/mes', 'Contrato'],
+        ['Resúmenes médicos con IA', '10/mes', '150/mes', '400/mes', '1,000/mes', 'Contrato'],
+        ['Órdenes de óptica', '15/mes', 'Ilimitadas', 'Ilimitadas', 'Ilimitadas', 'Ilimitadas'],
+        ['Recordatorios por correo', '100/mes', 'Ilimitados', 'Ilimitados', 'Ilimitados', 'Ilimitados'],
+      ]],
+      ['Archivos', '#0f766e', [
+        ['Almacenamiento', '1 GB (unas 2,500 fotos)', '25 GB', '100 GB', '50 GB por médico, mínimo 200 GB', 'Contrato'],
+        ['Tamaño máximo por archivo', '10 MB', '25 MB', '50 MB', '100 MB', 'Contrato'],
+        ['Fotos clínicas y antes / después', 'Sí', 'Sí', 'Sí', 'Sí', 'Sí'],
+      ]],
+      ['Contabilidad y documentos', '#0f766e', [
+        ['Contabilidad', 'Caja y recibos', '+ Gastos, cuentas por cobrar, informes', '+ Comprobantes fiscales (NCF / e-CF), ARS', '+ Varias sucursales y cajas', '+ Exportación a su ERP'],
+        ['Marca «Hecho con medira»', 'Sí', 'No', 'No', 'No', 'No'],
+        ['Logo propio en documentos', 'No', 'Sí', 'Sí', 'Sí', 'Sí'],
+      ]],
+      ['Seguridad y soporte', '#0f766e', [
+        ['Auditoría', 'No', '30 días', '1 año', '5 años', '5 años'],
+        ['Soporte', 'Centro de ayuda', 'Correo', 'Correo y WhatsApp', 'Prioritario', 'Gerente de cuenta'],
+      ]],
+    ];
+    const dim = (t) => t === 'No' || t === 'Ninguno' || t.startsWith('No (');
+    const grupos = G.map(([titulo, color, filas]) => ({ titulo, color, filas: filas.map(([label, ...v]) => ({ label, vals: v.map((t, i) => ({ t, color: dim(t) ? '#78716c' : '#1c1917', bg: i === 1 && destacar ? '#ffffff' : 'transparent' })) })) }));
+    const extras = [
+      ['500 mensajes de WhatsApp', 'US$10'], ['50 estudios con IA', 'US$10'], ['200 resúmenes con IA', 'US$10'],
+      ['100 consultas dictadas con IA', 'US$10'], ['50 GB de almacenamiento', 'US$5/mes'],
+      ['Usuario adicional en Médico independiente (máximo 1)', 'US$5/mes'], ['Médico adicional en Consultorio', 'US$15/mes'],
+    ].map(([t, p]) => ({ t, p }));
+    const faqs = [
+      ['¿El plan Gratis pide tarjeta?', 'No. Gratis no pide tarjeta ni datos de pago, y no tiene prueba porque es gratis para siempre.'],
+      ['¿Cómo funciona la prueba de 3 días?', 'Elige un plan de pago y registra su forma de pago. Hoy paga US$0 y el plan se activa de inmediato. El día 2 recibe un correo de aviso y el día 3 se cobra el primer mes. Si cancela antes, no se cobra nada.'],
+      ['¿Qué pasa si llego a un límite?', 'Al 80% de una cuota ve un aviso y nada se bloquea. Al 100% solo se rechaza esa acción, con la opción de mejorar el plan o comprar un paquete.'],
+      ['¿Qué pasa si falla mi pago?', 'Tiene 10 días de gracia con todo su plan activo y recordatorios por correo y WhatsApp. Si no paga, la cuenta baja a Gratis. Sus datos nunca se borran.'],
+      ['¿Puedo cambiar de plan?', 'Sí. Subir se aplica al instante y se prorratea. Bajar se aplica al siguiente cobro.'],
+      ['¿Por qué el personal es ilimitado desde Consultorio?', 'Lo que vale en cada plan es el médico. El personal no puede crear consultas, firmar recetas ni dictar; solo un médico puede.'],
+    ].map(([q, a]) => ({ q, a }));
+    return {
+      planes: planes.slice(0, 4), hospitalItems: planes[4].items, grupos, extras, faqs, movil, escritorio: !movil,
+      navDisplay: movil ? 'none' : 'flex', menuAbierto: movil && this.state.menu, menuTxt: this.state.menu ? 'Cerrar' : 'Menú',
+      toggleMenu: () => this.setState((s) => ({ menu: !s.menu })),
+      pl: movil ? { display: 'flex', ox: 'auto', m: '28px -20px 0', p: '4px 20px 8px', flex: '0 0 80%', cols: 'none' } : { display: 'grid', cols: this.state.estrecho ? 'repeat(2,minmax(0,1fr))' : 'repeat(4,minmax(0,1fr))', ox: 'visible', m: '32px 0 0', p: '0', flex: 'initial' },
+      setMensual: () => this.setState({ anual: false }), setAnual: () => this.setState({ anual: true }),
+      pillX: anual ? '100%' : '0%', mensualFg: anual ? '#d5e5e2' : '#042f2e', anualFg: anual ? '#042f2e' : '#d5e5e2',
+    };
+  }
+}
+</script>
+</body>
+</html>

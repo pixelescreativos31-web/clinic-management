@@ -76,7 +76,7 @@ export default async function SuperPage() {
   }))
 
   return (
-    <main className="min-h-screen bg-canvas">
+    <main className="min-h-screen bg-[#fafaf7]">
       <SuperConsole tenants={rows} activity={activity} />
     </main>
   )

@@ -124,14 +124,14 @@ function digestHtml(tenant: Tenant, appts: Appointment[], now: Date): string {
       return `<tr>
         <td style="padding:6px 14px 6px 0;white-space:nowrap;font-variant-numeric:tabular-nums">${formatTime(a.start, tenant)}</td>
         <td style="padding:6px 14px 6px 0">${firstName}</td>
-        <td style="padding:6px 0;color:#4b5f5a">${doctor}</td>
+        <td style="padding:6px 0;color:#44403c">${doctor}</td>
       </tr>`
     })
     .join('')
 
-  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
+  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c1917;max-width:520px">
     <h2 style="margin:0 0 2px;font-size:18px">${tenant.name}</h2>
-    <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
+    <p style="margin:0 0 16px;color:#44403c;font-size:14px">
       Agenda de hoy — ${formatDate(now, tenant)} · ${appts.length} ${appts.length === 1 ? 'cita' : 'citas'}
     </p>
     <table style="border-collapse:collapse;font-size:14px">${rows}</table>

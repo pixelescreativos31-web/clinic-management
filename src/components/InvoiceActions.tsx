@@ -57,23 +57,27 @@ export function InvoiceActions({
 
   return (
     <div className="flex flex-col gap-3">
-      {error && <p className="rounded-lg border border-red/25 bg-red-soft px-3 py-2 text-sm text-red">{error}</p>}
+      {error && (
+        <p role="alert" className="rounded-[10px] border border-[#b45309]/30 bg-[#faf3e6] px-3 py-2 text-sm text-[#b45309]">
+          {error}
+        </p>
+      )}
 
       {balanceDue > 0 && !payOpen && (
-        <button className={btnPrimary} onClick={() => { setAmount(String(balanceDue)); setPayOpen(true) }}>
+        <button className={`${btnPrimary} w-full`} onClick={() => { setAmount(String(balanceDue)); setPayOpen(true) }}>
           Registrar pago
         </button>
       )}
 
       {payOpen && (
-        <div className="rounded-lg border border-border p-3.5">
-          <div className="grid grid-cols-2 gap-2.5">
+        <div className="rounded-[10px] border border-[#d6d3d1] p-3.5">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Monto</label>
-              <input className={inputClass} inputMode="decimal" value={amount} autoFocus onChange={(e) => setAmount(e.target.value)} />
+              <label className="mb-1.5 block text-[13px] font-medium text-[#44403c]">Monto</label>
+              <input className={`${inputClass} tabular`} inputMode="decimal" value={amount} autoFocus onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Método de pago</label>
+              <label className="mb-1.5 block text-[13px] font-medium text-[#44403c]">Método de pago</label>
               <AppSelect value={method} onChange={setMethod} options={METHOD_OPTIONS} />
             </div>
           </div>
@@ -88,12 +92,12 @@ export function InvoiceActions({
       )}
 
       {canVoid && !voidOpen && (
-        <button className={btnGhost} onClick={() => setVoidOpen(true)}>Anular factura</button>
+        <button className={`${btnGhost} w-full`} onClick={() => setVoidOpen(true)}>Anular factura</button>
       )}
 
       {voidOpen && (
-        <div className="rounded-lg border border-red/25 p-3.5">
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Motivo de la anulación (obligatorio)</label>
+        <div className="rounded-[10px] border border-[#1c1917] p-3.5">
+          <label className="mb-1.5 block text-[13px] font-medium text-[#44403c]">Motivo de la anulación (obligatorio)</label>
           <input className={inputClass} value={reason} autoFocus onChange={(e) => setReason(e.target.value)} placeholder="p. ej., facturada por error" />
           <div className="mt-3 flex gap-2">
             <button className={`${btnDanger} flex-1`} disabled={pending || !reason.trim()} onClick={doVoid}>

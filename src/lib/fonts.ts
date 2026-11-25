@@ -1,21 +1,21 @@
-// src/lib/fonts.ts — EMR typography (design handoff 2026-10)
+// src/lib/fonts.ts — medira typography (design handoff 2026-11, "Clinical Calm")
 //
-// DM Sans for text, Bricolage Grotesque for headings and figures. Wired up in
-// src/app/(frontend)/layout.tsx; globals.css maps --font-dm-sans /
-// --font-bricolage to --font-sans / --font-display.
+// Geist for everything, Geist Mono for folios, codes and shortcuts. Wired up in
+// src/app/(frontend)/layout.tsx; globals.css maps --font-geist / --font-geist-mono
+// to --font-sans / --font-display / --font-mono.
 
-import { Bricolage_Grotesque, DM_Sans } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 
-export const dmSans = DM_Sans({
+export const geist = Geist({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
-  variable: '--font-dm-sans',
+  variable: '--font-geist',
   display: 'swap',
 })
 
-export const bricolage = Bricolage_Grotesque({
+export const geistMono = Geist_Mono({
   subsets: ['latin'],
-  weight: ['600', '700'],
-  variable: '--font-bricolage',
+  weight: ['400', '500'],
+  variable: '--font-geist-mono',
   display: 'swap',
 })

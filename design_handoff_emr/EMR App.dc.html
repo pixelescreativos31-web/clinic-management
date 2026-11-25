@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9ecec;color:#15201e;font-family:'DM Sans',ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:#0d6e60;text-decoration:none}a:hover{color:#0a584d}
+*{box-sizing:border-box}
+input,textarea,button{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#9aa4a4}
+::-webkit-scrollbar{display:none}
+@keyframes emr-up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes emr-toast{0%{opacity:0;transform:translate(-50%,8px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:{{ outerPad }}">
+<div data-screen-label="EMR App" style="position:relative;width:100%;max-width:{{ shellW }};height:{{ shellH }};background:#f4f6f6;border-radius:{{ shellR }};border:{{ shellBorder }};box-shadow:{{ shellShadow }};overflow:hidden;display:flex">
+
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ false }}">
+  <aside style="width:232px;flex-shrink:0;background:#fff;border-right:1px solid #e3e7e7;display:flex;flex-direction:column;padding:20px 12px;gap:4px">
+    <div style="display:flex;align-items:center;gap:10px;padding:0 10px 18px"><span style="width:28px;height:28px;border-radius:8px;background:#0d6e60;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">+</span><span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;letter-spacing:-.02em">EMR</span></div>
+    <div style="margin:0 10px 14px;padding:10px 12px;border-radius:10px;background:#f4f6f6;border:1px solid #e3e7e7"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6b7577;font-weight:600">Consultorio</div><div style="font-size:13px;font-weight:600;margin-top:2px">Dra. Carmen Rosario</div></div>
+    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+      <button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;background:{{ n.bg }};color:{{ n.fg }}"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;font-variation-settings:'FILL' {{ n.fill }},'wght' 400,'opsz' 24">{{ n.icon }}</span>{{ n.label }}</button>
+    </sc-for>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid #e3e7e7"><span style="width:32px;height:32px;border-radius:999px;background:#e6f1ee;color:#0d6e60;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">{{ userInitials }}</span><span style="min-width:0"><span style="display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ userName }}</span><span style="display:block;font-size:11px;color:#6b7577">{{ roleLabel }}</span></span></div>
+  </aside>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative">
+
+    <header style="position:sticky;top:0;z-index:10;background:rgba(244,246,246,.92);backdrop-filter:blur(8px);border-bottom:1px solid #e3e7e7;padding:{{ headerPad }};display:flex;align-items:center;gap:12px;min-height:56px">
+      <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ goBack }}" style="all:unset;cursor:pointer;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e3e7e7;color:#15201e;flex-shrink:0"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">arrow_back</span></button>
+      </sc-if>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:18px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ screenTitle }}</div>
+        <div style="font-size:12px;color:#6b7577;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ screenSub }}</div>
+      </div>
+      <sc-if value="{{ mobile }}" hint-placeholder-val="{{ true }}">
+        <span style="width:36px;height:36px;border-radius:999px;background:#e6f1ee;color:#0d6e60;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">{{ userInitials }}</span>
+      </sc-if>
+    </header>
+
+    <div style="flex:1;overflow:auto;padding:{{ contentPad }};scrollbar-width:none">
+
+      <!-- INICIO -->
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;gap:14px;grid-template-columns:{{ homeCols }}">
+          <div style="grid-column:1/-1;background:#0d6e60;color:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9fe3d4">Siguiente paciente</span><span style="font-size:12px;background:rgba(255,255,255,.15);border-radius:999px;padding:3px 10px">{{ nextTimeLabel }}</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0">{{ nextInitials }}</span><span style="min-width:0"><span style="display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:20px;letter-spacing:-.01em">{{ nextName }}</span><span style="display:block;font-size:13px;color:#cfe8e1">{{ nextReason }}</span></span></div>
+            <div style="display:flex;gap:8px">
+              <button onClick="{{ nextPrimary }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:13px;border-radius:10px;background:#fff;color:#0d6e60;font-weight:600;font-size:14px;min-height:46px;box-sizing:border-box">{{ nextPrimaryLabel }}</button>
+              <button onClick="{{ openNextPatient }}" style="all:unset;cursor:pointer;padding:13px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:500;font-size:14px;min-height:46px;box-sizing:border-box">Expediente</button>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">Citas hoy</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:28px;line-height:1.1;margin-top:4px">{{ kpiTotal }}</div></div>
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">Atendidas</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:28px;line-height:1.1;margin-top:4px;color:#1a7a50">{{ kpiDone }}</div></div>
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">En sala</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:28px;line-height:1.1;margin-top:4px;color:#2563ab">{{ kpiWaiting }}</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-content:start">
+            <button onClick="{{ openSheet }}" style="all:unset;cursor:pointer;background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:16px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;gap:8px"><span style="width:28px;height:28px;border-radius:8px;background:#e6f1ee;color:#0d6e60;display:flex;align-items:center;justify-content:center;font-weight:700"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">calendar_add_on</span></span><span style="font-size:14px;font-weight:600">Nueva cita</span></button>
+            <button onClick="{{ openWalkin }}" style="all:unset;cursor:pointer;background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:16px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;gap:8px"><span style="width:28px;height:28px;border-radius:8px;background:#e9f0f9;color:#2563ab;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">directions_walk</span></span><span style="font-size:14px;font-weight:600">Paciente sin cita</span></button>
+            <button onClick="{{ newPatientToast }}" style="all:unset;cursor:pointer;background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:16px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;gap:8px"><span style="width:28px;height:28px;border-radius:8px;background:#f1f3f3;color:#15201e;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">person_add</span></span><span style="font-size:14px;font-weight:600">Nuevo paciente</span></button>
+            <button onClick="{{ goBilling }}" style="all:unset;cursor:pointer;background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:16px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;gap:8px"><span style="width:28px;height:28px;border-radius:8px;background:#faf3e6;color:#b45309;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">payments</span></span><span style="font-size:14px;font-weight:600">Cobrar</span></button>
+          </div>
+          <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef1f1"><span style="font-weight:600;font-size:14px">Saldos pendientes</span><span style="font-size:12px;color:#b45309;font-weight:600;font-variant-numeric:tabular-nums">RD$ 4,300</span></div>
+            <button onClick="{{ goBilling }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #eef1f1;min-height:52px"><span style="font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums;width:64px;flex-shrink:0">F-0231</span><span style="flex:1;min-width:0;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">María Peña</span><span style="font-size:14px;font-weight:600;color:#b45309;font-variant-numeric:tabular-nums">RD$ 1,500</span></button>
+            <button onClick="{{ goBilling }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #eef1f1;min-height:52px"><span style="font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums;width:64px;flex-shrink:0">F-0228</span><span style="flex:1;min-width:0;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Pedro Núñez</span><span style="font-size:14px;font-weight:600;color:#b45309;font-variant-numeric:tabular-nums">RD$ 2,800</span></button>
+          </div>
+          <div style="grid-column:1/-1;background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef1f1"><span style="font-weight:600;font-size:14px">Próximas hoy</span><button onClick="{{ goAgenda }}" style="all:unset;cursor:pointer;font-size:13px;font-weight:600;color:#0d6e60">Ver agenda ›</button></div>
+            <sc-for list="{{ upcoming }}" as="a" hint-placeholder-count="4">
+              <button onClick="{{ a.openPatient }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #eef1f1;min-height:56px">
+                <span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;width:44px">{{ a.time }}</span>
+                <span style="width:34px;height:34px;border-radius:999px;background:{{ a.avBg }};color:{{ a.avFg }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">{{ a.initials }}</span>
+                <span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</span><span style="display:block;font-size:12px;color:#6b7577;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.reason }}</span></span>
+                <span style="font-size:11px;font-weight:600;border-radius:6px;padding:4px 8px;background:{{ a.stBg }};color:{{ a.stFg }};white-space:nowrap">{{ a.stLabel }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- AGENDA -->
+      <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:6px;overflow:auto;padding-bottom:2px;scrollbar-width:none">
+            <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+              <button onClick="{{ d.pick }}" style="all:unset;cursor:pointer;flex:0 0 auto;width:52px;padding:8px 0;border-radius:12px;text-align:center;background:{{ d.bg }};color:{{ d.fg }};border:1px solid {{ d.border }}"><span style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8">{{ d.dow }}</span><span style="display:block;font-size:17px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums">{{ d.num }}</span></button>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:inline-flex;background:#fff;border:1px solid #e3e7e7;border-radius:10px;padding:3px">
+              <button onClick="{{ setList }}" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;background:{{ listBg }};color:{{ listFg }}">Lista</button>
+              <button onClick="{{ setTimeline }}" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;background:{{ tlBg }};color:{{ tlFg }}">Línea de tiempo</button>
+            </div>
+            <span style="flex:1"></span>
+            <span style="font-size:12px;color:#6b7577">{{ agendaCount }}</span>
+          </div>
+          <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ appts }}" as="a" hint-placeholder-count="6">
+                <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;border-left:4px solid {{ a.stFg }}">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;width:48px">{{ a.time }}</span>
+                    <button onClick="{{ a.openPatient }}" style="all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:10px">
+                      <span style="width:36px;height:36px;border-radius:999px;background:{{ a.avBg }};color:{{ a.avFg }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">{{ a.initials }}</span>
+                      <span style="min-width:0"><span style="display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</span><span style="display:block;font-size:12px;color:#6b7577;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.reason }}</span></span>
+                    </button>
+                    <span style="font-size:11px;font-weight:600;border-radius:6px;padding:4px 8px;background:{{ a.stBg }};color:{{ a.stFg }};white-space:nowrap">{{ a.stLabel }}</span>
+                  </div>
+                  <sc-if value="{{ a.canCheckin }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:8px">
+                      <button onClick="{{ a.checkin }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:11px;border-radius:10px;background:#0d6e60;color:#fff;font-size:13px;font-weight:600;min-height:44px;box-sizing:border-box">Registrar llegada</button>
+                      <button onClick="{{ a.remind }}" style="all:unset;cursor:pointer;padding:11px 14px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;color:#1a7a50;font-size:13px;font-weight:600;min-height:44px;box-sizing:border-box">WhatsApp</button>
+                      <button onClick="{{ a.noshow }}" style="all:unset;cursor:pointer;padding:11px 14px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;color:#6b7577;font-size:13px;font-weight:500;min-height:44px;box-sizing:border-box">No asistió</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ a.canAttend }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:8px">
+                      <button onClick="{{ a.attend }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:11px;border-radius:10px;background:#2563ab;color:#fff;font-size:13px;font-weight:600;min-height:44px;box-sizing:border-box">Atender ahora</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ a.canBill }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:8px">
+                      <button onClick="{{ a.bill }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:11px;border-radius:10px;border:1px solid #0d6e60;color:#0d6e60;font-size:13px;font-weight:600;min-height:44px;box-sizing:border-box">Cobrar consulta</button>
+                      <button onClick="{{ printToast }}" style="all:unset;cursor:pointer;padding:11px 14px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;color:#15201e;font-size:13px;font-weight:500;min-height:44px;box-sizing:border-box">Imprimir receta</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isTimeline }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+              <sc-for list="{{ slots }}" as="s" hint-placeholder-count="8">
+                <div style="display:grid;grid-template-columns:56px 1fr;border-bottom:1px solid #eef1f1;min-height:52px;background:{{ s.rowBg }}">
+                  <div style="padding:10px 0 0 12px;font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums;border-right:1px solid #eef1f1;position:relative">{{ s.time }}<sc-if value="{{ s.isNow }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:-5px;top:14px;width:9px;height:9px;border-radius:999px;background:#b3261e"></span></sc-if></div>
+                  <sc-if value="{{ s.free }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ openSheet }}" style="all:unset;cursor:pointer;margin:6px 10px;border:1px dashed #cfd6d6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7577;min-height:40px">Libre · tocar para agendar</button>
+                  </sc-if>
+                  <sc-if value="{{ s.busy }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ s.openPatient }}" style="all:unset;cursor:pointer;margin:6px 10px;border-radius:8px;padding:8px 10px;background:{{ s.stBg }};border-left:3px solid {{ s.stFg }};display:flex;align-items:center;gap:8px;min-height:40px"><span style="flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span><span style="font-size:11px;font-weight:600;color:{{ s.stFg }}">{{ s.stLabel }}</span></button>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- PACIENTES -->
+      <sc-if value="{{ isPatients }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <input value="{{ query }}" onChange="{{ setQuery }}" placeholder="Buscar por nombre, teléfono o expediente" style="width:100%;height:48px;border-radius:12px;border:1px solid #e3e7e7;background:#fff;padding:0 14px;font-size:15px;outline:none">
+          <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+            <sc-for list="{{ patients }}" as="p" hint-placeholder-count="8">
+              <button onClick="{{ p.open }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 14px;border-bottom:1px solid #eef1f1;min-height:60px">
+                <span style="width:38px;height:38px;border-radius:999px;background:{{ p.avBg }};color:{{ p.avFg }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">{{ p.initials }}</span>
+                <span style="flex:1;min-width:0"><span style="display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span><span style="display:block;font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums">{{ p.sub }}</span></span>
+                <sc-if value="{{ p.hasAllergy }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:700;color:#b3261e;background:#fbeceb;border-radius:5px;padding:3px 6px">ALERGIA</span></sc-if>
+                <span style="font-size:11px;color:#6b7577;background:#f1f3f3;border-radius:5px;padding:3px 6px;font-variant-numeric:tabular-nums">{{ p.mrn }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- EXPEDIENTE -->
+      <sc-if value="{{ isPatient }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;gap:12px;grid-template-columns:{{ patientCols }};align-items:start">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:48px;height:48px;border-radius:999px;background:#e6f1ee;color:#0d6e60;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0">MP</span><span style="min-width:0;flex:1"><span style="display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:20px;letter-spacing:-.01em">María Peña</span><span style="display:block;font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums">EXP-00412 · 34 años · F · O+ · ARS Humano</span></span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#fbeceb;color:#b3261e;font-size:13px;font-weight:600"><span style="width:18px;height:18px;border-radius:999px;background:#b3261e;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:13px;line-height:1">priority_high</span></span>Alergias: Penicilina, AINEs</div>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+                <button onClick="{{ goVisit }}" style="all:unset;cursor:pointer;grid-column:1/-1;display:flex;align-items:center;justify-content:center;padding:13px;border-radius:10px;background:#0d6e60;color:#fff;font-size:14px;font-weight:600;min-height:48px;box-sizing:border-box">Registrar consulta</button>
+                <a href="tel:8095550142" style="display:flex;align-items:center;justify-content:center;padding:11px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;color:#15201e;font-size:13px;font-weight:600;min-height:44px">Llamar</a>
+                <button onClick="{{ remindToast }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:11px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;color:#1a7a50;font-size:13px;font-weight:600;min-height:44px;box-sizing:border-box">WhatsApp</button>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px 16px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:14px">Última medición</span><span style="font-size:12px;color:#6b7577">12 sep 2026</span></div>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px">
+                <div style="text-align:center;padding:8px 4px;border-radius:10px;background:#f4f6f6"><div style="font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">128/82</div><div style="font-size:10px;color:#6b7577">PA</div></div>
+                <div style="text-align:center;padding:8px 4px;border-radius:10px;background:#f4f6f6"><div style="font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">64 kg</div><div style="font-size:10px;color:#6b7577">Peso</div></div>
+                <div style="text-align:center;padding:8px 4px;border-radius:10px;background:#f4f6f6"><div style="font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">24.1</div><div style="font-size:10px;color:#6b7577">IMC</div></div>
+                <div style="text-align:center;padding:8px 4px;border-radius:10px;background:#f4f6f6"><div style="font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">82 cm</div><div style="font-size:10px;color:#6b7577">Cintura</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:6px;overflow:auto;scrollbar-width:none">
+              <sc-for list="{{ patientTabs }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;flex:0 0 auto;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:{{ t.bg }};color:{{ t.fg }};border:1px solid {{ t.border }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ ptHistory }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ timeline }}" as="e" hint-placeholder-count="4">
+                  <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:{{ e.fg }};background:{{ e.bg }};border-radius:5px;padding:3px 7px">{{ e.kind }}</span><span style="font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums">{{ e.date }}</span></div>
+                    <div style="font-size:14px;font-weight:600">{{ e.title }}</div>
+                    <div style="font-size:13px;color:#6b7577">{{ e.detail }}</div>
+                    <sc-if value="{{ e.hasRx }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap"><span style="font-size:12px;font-weight:600;color:#0d6e60;background:#e6f1ee;border-radius:6px;padding:5px 8px">{{ e.rx }}</span><button onClick="{{ printToast }}" style="all:unset;cursor:pointer;font-size:12px;font-weight:600;color:#6b7577;border:1px solid #e3e7e7;border-radius:6px;padding:5px 8px">Imprimir receta</button></div></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ptInfo }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Teléfono</span><span style="font-weight:500;font-variant-numeric:tabular-nums">809-555-0142</span></div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Nacimiento</span><span style="font-weight:500">14 mar 1992</span></div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Dirección</span><span style="font-weight:500;text-align:right">Los Jardines, Santiago</span></div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Ocupación</span><span style="font-weight:500">Contadora</span></div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Referido por</span><span style="font-weight:500">Dr. Luis Báez</span></div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">APP</span><span style="font-weight:500;text-align:right">Asma leve</span></div>
+                <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;font-size:14px"><span style="color:#6b7577">APF</span><span style="font-weight:500;text-align:right">Madre hipertensa, padre DM2</span></div>
+              </div>
+              <button onClick="{{ editToast }}" style="all:unset;cursor:pointer;text-align:center;padding:12px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box">Editar datos</button>
+            </sc-if>
+            <sc-if value="{{ ptInvoices }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+                <button onClick="{{ goBilling }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #eef1f1;min-height:52px"><span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">F-0231</span><span style="flex:1;font-size:13px;color:#6b7577">12 sep 2026</span><span style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">RD$ 2,500</span><span style="font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;background:#faf3e6;color:#b45309">Parcial</span></button>
+                <button onClick="{{ goBilling }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #eef1f1;min-height:52px"><span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">F-0197</span><span style="flex:1;font-size:13px;color:#6b7577">14 ago 2026</span><span style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">RD$ 2,500</span><span style="font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;background:#e8f4ec;color:#1a7a50">Pagada</span></button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- CONSULTA -->
+      <sc-if value="{{ isVisit }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:720px;padding-bottom:84px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#fbeceb;color:#b3261e;font-size:13px;font-weight:600"><span style="width:18px;height:18px;border-radius:999px;background:#b3261e;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:13px;line-height:1">priority_high</span></span>Alergias: Penicilina, AINEs</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:12px;color:#6b7577">Formato:</span>
+            <sc-for list="{{ formats }}" as="f" hint-placeholder-count="3">
+              <button onClick="{{ f.pick }}" style="all:unset;cursor:pointer;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;background:{{ f.bg }};color:{{ f.fg }};border:1px solid {{ f.border }}">{{ f.label }}</button>
+            </sc-for>
+          </div>
+          <!-- required -->
+          <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+            <label style="font-size:13px;font-weight:600">Motivo de consulta</label>
+            <textarea rows="2" placeholder="Fiebre de 2 días, dolor de garganta…" style="width:100%;border-radius:10px;border:1px solid #e3e7e7;padding:11px 12px;font-size:15px;resize:none;outline:none;background:#fafbfb"></textarea>
+            <label style="font-size:13px;font-weight:600;margin-top:4px">Diagnóstico</label>
+            <input placeholder="ej. Faringitis viral" style="width:100%;height:46px;border-radius:10px;border:1px solid #e3e7e7;padding:0 12px;font-size:15px;outline:none;background:#fafbfb">
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="font-size:12px;color:#6b7577;align-self:center">Frecuentes:</span><button style="all:unset;cursor:pointer;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:#f1f3f3">Hipertensión</button><button style="all:unset;cursor:pointer;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:#f1f3f3">Control</button><button style="all:unset;cursor:pointer;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:#f1f3f3">IVU</button></div>
+          </div>
+          <!-- optional sections -->
+          <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="5">
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+              <button onClick="{{ sec.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:14px;min-height:52px"><span style="flex:1;font-size:14px;font-weight:600">{{ sec.title }}</span><span style="font-size:12px;color:#6b7577">{{ sec.hint }}</span><span style="width:24px;height:24px;border-radius:999px;background:#f1f3f3;display:flex;align-items:center;justify-content:center;color:#15201e;transform:{{ sec.rot }};transition:transform .2s"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">expand_more</span></span></button>
+              <sc-if value="{{ sec.open }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:10px;border-top:1px solid #eef1f1;padding-top:12px">
+                  <sc-if value="{{ sec.isVitals }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px">
+                      <sc-for list="{{ vitals }}" as="v" hint-placeholder-count="6">
+                        <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;color:#6b7577">{{ v.label }}</span><input inputMode="decimal" placeholder="{{ v.ph }}" style="height:46px;border-radius:10px;border:1px solid #e3e7e7;padding:0 10px;font-size:16px;outline:none;background:#fafbfb;width:100%;font-variant-numeric:tabular-nums"></label>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ sec.isAsk }}" hint-placeholder-val="{{ false }}">
+                    <sc-for list="{{ asks }}" as="q" hint-placeholder-count="4">
+                      <div style="display:flex;align-items:center;gap:8px;min-height:44px"><span style="flex:1;font-size:14px">{{ q.label }}</span><button onClick="{{ q.yes }}" style="all:unset;cursor:pointer;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:{{ q.yesBg }};color:{{ q.yesFg }};border:1px solid #e3e7e7">Sí</button><button onClick="{{ q.no }}" style="all:unset;cursor:pointer;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:{{ q.noBg }};color:{{ q.noFg }};border:1px solid #e3e7e7">No</button></div>
+                    </sc-for>
+                    <textarea rows="2" placeholder="Sueño, agua, otros hallazgos…" style="width:100%;border-radius:10px;border:1px solid #e3e7e7;padding:11px 12px;font-size:15px;resize:none;outline:none;background:#fafbfb"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ sec.isRx }}" hint-placeholder-val="{{ false }}">
+                    <sc-for list="{{ rxRows }}" as="r" hint-placeholder-count="1">
+                      <div style="display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;background:#f4f6f6">
+                        <input placeholder="Medicamento y dosis (Amoxicilina 500 mg)" style="height:46px;border-radius:10px;border:1px solid #e3e7e7;padding:0 12px;font-size:15px;outline:none;background:#fff;width:100%">
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                          <sc-for list="{{ freqs }}" as="fq" hint-placeholder-count="5"><button style="all:unset;cursor:pointer;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:600;background:#fff;border:1px solid #e3e7e7">{{ fq }}</button></sc-for>
+                        </div>
+                        <div style="display:grid;grid-template-columns:90px 1fr;gap:8px"><input inputMode="numeric" placeholder="Días" style="height:46px;border-radius:10px;border:1px solid #e3e7e7;padding:0 12px;font-size:15px;outline:none;background:#fff;width:100%"><input placeholder="Indicaciones (después de comer)" style="height:46px;border-radius:10px;border:1px solid #e3e7e7;padding:0 12px;font-size:15px;outline:none;background:#fff;width:100%"></div>
+                      </div>
+                    </sc-for>
+                    <button onClick="{{ addRx }}" style="all:unset;cursor:pointer;font-size:13px;font-weight:600;color:#0d6e60;padding:10px 0">+ Agregar medicamento</button>
+                  </sc-if>
+                  <sc-if value="{{ sec.isLab }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                      <sc-for list="{{ labs }}" as="lb" hint-placeholder-count="6"><button onClick="{{ lb.toggle }}" style="all:unset;cursor:pointer;padding:9px 12px;border-radius:999px;font-size:13px;font-weight:600;background:{{ lb.bg }};color:{{ lb.fg }};border:1px solid {{ lb.border }}">{{ lb.label }}</button></sc-for>
+                    </div>
+                    <textarea rows="2" placeholder="Resultados u observaciones…" style="width:100%;border-radius:10px;border:1px solid #e3e7e7;padding:11px 12px;font-size:15px;resize:none;outline:none;background:#fafbfb"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ sec.isFollow }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                      <sc-for list="{{ follows }}" as="fw" hint-placeholder-count="4"><button onClick="{{ fw.pick }}" style="all:unset;cursor:pointer;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:{{ fw.bg }};color:{{ fw.fg }};border:1px solid {{ fw.border }}">{{ fw.label }}</button></sc-for>
+                    </div>
+                    <textarea rows="2" placeholder="Plan / tratamiento no farmacológico…" style="width:100%;border-radius:10px;border:1px solid #e3e7e7;padding:11px 12px;font-size:15px;resize:none;outline:none;background:#fafbfb"></textarea>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <!-- sticky save -->
+        <div style="position:absolute;left:0;right:0;bottom:{{ saveBottom }};padding:10px {{ sidePad }};background:linear-gradient(to top,#f4f6f6 70%,rgba(244,246,246,0));display:flex;gap:8px;max-width:{{ saveMaxW }}">
+          <button onClick="{{ saveVisit }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:14px;border-radius:12px;background:#0d6e60;color:#fff;font-size:15px;font-weight:600;min-height:50px;box-sizing:border-box;box-shadow:0 8px 20px -10px rgba(13,110,96,.6)">Guardar consulta</button>
+          <button onClick="{{ saveAndPrint }}" style="all:unset;cursor:pointer;padding:14px 16px;border-radius:12px;border:1px solid #0d6e60;background:#fff;color:#0d6e60;font-size:15px;font-weight:600;min-height:50px;box-sizing:border-box">Guardar e imprimir</button>
+        </div>
+      </sc-if>
+
+      <!-- COBRAR -->
+      <sc-if value="{{ isBilling }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:560px">
+          <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #eef1f1"><span style="width:38px;height:38px;border-radius:999px;background:#e6f1ee;color:#0d6e60;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">MP</span><span style="flex:1;min-width:0"><span style="display:block;font-size:15px;font-weight:600">María Peña</span><span style="display:block;font-size:12px;color:#6b7577;font-variant-numeric:tabular-nums">Factura F-0231 · 8 oct 2026</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span>Consulta general</span><span style="font-weight:600;font-variant-numeric:tabular-nums">RD$ 2,500</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:14px"><span>Electrocardiograma</span><span style="font-weight:600;font-variant-numeric:tabular-nums">RD$ 1,800</span></div>
+            <button onClick="{{ itemToast }}" style="all:unset;cursor:pointer;display:block;width:100%;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #eef1f1;font-size:13px;font-weight:600;color:#0d6e60">+ Agregar servicio</button>
+            <div style="display:flex;justify-content:space-between;padding:12px 16px;font-size:14px;color:#6b7577"><span>Pagado</span><span style="font-variant-numeric:tabular-nums">RD$ 2,800</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:14px 16px;background:#faf3e6"><span style="font-size:14px;font-weight:600;color:#b45309">Saldo pendiente</span><span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:26px;color:#b45309;font-variant-numeric:tabular-nums">{{ balanceLabel }}</span></div>
+          </div>
+          <sc-if value="{{ hasBalance }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:13px;font-weight:600">Registrar pago</span>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+              <sc-for list="{{ methods }}" as="m" hint-placeholder-count="3"><button onClick="{{ m.pick }}" style="all:unset;cursor:pointer;text-align:center;padding:11px 6px;border-radius:10px;font-size:13px;font-weight:600;background:{{ m.bg }};color:{{ m.fg }};border:1px solid {{ m.border }};min-height:44px;box-sizing:border-box">{{ m.label }}</button></sc-for>
+            </div>
+            <div style="display:flex;gap:8px"><input value="{{ payAmount }}" onChange="{{ setPayAmount }}" inputMode="numeric" style="flex:1;height:50px;border-radius:10px;border:1px solid #e3e7e7;padding:0 14px;font-size:20px;font-weight:600;outline:none;background:#fafbfb;font-variant-numeric:tabular-nums;min-width:0"><button onClick="{{ payFull }}" style="all:unset;cursor:pointer;padding:0 14px;border-radius:10px;border:1px solid #e3e7e7;font-size:13px;font-weight:600;color:#0d6e60">Total</button></div>
+            <button onClick="{{ recordPay }}" style="all:unset;cursor:pointer;text-align:center;padding:14px;border-radius:12px;background:#0d6e60;color:#fff;font-size:15px;font-weight:600;min-height:50px;box-sizing:border-box">Registrar pago</button>
+          </div>
+          </sc-if>
+          <div style="display:flex;gap:8px"><button onClick="{{ printToast }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:12px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box">Imprimir recibo</button><button onClick="{{ remindToast }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:12px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;color:#1a7a50;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box">Enviar por WhatsApp</button></div>
+        </div>
+      </sc-if>
+
+      <!-- REPORTES -->
+      <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:6px;overflow:auto;scrollbar-width:none"><button style="all:unset;cursor:pointer;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#15201e;color:#fff">Octubre 2026</button><button style="all:unset;cursor:pointer;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#fff;border:1px solid #e3e7e7">Septiembre</button><button style="all:unset;cursor:pointer;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#fff;border:1px solid #e3e7e7">Agosto</button></div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">Ingresos</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:24px;margin-top:4px;font-variant-numeric:tabular-nums">RD$ 86,400</div><div style="font-size:12px;color:#1a7a50;margin-top:2px">+12% vs. sep</div></div>
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">Por cobrar</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:24px;margin-top:4px;color:#b45309;font-variant-numeric:tabular-nums">RD$ 4,300</div><div style="font-size:12px;color:#6b7577;margin-top:2px">2 facturas</div></div>
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">Consultas</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:24px;margin-top:4px">38</div><div style="font-size:12px;color:#6b7577;margin-top:2px">6 sin cita</div></div>
+            <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px"><div style="font-size:12px;color:#6b7577">No asistieron</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:24px;margin-top:4px">3</div><div style="font-size:12px;color:#6b7577;margin-top:2px">7% de las citas</div></div>
+          </div>
+          <div style="background:#fff;border:1px solid #e3e7e7;border-radius:14px;padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:14px">Consultas por día</span><span style="font-size:12px;color:#6b7577">últimos 14 días</span></div>
+            <div style="display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:14px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="14"><span style="flex:1;border-radius:4px 4px 0 0;background:{{ b.color }};height:{{ b.h }}"></span></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px"><button onClick="{{ printToast }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:12px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box">Imprimir reporte</button><button onClick="{{ exportToast }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:12px;border-radius:10px;border:1px solid #e3e7e7;background:#fff;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box">Exportar Excel</button></div>
+        </div>
+      </sc-if>
+
+    </div>
+
+    <!-- BOTTOM TABS (mobile) -->
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ true }}">
+      <nav style="flex-shrink:0;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid #e3e7e7;padding:6px 4px 14px">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+          <button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;min-height:48px;color:{{ n.fg }}"><span style="width:52px;height:30px;border-radius:999px;background:{{ n.bg }};display:flex;align-items:center;justify-content:center"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' {{ n.fill }},'wght' 400,'opsz' 24">{{ n.icon }}</span></span><span style="font-size:10px;font-weight:600">{{ n.label }}</span></button>
+        </sc-for>
+      </nav>
+    </sc-if>
+
+    <!-- SHEET: nueva cita / sin cita -->
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(12,33,29,.45);z-index:20"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;z-index:21;background:#fff;border-radius:18px 18px 0 0;padding:10px 16px 20px;display:flex;flex-direction:column;gap:12px;animation:emr-up .25s ease-out;max-width:560px;margin:0 auto">
+        <span style="width:40px;height:4px;border-radius:999px;background:#d7dddd;align-self:center"></span>
+        <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:18px">{{ sheetTitle }}</div>
+        <input placeholder="Paciente (nombre o teléfono)" style="width:100%;height:48px;border-radius:12px;border:1px solid #e3e7e7;padding:0 14px;font-size:15px;outline:none;background:#fafbfb">
+        <sc-if value="{{ sheetIsAppt }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12px;color:#6b7577">Horarios libres hoy</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ freeSlots }}" as="fs" hint-placeholder-count="5"><button onClick="{{ fs.pick }}" style="all:unset;cursor:pointer;padding:10px 14px;border-radius:999px;font-size:14px;font-weight:600;background:{{ fs.bg }};color:{{ fs.fg }};border:1px solid {{ fs.border }};font-variant-numeric:tabular-nums">{{ fs.label }}</button></sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ sheetIsWalkin }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:#e9f0f9;color:#2563ab"><span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">T-04</span><span style="font-size:13px">Siguiente turno disponible · espera estimada 25 min</span></div>
+        </sc-if>
+        <input placeholder="Motivo (opcional)" style="width:100%;height:48px;border-radius:12px;border:1px solid #e3e7e7;padding:0 14px;font-size:15px;outline:none;background:#fafbfb">
+        <button onClick="{{ confirmSheet }}" style="all:unset;cursor:pointer;text-align:center;padding:14px;border-radius:12px;background:#0d6e60;color:#fff;font-size:15px;font-weight:600;min-height:50px;box-sizing:border-box">{{ sheetCta }}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:50%;bottom:{{ toastBottom }};transform:translateX(-50%);z-index:30;background:#15201e;color:#fff;border-radius:999px;padding:10px 16px;font-size:13px;font-weight:500;white-space:nowrap;animation:emr-toast 2.6s ease both;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)">{{ toast }}</div>
+    </sc-if>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;vista&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Móvil&quot;,&quot;Escritorio&quot;],&quot;default&quot;:&quot;Móvil&quot;,&quot;tsType&quot;:&quot;'Móvil' | 'Escritorio'&quot;,&quot;section&quot;:&quot;Vista&quot;},&quot;rol&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Médico&quot;,&quot;Asistente&quot;],&quot;default&quot;:&quot;Médico&quot;,&quot;tsType&quot;:&quot;'Médico' | 'Asistente'&quot;,&quot;section&quot;:&quot;Vista&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'home', stack: [], agendaView: 'list', day: 3, ptTab: 'hist', format: 'General',
+    open: { rx: true }, asks: {}, labs: {}, follow: '', rxCount: 1, sheet: null, slot: '',
+    toast: '', toastId: 0, query: '', method: 'Efectivo', payAmount: '1500', balance: 1500,
+    status: { 1: 'done', 2: 'done', 3: 'waiting', 4: 'walkin', 5: 'sched', 6: 'sched', 7: 'noshow' },
+  };
+  ST = {
+    done: ['Atendido', '#e8f4ec', '#1a7a50'], waiting: ['En sala', '#e9f0f9', '#2563ab'], walkin: ['Sin cita T-03', '#e9f0f9', '#2563ab'],
+    sched: ['Programada', '#e6f1ee', '#0d6e60'], noshow: ['No asistió', '#faf3e6', '#b45309'],
+  };
+  AV = [['#e6f1ee', '#0d6e60'], ['#e9f0f9', '#2563ab'], ['#faf3e6', '#b45309'], ['#e8f4ec', '#1a7a50']];
+  APPTS = [
+    { id: 1, time: '9:00', name: 'José Rodríguez', reason: 'Control · hipertensión' },
+    { id: 2, time: '9:30', name: 'Ana Martínez', reason: 'Primera consulta' },
+    { id: 3, time: '10:00', name: 'María Peña', reason: 'Fiebre · 2 días' },
+    { id: 4, time: '10:20', name: 'Carlos Vargas', reason: 'Dolor lumbar' },
+    { id: 5, time: '10:30', name: 'Luis García', reason: 'Resultados de laboratorio' },
+    { id: 6, time: '11:00', name: 'Carla Díaz', reason: 'Seguimiento nutricional' },
+    { id: 7, time: '11:30', name: 'Pedro Núñez', reason: 'Control' },
+  ];
+  PATIENTS = [
+    ['María Peña', '809-555-0142 · 34 años', 'EXP-00412', true], ['José Rodríguez', '829-555-0199 · 61 años', 'EXP-00387', false],
+    ['Ana Martínez', '849-555-0107 · 28 años', 'EXP-00415', false], ['Carla Díaz', '809-555-0163 · 45 años', 'EXP-00402', false],
+    ['Luis García', '829-555-0121 · 52 años', 'EXP-00390', true], ['Pedro Núñez', '809-555-0188 · 39 años', 'EXP-00398', false],
+    ['Carlos Vargas', '849-555-0133 · 47 años', 'EXP-00416', false], ['Rosa Féliz', '809-555-0175 · 70 años', 'EXP-00371', false],
+  ];
+  TITLES = { home: ['Buenos días, Carmen', 'Jueves 8 de octubre · 7 citas'], agenda: ['Agenda', 'Dra. Carmen Rosario'], patients: ['Pacientes', '128 registrados'], patient: ['Expediente', 'María Peña · EXP-00412'], visit: ['Consulta', 'María Peña · 10:00'], billing: ['Cobrar', 'Factura F-0231'], reports: ['Reportes', 'Octubre 2026'] };
+  ini(n) { return n.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+  av(n) { return this.AV[(n.charCodeAt(0) + n.length) % 4]; }
+  go(screen, push = true) { this.setState(s => ({ screen, stack: push && s.screen !== screen ? [...s.stack, s.screen] : s.stack })); }
+  back() { this.setState(s => { const st = [...s.stack]; const prev = st.pop() || 'home'; return { screen: prev, stack: st }; }); }
+  say(t) { this.setState(s => ({ toast: t, toastId: s.toastId + 1 })); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: '' }), 2600); }
+  setStatus(id, v, msg) { this.setState(s => ({ status: { ...s.status, [id]: v } })); if (msg) this.say(msg); }
+  renderVals() {
+    const s = this.state;
+    const vista = this.props.vista ?? 'Móvil';
+    const mobile = vista === 'Móvil', desktop = !mobile;
+    const role = this.props.rol ?? 'Médico';
+    const isDoctor = role === 'Médico';
+    const scr = s.screen;
+    const NAV = [['home', 'Inicio', 'home'], ['agenda', 'Agenda', 'calendar_month'], ['patients', 'Pacientes', 'group'], ['billing', 'Cobros', 'payments'], ['reports', 'Reportes', 'bar_chart']];
+    const pill = (on, onBg = '#15201e', onFg = '#fff') => on ? { bg: onBg, fg: onFg, border: onBg } : { bg: '#fff', fg: '#15201e', border: '#e3e7e7' };
+    const apptRow = a => { const st = s.status[a.id]; const [stLabel, stBg, stFg] = this.ST[st]; const [avBg, avFg] = this.av(a.name); return {
+      ...a, initials: this.ini(a.name), avBg, avFg, stLabel, stBg, stFg,
+      canCheckin: st === 'sched', canAttend: isDoctor && (st === 'waiting' || st === 'walkin'), canBill: st === 'done',
+      openPatient: () => this.go('patient'), checkin: () => this.setStatus(a.id, 'waiting', `${a.name} en sala de espera`),
+      noshow: () => this.setStatus(a.id, 'noshow'), attend: () => { this.go('visit'); }, bill: () => this.go('billing'), remind: () => this.say('WhatsApp abierto con el recordatorio'),
+    }; };
+    const appts = this.APPTS.map(apptRow);
+    const next = appts.find(a => s.status[a.id] === 'waiting' || s.status[a.id] === 'walkin') || appts.find(a => s.status[a.id] === 'sched') || appts[0];
+    const nextSt = s.status[next.id];
+    const kpiDone = appts.filter(a => s.status[a.id] === 'done').length, kpiWaiting = appts.filter(a => ['waiting', 'walkin'].includes(s.status[a.id])).length;
+    const times = ['9:00', '9:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30'];
+    const slots = times.map(t => { const a = appts.find(x => x.time === t); return a ? { time: t, busy: true, free: false, isNow: t === '10:30', rowBg: '#fff', name: a.name, stLabel: a.stLabel, stBg: a.stBg, stFg: a.stFg, openPatient: a.openPatient } : { time: t, busy: false, free: true, isNow: false, rowBg: t >= '12:00' ? '#f4f6f6' : '#fff' }; });
+    const dows = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+    const q = s.query.toLowerCase();
+    const sections = [
+      ['vitals', isDoctor && s.format === 'Nutrición' ? 'Antropometría' : 'Signos vitales', 'opcional'], ['ask', 'Interrogatorio', 'APP · APF · hábitos'], ['rx', 'Receta', `${s.rxCount} medicamento${s.rxCount > 1 ? 's' : ''}`], ['lab', 'Laboratorio', 'solicitar / anotar'], ['follow', 'Tratamiento y seguimiento', s.follow || 'sin cita de control'],
+    ].map(([k, title, hint]) => ({ key: k, title, hint, open: !!s.open[k], rot: s.open[k] ? 'rotate(180deg)' : 'rotate(0deg)', isVitals: k === 'vitals', isAsk: k === 'ask', isRx: k === 'rx', isLab: k === 'lab', isFollow: k === 'follow', toggle: () => this.setState(st => ({ open: { ...st.open, [k]: !st.open[k] } })) }));
+    const vitals = s.format === 'Nutrición'
+      ? [['Peso actual (kg)', '64'], ['Peso habitual', '66'], ['Talla (cm)', '163'], ['IMC', '24.1'], ['Cintura (cm)', '82'], ['Cadera (cm)', '98'], ['Abdomen', '86'], ['Brazos', '29'], ['Glúteos', '100'], ['Meta (kg)', '60']]
+      : [['PA sistólica', '120'], ['PA diastólica', '80'], ['Temp (°C)', '37'], ['Peso (kg)', '70'], ['Pulso', '72'], ['SpO₂ %', '98']];
+    const asks = ['Estreñimiento', 'Ansiedad', 'Estrés', 'Consumo de agua adecuado'].map(label => { const v = s.asks[label]; return { label, yesBg: v === true ? '#15201e' : '#fff', yesFg: v === true ? '#fff' : '#15201e', noBg: v === false ? '#15201e' : '#fff', noFg: v === false ? '#fff' : '#15201e', yes: () => this.setState(st => ({ asks: { ...st.asks, [label]: true } })), no: () => this.setState(st => ({ asks: { ...st.asks, [label]: false } })) }; });
+    const labs = ['Hemograma', 'Glicemia', 'HbA1c', 'Perfil lipídico', 'Orina', 'Coprológico', 'Sonografía abdominal', 'Tiroides'].map(label => ({ label, ...pill(!!s.labs[label], '#0d6e60'), toggle: () => this.setState(st => ({ labs: { ...st.labs, [label]: !st.labs[label] } })) }));
+    const follows = ['1 semana', '15 días', '1 mes', '3 meses'].map(label => ({ label, ...pill(s.follow === label, '#0d6e60'), pick: () => this.setState({ follow: label }) }));
+    const bal = s.balance;
+    const title = this.TITLES[scr];
+    return {
+      desktop, mobile, outerPad: mobile ? '24px 12px' : '0', shellW: mobile ? '390px' : '100%', shellH: mobile ? '844px' : '100vh', shellR: mobile ? '40px' : '0', shellBorder: mobile ? '10px solid #15201e' : 'none', shellShadow: mobile ? '0 40px 80px -30px rgba(0,0,0,.5)' : 'none',
+      headerPad: mobile ? '12px 16px' : '14px 28px', contentPad: mobile ? '14px 14px 24px' : '24px 28px 40px', homeCols: mobile ? '1fr' : '1fr 1fr', patientCols: mobile ? '1fr' : '360px minmax(0,1fr)',
+      sidePad: mobile ? '14px' : '28px', saveBottom: mobile ? '82px' : '0', saveMaxW: mobile ? 'none' : '776px', toastBottom: mobile ? '96px' : '28px',
+      userInitials: isDoctor ? 'CR' : 'YL', userName: isDoctor ? 'Dra. Carmen Rosario' : 'Yolanda López', roleLabel: isDoctor ? 'Médico titular' : 'Asistente',
+      screenTitle: scr === 'home' && !isDoctor ? 'Buenos días, Yolanda' : title[0], screenSub: title[1],
+      canBack: !NAV.some(n => n[0] === scr), goBack: () => this.back(),
+      navItems: NAV.map(([k, label, icon]) => { const on = scr === k || (k === 'patients' && ['patient', 'visit'].includes(scr)); return { label, icon, fill: on ? 1 : 0, bg: on ? '#e6f1ee' : 'transparent', fg: on ? '#0d6e60' : '#6b7577', go: () => this.setState({ screen: k, stack: [] }) }; }),
+      isHome: scr === 'home', isAgenda: scr === 'agenda', isPatients: scr === 'patients', isPatient: scr === 'patient', isVisit: scr === 'visit', isBilling: scr === 'billing', isReports: scr === 'reports',
+      nextName: next.name, nextInitials: next.initials, nextReason: `${next.time} · ${next.reason}`, nextTimeLabel: nextSt === 'sched' ? 'Programada' : nextSt === 'walkin' ? 'Sin cita · T-03' : 'En sala',
+      nextPrimaryLabel: nextSt === 'sched' ? 'Registrar llegada' : isDoctor ? 'Atender ahora' : 'Avisar al médico',
+      nextPrimary: () => nextSt === 'sched' ? this.setStatus(next.id, 'waiting', `${next.name} en sala`) : isDoctor ? this.go('visit') : this.say('Aviso enviado a la Dra. Rosario'),
+      openNextPatient: () => this.go('patient'),
+      kpiTotal: appts.length, kpiDone, kpiWaiting,
+      upcoming: appts.filter(a => !['done', 'noshow'].includes(s.status[a.id])).slice(0, 4),
+      goAgenda: () => this.setState({ screen: 'agenda', stack: [] }), goBilling: () => this.go('billing'), goVisit: () => this.go('visit'),
+      newPatientToast: () => this.say('Nuevo paciente: nombre y teléfono bastan'),
+      days: dows.map((dow, i) => ({ dow, num: 5 + i, ...pill(s.day === i, '#15201e'), pick: () => this.setState({ day: i }) })),
+      setList: () => this.setState({ agendaView: 'list' }), setTimeline: () => this.setState({ agendaView: 'timeline' }),
+      isList: s.agendaView === 'list', isTimeline: s.agendaView === 'timeline',
+      listBg: s.agendaView === 'list' ? '#15201e' : 'transparent', listFg: s.agendaView === 'list' ? '#fff' : '#6b7577', tlBg: s.agendaView === 'timeline' ? '#15201e' : 'transparent', tlFg: s.agendaView === 'timeline' ? '#fff' : '#6b7577',
+      agendaCount: `${appts.length} citas · ${kpiWaiting} en sala`, appts, slots,
+      query: s.query, setQuery: e => this.setState({ query: e.target.value }),
+      patients: this.PATIENTS.filter(p => !q || p[0].toLowerCase().includes(q) || p[1].includes(q) || p[2].toLowerCase().includes(q)).map(([name, sub, mrn, hasAllergy]) => { const [avBg, avFg] = this.av(name); return { name, sub, mrn, hasAllergy, initials: this.ini(name), avBg, avFg, open: () => this.go('patient') }; }),
+      patientTabs: [['hist', 'Historial'], ['info', 'Datos'], ['inv', 'Facturas']].map(([k, label]) => ({ label, ...pill(s.ptTab === k, '#15201e'), pick: () => this.setState({ ptTab: k }) })),
+      ptHistory: s.ptTab === 'hist', ptInfo: s.ptTab === 'info', ptInvoices: s.ptTab === 'inv',
+      timeline: [
+        { kind: 'Consulta', bg: '#e6f1ee', fg: '#0d6e60', date: '12 sep 2026', title: 'Faringitis aguda', detail: 'PA 128/82 · 37.8° · 64 kg · Dra. Rosario', hasRx: true, rx: 'Azitromicina 500 mg · 3 días' },
+        { kind: 'Factura', bg: '#faf3e6', fg: '#b45309', date: '12 sep 2026', title: 'F-0231 · RD$ 2,500', detail: 'Pago parcial · saldo RD$ 1,500', hasRx: false },
+        { kind: 'Laboratorio', bg: '#e9f0f9', fg: '#2563ab', date: '20 ago 2026', title: 'Hemograma, glicemia', detail: 'Hb 12.8 · Glicemia 92 mg/dL', hasRx: false },
+        { kind: 'Consulta', bg: '#e6f1ee', fg: '#0d6e60', date: '14 ago 2026', title: 'Control nutricional', detail: '66 kg · IMC 24.8 · Meta 60 kg · Dra. Rosario', hasRx: true, rx: 'Plan alimentario 1,500 kcal' },
+      ],
+      remindToast: () => this.say('WhatsApp abierto con el mensaje listo'), printToast: () => this.say('Abriendo versión para imprimir'), editToast: () => this.say('Edición de datos del paciente'), itemToast: () => this.say('Agregar servicio a la factura'), exportToast: () => this.say('Exportando a Excel…'),
+      formats: ['General', 'Nutrición', 'Pediatría'].map(label => ({ label, ...pill(s.format === label, '#0d6e60'), pick: () => this.setState({ format: label, open: { ...s.open, vitals: label === 'Nutrición' } }) })),
+      sections, vitals: vitals.map(([label, ph]) => ({ label, ph })), asks, labs, follows,
+      rxRows: Array.from({ length: s.rxCount }, (_, i) => ({ i })), freqs: ['Cada 8 h', 'Cada 12 h', 'Cada 24 h', 'Al dormir', 'Si hay dolor'],
+      addRx: () => this.setState(st => ({ rxCount: st.rxCount + 1 })),
+      saveVisit: () => { this.setStatus(3, 'done'); this.say('Consulta guardada'); this.setState({ screen: 'agenda', stack: [] }); },
+      saveAndPrint: () => { this.setStatus(3, 'done'); this.say('Consulta guardada · imprimiendo receta'); this.setState({ screen: 'agenda', stack: [] }); },
+      balanceLabel: bal > 0 ? `RD$ ${bal.toLocaleString('en-US')}` : 'Pagada', hasBalance: bal > 0,
+      methods: ['Efectivo', 'Tarjeta', 'Transferencia'].map(label => ({ label, ...pill(s.method === label, '#0d6e60'), pick: () => this.setState({ method: label }) })),
+      payAmount: s.payAmount, setPayAmount: e => this.setState({ payAmount: e.target.value.replace(/[^\d]/g, '') }), payFull: () => this.setState({ payAmount: String(bal) }),
+      recordPay: () => { const amt = Math.min(Number(s.payAmount) || 0, bal); this.setState({ balance: bal - amt, payAmount: String(bal - amt) }); this.say(`Pago de RD$ ${amt.toLocaleString('en-US')} registrado (${s.method})`); },
+      bars: [3, 5, 4, 6, 2, 0, 0, 4, 7, 5, 6, 3, 0, 4].map((v, i) => ({ h: `${Math.max(6, v * 12)}%`, color: i === 13 ? '#0d6e60' : v === 0 ? '#e3e7e7' : '#9fd3c7' })),
+      sheetOpen: !!s.sheet, sheetIsAppt: s.sheet === 'appt', sheetIsWalkin: s.sheet === 'walkin', sheetTitle: s.sheet === 'walkin' ? 'Paciente sin cita' : 'Nueva cita', sheetCta: s.sheet === 'walkin' ? 'Dar turno T-04' : s.slot ? `Agendar a las ${s.slot}` : 'Elija un horario',
+      openSheet: () => this.setState({ sheet: 'appt', slot: '' }), openWalkin: () => this.setState({ sheet: 'walkin' }), closeSheet: () => this.setState({ sheet: null }),
+      freeSlots: ['12:00', '12:30', '2:00', '2:30', '3:00'].map(label => ({ label, ...pill(s.slot === label, '#0d6e60'), pick: () => this.setState({ slot: label }) })),
+      confirmSheet: () => { const w = s.sheet === 'walkin'; if (!w && !s.slot) { this.say('Elija un horario libre'); return; } this.setState({ sheet: null }); this.say(w ? 'Turno T-04 asignado · aparece en la agenda' : `Cita agendada a las ${s.slot}`); },
+      hasToast: !!s.toast, toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

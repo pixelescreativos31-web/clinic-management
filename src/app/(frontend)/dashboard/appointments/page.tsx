@@ -1,7 +1,8 @@
-// Agenda — redesigned (design handoff "EMR App" → Agenda). Server side loads the
+// Agenda — design_handoff_medira «Agenda». Server side loads the
 // day's appointments with their consultation / invoice so each card can offer the
 // right next step; AgendaBoard renders the list, timeline and quick sheets.
 
+import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { startOfDayInTz } from '@/lib/reports'
@@ -10,7 +11,7 @@ import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availab
 import { toWaDigits, waReminderLink } from '@/lib/whatsapp'
 import { DEFAULT_TIMEZONE, type AppointmentStatus } from '@/lib/constants'
 import type { Appointment, BookingRequest, Invoice, Patient, User, Visit } from '@/payload-types'
-import { canRecordVisits, practitionerWhere } from '@/lib/practice'
+import { canStartVisits, practitionerWhere } from '@/lib/practice'
 import { AppHeader, AppContent } from '@/components/AppHeader'
 import { AgendaBoard, type AgendaAppt, type AgendaDay, type AgendaDoctor } from '@/components/AgendaBoard'
 import { OnlineRequests, type OnlineRequestRow } from '@/components/OnlineRequests'
@@ -22,7 +23,7 @@ function addDays(dateStr: string, delta: number): string {
   return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10)
 }
 
-const DOW = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
+const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<{ date?: string; ok?: string }> }) {
   const { user, tenant } = await requireDashboardSession()
@@ -172,8 +173,11 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
       <AppContent>
         {requests.length > 0 && <OnlineRequests rows={requests} />}
         {doctors.length === 0 ? (
-          <div className="rounded-[14px] border border-[#e3e7e7] bg-white p-6 text-sm text-[#6b7577]">
-            Todavía no hay médicos que atiendan pacientes. Configure su perfil médico en Configuración.
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-[#e7e5e4] bg-white px-4 py-6 text-sm text-[#57534e]">
+            Todavía no hay médicos que atiendan pacientes.
+            <Link href="/dashboard/settings" className="font-medium text-[#0f766e] hover:text-[#115e59]">
+              Ir a Configuración
+            </Link>
           </div>
         ) : (
           <AgendaBoard
@@ -187,7 +191,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
             durationMins={tenant?.settings?.appointmentDurationMins || 20}
             doctors={doctors}
             appts={rows}
-            clinical={canRecordVisits(user)}
+            clinical={canStartVisits(user)}
             defaultDoctorId={defaultDoctorId}
             initialToast={params.ok?.slice(0, 120)}
           />

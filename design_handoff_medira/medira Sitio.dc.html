@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#fafaf7;color:#1c1917;font-family:Geist,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:#0f766e;text-decoration:none}
+a:hover{color:#115e59}
+*{box-sizing:border-box}
+button,input,textarea{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height:100vh;overflow-x:hidden;background:#fafaf7">
+<header style="position:sticky;top:0;z-index:40;background:#042f2e;color:#ffffff">
+  <div style="max-width:1160px;margin:0 auto;min-height:60px;padding:8px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px">
+    <a href="medira Inicio.dc.html" style="flex:none;font-size:22px;font-weight:600;letter-spacing:-.04em;color:#ffffff">medira</a>
+    <nav style="flex:1 1 auto;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;justify-content:center">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3"><button onClick="{{ n.pick }}" style="flex:none;height:40px;padding:0 12px;border:0;border-bottom:2px solid {{ n.line }};background:none;color:{{ n.fg }};font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap">{{ n.t }}</button></sc-for>
+      <a href="medira Precios.dc.html" style="flex:none;height:40px;padding:0 12px;display:flex;align-items:center;font-size:15px;font-weight:500;color:#d5e5e2;white-space:nowrap">Precios</a>
+    </nav>
+    <a href="medira Flujos.dc.html" style="flex:none;padding:9px 16px;border-radius:10px;background:#ffffff;color:#042f2e;font-size:15px;font-weight:500">Empezar gratis</a>
+  </div>
+</header>
+
+<section style="background:#042f2e;color:#ffffff">
+  <div data-screen-label="{{ hero.t }}" style="max-width:1160px;margin:0 auto;padding:clamp(32px,5vw,64px) 20px clamp(32px,5vw,56px)">
+    <h1 style="margin:0;max-width:780px;font-weight:500;font-size:clamp(30px,4.6vw,52px);line-height:1.06;letter-spacing:-.04em;text-wrap:balance">{{ hero.t }}</h1>
+    <p style="margin:16px 0 0;max-width:580px;font-size:18px;line-height:1.55;color:#b6d4cf;text-wrap:pretty">{{ hero.d }}</p>
+    <sc-if value="{{ es.especialidad }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:24px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="7"><button onClick="{{ t.pick }}" disabled="{{ t.pronto }}" style="flex:none;height:40px;padding:0 14px;border:1px solid {{ t.bd }};border-radius:10px;background:{{ t.bg }};color:{{ t.fg }};font-size:14px;font-weight:500;cursor:{{ t.cursor }};white-space:nowrap;display:inline-flex;align-items:center;gap:6px">{{ t.t }}<sc-if value="{{ t.pronto }}" hint-placeholder-val="{{ false }}"><span style="padding:0 6px;border:1px dashed currentColor;border-radius:5px;font-size:11px">pronto</span></sc-if></button></sc-for>
+      </div>
+    </sc-if>
+  </div>
+</section>
+
+<sc-if value="{{ es.seguridad }}" hint-placeholder-val="{{ true }}">
+<section style="max-width:1160px;margin:0 auto;padding:clamp(24px,4vw,48px) 20px 0;display:flex;flex-wrap:wrap;gap:12px">
+  <sc-for list="{{ secciones }}" as="s" hint-placeholder-count="6">
+    <div style="flex:1 1 320px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:20px 22px 8px">
+      <h2 style="margin:0;font-size:18px;font-weight:600;letter-spacing:-.02em">{{ s.t }}</h2>
+      <div style="margin-top:10px"><sc-for list="{{ s.items }}" as="it" hint-placeholder-count="4"><div style="padding:11px 0;border-top:1px solid #f0eeec;font-size:15px;color:#44403c;text-wrap:pretty">{{ it }}</div></sc-for></div>
+    </div>
+  </sc-for>
+</section>
+<section style="max-width:1160px;margin:0 auto;padding:clamp(40px,6vw,72px) 20px 0">
+  <h2 style="margin:0;font-weight:500;font-size:clamp(24px,3vw,34px);line-height:1.1;letter-spacing:-.03em">Quién ve qué</h2>
+  <p style="margin:12px 0 0;max-width:600px;color:#57534e">Las notas privadas del médico solo las ve quien las escribió. Ver un expediente fuera de lo permitido exige escribir el motivo, queda en la auditoría y avisa al dueño.</p>
+  <div style="margin-top:20px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow-x:auto">
+    <div style="min-width:820px">
+      <div style="display:grid;grid-template-columns:.8fr 1.9fr .7fr .7fr .8fr 1fr;font-size:13px;font-weight:600;color:#57534e;background:#fafaf7"><div style="padding:12px 16px">Rol</div><div style="padding:12px">Datos clínicos</div><div style="padding:12px">Agenda</div><div style="padding:12px">Cobros</div><div style="padding:12px">Informes</div><div style="padding:12px">Configuración y plan</div></div>
+      <sc-for list="{{ roles }}" as="r" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:.8fr 1.9fr .7fr .7fr .8fr 1fr;border-top:1px solid #f0eeec;font-size:14px"><div style="padding:12px 16px;font-weight:600">{{ r.rol }}</div><sc-for list="{{ r.vals }}" as="v" hint-placeholder-count="5"><div style="padding:12px;color:{{ v.fg }}">{{ v.t }}</div></sc-for></div></sc-for>
+    </div>
+  </div>
+</section>
+<section style="max-width:1160px;margin:0 auto;padding:clamp(40px,6vw,72px) 20px clamp(56px,7vw,96px)">
+  <h2 style="margin:0;font-weight:500;font-size:clamp(24px,3vw,34px);line-height:1.1;letter-spacing:-.03em">Proveedores que tocan datos</h2>
+  <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:12px"><sc-for list="{{ proveedores }}" as="p" hint-placeholder-count="5"><div style="flex:1 1 170px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:14px 18px"><div style="font-size:13px;color:#57534e">{{ p.para }}</div><div style="margin-top:2px;font-weight:600">{{ p.quien }}</div></div></sc-for></div>
+  <p style="margin:16px 0 0;font-size:14px;color:#57534e">Estado del servicio: estado.medira.do</p>
+</section>
+</sc-if>
+
+<sc-if value="{{ es.especialidad }}" hint-placeholder-val="{{ false }}">
+<section style="max-width:1160px;margin:0 auto;padding:clamp(24px,4vw,48px) 20px 0;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+  <div style="flex:1.3 1 360px;min-width:0">
+    <div style="font-size:13px;font-weight:600;color:#57534e">Así se ve su consulta</div>
+    <div style="margin-top:8px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:14px 18px;border-bottom:1px solid #f0eeec"><div><div style="font-size:18px;font-weight:600;letter-spacing:-.02em">{{ f.paciente }}</div><div style="font-size:13px;color:#57534e">{{ f.sub }}</div></div><span style="padding:4px 10px;border-radius:6px;background:#b91c1c;color:#ffffff;font-size:12px;font-weight:600">{{ f.alerta }}</span></div>
+      <div style="padding:14px 18px;border-bottom:1px solid #f0eeec"><div style="font-size:12px;color:#57534e">Motivo</div><div style="margin-top:2px">{{ f.motivo }}</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:#f0eeec"><sc-for list="{{ f.campos }}" as="c" hint-placeholder-count="6"><div style="background:#ffffff;padding:12px 18px"><div style="font-size:12px;color:#57534e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.l }}</div><div style="margin-top:2px;font-size:18px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ c.v }} <span style="font-size:12px;font-weight:400;letter-spacing:0;color:#57534e">{{ c.u }}</span></div></div></sc-for></div>
+      <div style="padding:14px 18px;border-top:1px solid #f0eeec"><div style="font-size:12px;color:#57534e">{{ f.cierreL }}</div><div style="margin-top:2px;font-weight:500">{{ f.cierre }}</div></div>
+    </div>
+  </div>
+  <div style="flex:1 1 320px;min-width:0">
+    <div style="font-size:13px;font-weight:600;color:#57534e">Así sale su documento</div>
+    <div style="margin-top:8px;background:#ffffff;border:1px solid #d6d3d1;border-radius:8px;padding:22px;font-size:14px">
+      <div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:2px solid #1c1917"><div><div style="font-size:16px;font-weight:600">Consultorio Dra. Carmen Rosario</div><div style="font-size:12px;color:#57534e">{{ f.nombre }} · Exequátur 000-00</div></div><div style="text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#57534e;white-space:nowrap">N.º {{ f.folio }}<br>25/11/2026</div></div>
+      <div style="margin-top:16px;font-size:19px;font-weight:600;letter-spacing:-.02em">{{ f.docTitulo }}</div>
+      <sc-for list="{{ f.doc }}" as="d" hint-placeholder-count="3"><div style="padding:9px 0;border-top:1px solid #f0eeec;margin-top:9px"><div style="font-weight:500">{{ d.a }}</div><div style="font-size:13px;color:#57534e">{{ d.b }}</div></div></sc-for>
+      <div style="margin-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px"><div style="width:48px;height:48px;background:repeating-linear-gradient(135deg,#1c1917 0 3px,#ffffff 3px 6px)"></div><div style="padding-top:4px;border-top:1px solid #1c1917;min-width:150px;text-align:center;font-size:12px;color:#57534e">Firma y sello</div></div>
+    </div>
+  </div>
+</section>
+<section style="max-width:1160px;margin:0 auto;padding:clamp(32px,5vw,56px) 20px clamp(56px,7vw,96px)">
+  <div style="display:flex;flex-wrap:wrap;gap:12px"><sc-for list="{{ f.cambia }}" as="c" hint-placeholder-count="3"><div style="flex:1 1 260px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:18px 20px"><div style="font-weight:600">{{ c.t }}</div><div style="margin-top:4px;font-size:15px;color:#57534e;text-wrap:pretty">{{ c.d }}</div></div></sc-for></div>
+  <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:12px"><a href="medira Flujos.dc.html" style="padding:13px 22px;border-radius:10px;background:#0f766e;color:#ffffff;font-weight:500">Probar 3 días gratis</a><a href="medira Precios.dc.html" style="padding:13px 22px;border-radius:10px;border:1px solid #d6d3d1;background:#ffffff;color:#1c1917;font-weight:500">Ver planes</a></div>
+</section>
+</sc-if>
+
+<sc-if value="{{ es.hospitales }}" hint-placeholder-val="{{ false }}">
+<section style="max-width:1160px;margin:0 auto;padding:clamp(24px,4vw,48px) 20px clamp(56px,7vw,96px);display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+  <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:12px">
+    <sc-for list="{{ hosp }}" as="h" hint-placeholder-count="5"><div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:16px 20px"><div style="font-weight:600">{{ h.t }}</div><div style="margin-top:2px;font-size:15px;color:#57534e">{{ h.d }}</div></div></sc-for>
+  </div>
+  <div style="flex:1.2 1 360px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:22px">
+    <sc-if value="{{ pendiente }}" hint-placeholder-val="{{ true }}">
+      <h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-.02em">Pida una demo guiada</h2>
+      <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px">
+        <sc-for list="{{ campos }}" as="c" hint-placeholder-count="6"><label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">{{ c.l }}<input value="{{ c.val }}" onChange="{{ c.set }}" type="{{ c.type }}" style="height:48px;padding:0 12px;border:1px solid #d6d3d1;border-radius:10px;font-size:16px;color:#1c1917;width:100%"></label></sc-for>
+      </div>
+      <label style="margin-top:12px;display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">¿Qué necesita su institución?<textarea value="{{ msg.val }}" onChange="{{ msg.set }}" rows="3" style="padding:10px 12px;border:1px solid #d6d3d1;border-radius:10px;font-size:16px;line-height:1.5;color:#1c1917;resize:vertical"></textarea></label>
+      <button onClick="{{ enviar }}" style="margin-top:16px;width:100%;height:50px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:16px;font-weight:600;cursor:pointer">Pedir demo</button>
+      <p style="margin:12px 0 0;font-size:13px;color:#57534e">Le responde un gerente de cuenta. Sus datos se usan solo para coordinar la demo.</p>
+    </sc-if>
+    <sc-if value="{{ enviado }}" hint-placeholder-val="{{ false }}">
+      <h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-.02em">Recibimos su solicitud</h2>
+      <p style="margin:8px 0 0;color:#57534e">Un gerente de cuenta le escribirá para coordinar la demo guiada.</p>
+      <button onClick="{{ otra }}" style="margin-top:16px;height:46px;padding:0 18px;border:1px solid #d6d3d1;border-radius:10px;background:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Enviar otra solicitud</button>
+    </sc-if>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ es.lista }}" hint-placeholder-val="{{ false }}">
+<section style="max-width:860px;margin:0 auto;padding:clamp(24px,4vw,48px) 20px clamp(56px,7vw,96px)">
+  <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden">
+    <sc-for list="{{ lista }}" as="l" hint-placeholder-count="6"><div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;padding:16px 20px;border-top:1px solid {{ l.sep }}"><div style="flex:1 1 260px;min-width:0"><div style="font-weight:600">{{ l.t }}</div><div style="font-size:15px;color:#57534e">{{ l.d }}</div></div><span style="flex:none;padding:3px 9px;border-radius:6px;border:1px solid {{ l.bd }};color:{{ l.fg }};font-size:12px;font-weight:600">{{ l.e }}</span></div></sc-for>
+  </div>
+</section>
+</sc-if>
+
+<footer style="border-top:1px solid #e7e5e4"><div style="max-width:1160px;margin:0 auto;padding:24px 20px 28px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 32px;font-size:14px;color:#57534e"><span style="font-size:18px;font-weight:600;letter-spacing:-.04em;color:#1c1917">medira.do</span><span>© 2026 Pixeles Creativos</span></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;pagina&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Seguridad&quot;,&quot;Especialidad&quot;,&quot;Hospitales&quot;],&quot;default&quot;:&quot;Seguridad&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { pag: null, esp: 'General', f: {}, enviado: false };
+  renderVals() {
+    const HASH = { hospitales: 'Hospitales', especialidad: 'Especialidad', seguridad: 'Seguridad', ayuda: 'Ayuda', estado: 'Estado', terminos: 'Términos' }[(window.location.hash || '').slice(1)];
+    const S = this.state, pag = S.pag ?? HASH ?? this.props.pagina ?? 'Seguridad';
+    const setF = (k) => (e) => this.setState({ f: { ...this.state.f, [k]: e.target.value } });
+    const F = {
+      General: { titulo: 'medicina general', nombre: 'Medicina general', paciente: 'Ana Martínez', sub: '34 años · Exp. 0318', alerta: 'Alergia: penicilina', motivo: 'Fiebre y dolor de garganta desde hace 3 días', campos: [['Presión arterial', '118/76', 'mmHg'], ['Frecuencia', '88', 'lpm'], ['Temperatura', '38.4', '°C'], ['SpO₂', '98', '%'], ['Peso', '62.0', 'kg'], ['IMC', '23.1', '']], cierreL: 'Diagnóstico', cierre: 'Faringoamigdalitis aguda', folio: '0142', docTitulo: 'Receta', doc: [['Azitromicina 500 mg, tableta', '1 cada 24 horas por 3 días · Cantidad: 3 (tres)'], ['Paracetamol 500 mg, tableta', '1 cada 8 horas si hay fiebre · Cantidad: 10 (diez)']],
+        cambia: [['Ficha', '9 signos vitales con IMC, examen físico, diagnóstico y plan.'], ['Receta', 'Medicamentos con dosis, órdenes de laboratorio e imágenes por separado.'], ['Resumen', 'Resumen para el paciente en lenguaje simple y referencia a otro especialista.']] },
+      'Nutrición': { titulo: 'nutrición', nombre: 'Nutrición', paciente: 'Luis García', sub: '41 años · Exp. 0291', alerta: 'Alergia: mariscos', motivo: 'Control 4 del programa de peso', campos: [['Peso actual', '86.4', 'kg'], ['Peso habitual', '92.0', 'kg'], ['Meta', '78.0', 'kg'], ['Talla', '1.74', 'm'], ['IMC', '28.5', ''], ['Cintura', '96', 'cm']], cierreL: 'Evaluación', cierre: 'Sobrepeso en descenso', folio: '0087', docTitulo: 'Plan de alimentación', doc: [['Desayuno', 'Avena, fruta y huevo'], ['Almuerzo', 'Proteína, vegetales y ½ taza de arroz'], ['Próximo control', 'En 15 días, con foto, peso y medidas']],
+        cambia: [['Ficha', 'Antropometría completa, hábitos, sueño y agua.'], ['Programa de peso', 'Cada control guarda foto, peso y medidas del mismo día.'], ['Resumen', 'Peso, IMC y medidas con gráfico de evolución.']] },
+      'Estética': { titulo: 'estética', nombre: 'Estética', paciente: 'Carla Díaz', sub: '29 años · Exp. 0340', alerta: 'Alergia: látex', motivo: 'Sesión 4 de 10 del paquete reductivo', campos: [['Zona', 'Abdomen', ''], ['Tratamiento', 'Reductivo', ''], ['Terapeuta', 'M. Peña', ''], ['Restantes', '6', 'sesiones'], ['Fotos', 'Frente, perfil', ''], ['Consentimiento', 'Firmado', '']], cierreL: 'Nota de sesión', cierre: 'Sin molestias tras la sesión', folio: '0023', docTitulo: 'Indicaciones', doc: [['Hidratación', 'Beber 2 litros de agua al día'], ['Cuidado de la zona', 'Evitar sol directo durante 48 horas'], ['Próxima sesión', 'En 7 días']],
+        cambia: [['Ficha de sesión', 'La llena el terapeuta, que cuenta como personal y no como médico.'], ['Paquetes', 'Sesiones con saldo por paciente.'], ['Fotos', 'Antes y después con guía de pose y consentimiento firmado.']] },
+    };
+    const sel = (on) => (on ? { bg: '#ffffff', fg: '#042f2e', bd: '#ffffff' } : { bg: 'transparent', fg: '#ffffff', bd: '#2b6b65' });
+    const src = F[S.esp] || F.General;
+    const f = { ...src, campos: src.campos.map(([l, v, u]) => ({ l, v, u })), doc: src.doc.map(([a, b]) => ({ a, b })), cambia: src.cambia.map(([t, d]) => ({ t, d })) };
+    const HERO = { Seguridad: ['Seguridad y privacidad', 'medira guarda datos de salud. Aquí está, en lenguaje simple, cómo los protegemos y quién puede verlos.'], Especialidad: ['medira para ' + f.titulo, 'Así se ve su consulta y así sale su documento. Cada médico elige su especialidad y todo se adapta.'], Hospitales: ['medira para hospitales e instituciones', 'Contrato institucional con médicos y cuotas a su medida, exportación a su sistema contable y un gerente de cuenta.'], Ayuda: ['Centro de ayuda', 'Guías cortas con capturas y video. Si no encuentra la respuesta, escríbanos a soporte@medira.do.'], Estado: ['Estado del servicio', 'Todos los sistemas funcionan con normalidad. Si hay un incidente, avisamos a las clínicas afectadas en menos de 72 horas.'], 'Términos': ['Términos y privacidad', 'Documentos legales de medira. El texto final lo redacta su abogado antes de publicar.'] }[pag];
+    const dim = (t) => t === 'No';
+    const LISTAS = {
+      Ayuda: [['Empezar', 'Crear su cuenta, subir logo, firma y sello, y configurar el horario.', 'Guía'], ['Agenda y recordatorios', 'Citas, pacientes sin cita y confirmación por WhatsApp.', 'Guía'], ['Consulta y dictado con IA', 'Fichas por especialidad y cómo dictar desde la computadora o el celular.', 'Guía'], ['Receta y documentos', 'Firmar, enviar por enlace seguro y verificar con el código QR.', 'Guía'], ['Caja y comprobantes', 'Cobrar desde la cita, cerrar caja y emitir comprobantes fiscales.', 'Guía'], ['Seguridad y dos pasos', 'Activar la verificación, códigos de respaldo y qué hacer si pierde el teléfono.', 'Guía'], ['Hablar con soporte', 'Correo en los planes de pago; WhatsApp desde Consultorio.', 'Contacto']],
+      Estado: [['Aplicación', 'Funciona con normalidad', 'Operativo'], ['Inicio de sesión y dos pasos', 'Funciona con normalidad', 'Operativo'], ['WhatsApp automático', 'Funciona con normalidad', 'Operativo'], ['Correo', 'Funciona con normalidad', 'Operativo'], ['Dictado y estudios con IA', 'Funciona con normalidad', 'Operativo'], ['Cobros', 'Funciona con normalidad', 'Operativo'], ['Respaldos', 'Último respaldo: hoy, 3:00 a. m.', 'Operativo']],
+      'Términos': [['Términos de uso', 'Texto legal por redactar.', 'Pendiente'], ['Política de privacidad', 'Ley 172-13. Texto legal por redactar.', 'Pendiente'], ['Contrato de tratamiento de datos', 'Entre medira y cada clínica. Texto legal por redactar.', 'Pendiente'], ['Política de cookies', 'Texto legal por redactar.', 'Pendiente'], ['Acuerdo de servicio para Hospital', 'Texto legal por redactar.', 'Pendiente']],
+    };
+    return {
+      es: { seguridad: pag === 'Seguridad', especialidad: pag === 'Especialidad', hospitales: pag === 'Hospitales', lista: !!LISTAS[pag] },
+      lista: (LISTAS[pag] || []).map(([t, d, e], i) => ({ t, d, e, sep: i ? '#f0eeec' : 'transparent', fg: e === 'Operativo' ? '#15803d' : e === 'Pendiente' ? '#b45309' : '#57534e', bd: e === 'Operativo' ? '#15803d' : e === 'Pendiente' ? '#b45309' : '#d6d3d1' })), hero: { t: HERO[0], d: HERO[1] }, f,
+      nav: [['Seguridad', 'Seguridad y privacidad'], ['Especialidad', 'Por especialidad'], ['Hospitales', 'Hospitales'], ['Ayuda', 'Ayuda'], ['Estado', 'Estado'], ['Términos', 'Legal']].map(([id, t]) => ({ t, pick: () => { this.setState({ pag: id }); window.scrollTo(0, 0); }, fg: pag === id ? '#ffffff' : '#d5e5e2', line: pag === id ? '#2dd4bf' : 'transparent' })),
+      tabs: ['General', 'Nutrición', 'Estética', 'Oftalmología', 'Odontología', 'Gineco-obstetricia', 'Pediatría'].map((t) => ({ t, pronto: !F[t], cursor: F[t] ? 'pointer' : 'default', pick: () => this.setState({ esp: t }), ...sel(S.esp === t) })),
+      secciones: [
+        ['Verificación en dos pasos', ['Con app autenticadora: Google Authenticator, Microsoft Authenticator o 1Password.', 'Obligatoria para dueños y administradores.', '10 códigos de respaldo de un solo uso al activarla.', 'No usamos SMS, por el riesgo de robo de la línea.']],
+        ['Contraseñas y sesiones', ['Mínimo 10 caracteres; se rechazan las que aparecen en filtraciones conocidas.', 'Tras 5 intentos fallidos, espera creciente y aviso por correo.', 'Cierre por inactividad a los 30 minutos, con aviso de 60 segundos y borrador guardado.', 'Pantalla de sesiones activas con «Cerrar todas las demás».']],
+        ['Auditoría', ['Registra quién vio, creó, editó, imprimió, envió o exportó cada expediente, y desde dónde.', 'No se puede editar ni borrar.', 'Alertas al dueño: exportación masiva, muchos expedientes vistos en poco tiempo, ingresos fuera de horario.']],
+        ['Datos y respaldos', ['Cifrado en tránsito y en reposo, también en respaldos.', 'Archivos con enlaces firmados que caducan. Nunca públicos.', 'Cada clínica está aislada de las demás, con pruebas automáticas en cada cambio.', 'Respaldo diario cifrado en otra ubicación, guardado 30 días.']],
+        ['Privacidad y ley', ['Ley 172-13 de protección de datos personales y Ley General de Salud 42-01.', 'El paciente puede pedir copia, corrección o cierre de sus datos.', 'La IA no guarda ni entrena con los datos de los pacientes.', 'Al cerrar la cuenta hay 30 días para exportar todo.']],
+        ['Soporte e incidentes', ['Soporte de medira no ve datos clínicos.', 'Solo entra a una clínica si el dueño lo autoriza, por 24 horas, y todo queda registrado.', 'Aviso a las clínicas afectadas en menos de 72 horas.']],
+      ].map(([t, items]) => ({ t, items })),
+      roles: [['Dueño', 'Sí, si es médico; si no, solo con acceso de emergencia', 'Sí', 'Sí', 'Sí', 'Sí'], ['Médico', 'Sus pacientes; todos si la clínica comparte expediente', 'La suya', 'Los suyos', 'Los suyos', 'Su perfil'], ['Terapeuta', 'Solo fichas de sesión', 'La suya', 'No', 'No', 'Su perfil'], ['Recepción', 'Solo datos de contacto y citas', 'Toda', 'Sí', 'Caja del día', 'No'], ['Contador', 'No', 'No', 'Sí', 'Sí', 'Datos fiscales']].map(([rol, ...v]) => ({ rol, vals: v.map((t) => ({ t, fg: dim(t) ? '#78716c' : '#1c1917' })) })),
+      proveedores: [['Alojamiento', 'Hosting'], ['Correo', 'Resend'], ['WhatsApp', 'Meta'], ['Inteligencia artificial', 'Proveedor de IA con acuerdo de no guardar datos']].map(([para, quien]) => ({ para, quien })),
+      hosp: [['Contrato institucional', 'Médicos, usuarios y cuotas definidos por contrato.'], ['Exportación a su ERP', 'Contabilidad con varias sucursales y cajas.'], ['Auditoría de 5 años', 'Con verificación en dos pasos obligatoria para médicos.'], ['Capacitación y migración', 'Ayuda para migrar desde otros sistemas.'], ['Gerente de cuenta', 'Un contacto directo para su institución.']].map(([t, d]) => ({ t, d })),
+      campos: [['Nombre', 'text'], ['Cargo', 'text'], ['Institución', 'text'], ['Número de médicos', 'number'], ['Correo', 'email'], ['Teléfono', 'tel']].map(([l, type]) => ({ l, type, val: S.f[l] ?? '', set: setF(l) })),
+      msg: { val: S.f.msg ?? '', set: setF('msg') }, pendiente: !S.enviado, enviado: S.enviado, enviar: () => this.setState({ enviado: true }), otra: () => this.setState({ enviado: false }),
+    };
+  }
+}
+</script>
+</body>
+</html>

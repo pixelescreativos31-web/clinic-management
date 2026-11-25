@@ -1,11 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { Card, EmptyState } from '@/components/primitives'
-import { IconCheck } from '@/components/icons'
+import { EmptyState } from '@/components/primitives'
 import { formatsFor, initialFormat } from '@/lib/profiles'
 import { activeProgram, programContext } from '@/lib/programData'
-import { canRecordVisits } from '@/lib/practice'
+import { canStartVisits } from '@/lib/practice'
 import { massageToForm } from '@/lib/massage'
 import type { Visit } from '@/payload-types'
 import { VisitForm } from '@/components/VisitForm'
@@ -26,8 +25,8 @@ export default async function NewVisitPage({
   searchParams: Promise<{ appointment?: string }>
 }) {
   const { user, tenant } = await requireDashboardSession()
-  // Only clinical roles and therapists author visits.
-  if (!canRecordVisits(user)) redirect('/dashboard/appointments')
+  // Only people who see patients open visits (a non-practising owner does not).
+  if (!canStartVisits(user)) redirect('/dashboard/appointments')
 
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)!
@@ -59,9 +58,9 @@ export default async function NewVisitPage({
       <>
         {header}
         <AppContent>
-          <Card>
+          <div className="mx-auto max-w-[860px] rounded-xl border border-[#e7e5e4] bg-white">
             <EmptyState message="Registre la llegada del paciente antes de iniciar la consulta." actionHref="/dashboard/appointments" actionLabel="Volver a la agenda" />
-          </Card>
+          </div>
         </AppContent>
       </>
     )
@@ -83,16 +82,11 @@ export default async function NewVisitPage({
       <>
         {header}
         <AppContent>
-        <Card className="mx-auto max-w-[720px] p-8 text-center">
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-soft text-primary">
-            <IconCheck size={22} />
-          </span>
-          <h2 className="mt-4 text-lg font-semibold">Consulta registrada</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            La consulta de {patient?.name ?? 'el paciente'} quedó guardada.
-          </p>
-          <PostVisitActions visitId={String(existing.docs[0].id)} patientId={relId(patient)} />
-        </Card>
+          <section className="mx-auto max-w-[860px] rounded-xl border border-[#e7e5e4] bg-white px-5 py-6">
+            <h2 className="text-[17px] font-semibold tracking-[-.02em]">Consulta registrada</h2>
+            <p className="mt-1 text-sm text-[#57534e]">La consulta de {patient?.name ?? 'el paciente'} quedó guardada.</p>
+            <PostVisitActions visitId={String(existing.docs[0].id)} patientId={relId(patient)} />
+          </section>
         </AppContent>
       </>
     )

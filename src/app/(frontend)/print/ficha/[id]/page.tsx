@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { PrintButton } from '@/components/PrintButton'
+import { Letterhead, PrintToolbar, numericDate } from '../../_components/Letterhead'
+import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import { ageFromDOB, formatLongDate } from '@/lib/format'
 import { APP_NAME } from '@/lib/brand'
 import { CONSENT_TEXT, MASSAGE_FIELDS, MASSAGE_GROUP_LABELS, YES_NO_OPTIONS, massageServicesLine, type MassageGroup } from '@/lib/massage'
@@ -46,7 +46,7 @@ export default async function MassageSheetPrintPage({ params }: { params: Promis
         {group(g)
           .filter((f) => f.kind === 'yesno')
           .map((f) => (
-            <tr key={f.key} className="border-b border-border/60">
+            <tr key={f.key} className="border-b border-[#f0eeec]">
               <td className="w-[46%] py-1 pe-2">{f.label}</td>
               <td className="w-[10%] py-1 text-center font-semibold">{label(YES_NO_OPTIONS, m[f.key]) || '—'}</td>
               <td className="py-1 ps-2 text-muted-foreground">{text(m[`${f.key}Detail`])}</td>
@@ -58,36 +58,30 @@ export default async function MassageSheetPrintPage({ params }: { params: Promis
   const line = (l: string, v: string) => (
     <div className="flex gap-1.5 text-[11px]">
       <span className="shrink-0 text-muted-foreground">{l}:</span>
-      <span className="min-w-0 flex-1 border-b border-border/70 font-medium whitespace-pre-line">{v || ' '}</span>
+      <span className="min-w-0 flex-1 border-b border-[#d6d3d1] font-medium whitespace-pre-line">{v || ' '}</span>
     </div>
   )
   const H = ({ g }: { g: MassageGroup }) => (
-    <h2 className="mt-3 text-[11px] font-bold tracking-wide text-primary uppercase">{MASSAGE_GROUP_LABELS[g]}</h2>
+    <h2 className="mt-3 text-[12px] font-semibold text-[#1c1917]">{MASSAGE_GROUP_LABELS[g]}</h2>
   )
 
   return (
-    <main className="mx-auto w-full max-w-[216mm] bg-white px-8 py-8 text-[12px] text-ink print:max-w-none print:p-[10mm]">
+    <main className="mx-auto w-full max-w-[216mm] bg-white px-8 py-8 text-[12px] text-[#1c1917] print:max-w-none print:p-[10mm]">
       <style>{`@page { size: letter; margin: 0; } @media print { html, body { background: #fff; } }`}</style>
 
-      <div className="mb-5 flex items-center justify-between gap-3 print:hidden">
-        <Link href={`/dashboard/patients/${relId(patient)}?tab=historia`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">
-          ‹ Volver al cliente
-        </Link>
-        <PrintButton />
-      </div>
+      <PrintToolbar backHref={`/dashboard/patients/${relId(patient)}?tab=historia`} backLabel="Volver al cliente" />
 
-      <header className="flex items-center justify-between gap-4 border-b-2 border-primary pb-2">
-        {tenant?.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={tenant.logo} alt={tenant.name} className="h-14 w-auto" />
-        ) : (
-          <div className="font-display text-lg font-semibold">{tenant?.name}</div>
-        )}
-        <div className="text-end">
-          <div className="text-[13px] font-bold">Ficha técnica del cliente</div>
-          <div className="text-[10px] text-muted-foreground">Evaluación y consentimiento para masajes</div>
-        </div>
-      </header>
+      <Letterhead
+        logo={tenant?.logo}
+        name={tenant?.name}
+        details={
+          <>
+            <span className="font-medium text-[#1c1917]">Ficha técnica del cliente</span> · Evaluación y consentimiento para masajes
+          </>
+        }
+        doc="Ficha"
+        date={numericDate(visit.visitDate, tenant?.settings?.timezone || DEFAULT_TIMEZONE)}
+      />
 
       <H g="servicio" />
       <div className="mt-1 grid grid-cols-2 gap-x-6 gap-y-1">
@@ -143,15 +137,15 @@ export default async function MassageSheetPrintPage({ params }: { params: Promis
       <H g="consentimiento" />
       <p className="mt-1 text-justify text-[9.5px] leading-snug text-muted-foreground">{CONSENT_TEXT}</p>
       <div className="mt-8 grid grid-cols-2 gap-x-10 gap-y-8 text-center text-[10px]">
-        <div className="border-t border-ink/60 pt-1">Firma del cliente · {patient?.name}</div>
-        <div className="border-t border-ink/60 pt-1">Firma del terapeuta · {therapist?.name}</div>
-        {m.guardianName ? <div className="col-span-2 mx-auto w-1/2 border-t border-ink/60 pt-1">Padre, madre o tutor · {text(m.guardianName)}</div> : null}
+        <div className="border-t border-[#1c1917] pt-1">Firma del cliente · {patient?.name}</div>
+        <div className="border-t border-[#1c1917] pt-1">Firma del terapeuta · {therapist?.name}</div>
+        {m.guardianName ? <div className="col-span-2 mx-auto w-1/2 border-t border-[#1c1917] pt-1">Padre, madre o tutor · {text(m.guardianName)}</div> : null}
       </div>
       <p className="mt-4 text-[9px] text-muted-foreground">
         La ficha se revisa y actualiza antes de cada tratamiento. Ante condición médica, lesión, quemadura, cirugía reciente, dolor inexplicado o reacción
         alérgica se valora la seguridad del servicio y se solicita autorización de un profesional de salud cuando corresponda.
       </p>
-      <footer className="mt-3 text-center text-[9px] text-faint">Generado con {APP_NAME}</footer>
+      <footer className="mt-3 text-center text-[9px] text-[#78716c]">Generado con {APP_NAME}</footer>
     </main>
   )
 }

@@ -4,7 +4,7 @@ import { StaffManager, type StaffRow } from '@/components/StaffManager'
 import { DEFAULT_CURRENCY, WEEKDAYS } from '@/lib/constants'
 import { windowOf, formatWindow } from '@/lib/availability'
 import type { User } from '@/payload-types'
-import { isPractitioner } from '@/lib/practice'
+import { isIndividualPractice, isPractitioner } from '@/lib/practice'
 import { profileFormats } from '@/lib/profiles'
 import { orgTypeOf } from '@/lib/specialties'
 
@@ -53,5 +53,13 @@ export default async function StaffPage() {
   // Templates a doctor can default to: the profile's, minus massage (therapists) and
   // the programme (opened automatically for enrolled patients).
   const formatOptions = profileFormats(session.tenant).filter((f) => f !== 'massage' && f !== 'program')
-  return <StaffManager staff={staff} currency={session.tenant?.settings?.currency || DEFAULT_CURRENCY} formatOptions={formatOptions} orgType={orgTypeOf(session.tenant)} />
+  return (
+    <StaffManager
+      title={isIndividualPractice(session.tenant) ? 'Asistente' : 'Equipo'}
+      staff={staff}
+      currency={session.tenant?.settings?.currency || DEFAULT_CURRENCY}
+      formatOptions={formatOptions}
+      orgType={orgTypeOf(session.tenant)}
+    />
+  )
 }

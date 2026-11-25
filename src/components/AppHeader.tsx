@@ -1,80 +1,133 @@
 'use client'
 
-// Redesigned page chrome (design handoff shell): sticky translucent header with an
-// optional back button, Bricolage title + subtitle, page actions, and — on phones —
-// the user's avatar, which opens the menu with admin pages and sign-out.
-// ContentFrame keeps not-yet-redesigned pages working inside the new shell.
+// Page chrome — design_handoff_medira shell: sticky 56px header on the warm
+// translucent background, «Volver» on child views, 17/600 title, the patient
+// search (⌘K / Ctrl+K) and the page's own actions. ContentFrame keeps pages that
+// do not render an AppHeader working inside the same shell.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useShell } from './Sidebar'
-import { IconBack, IconLogout } from './icons'
-import { logoutAction } from '@/app/(frontend)/login/actions'
-import { initialsOf } from '@/lib/apptStatus'
-import { APP_NAME } from '@/lib/brand'
+import { usePathname, useRouter } from 'next/navigation'
+import { useShell, isActivePath } from './Sidebar'
 
-/** Pages already on the new design render their own AppHeader. */
+/** Pages that render their own AppHeader. */
 const REDESIGNED: RegExp[] = [
   /^\/dashboard$/,
   /^\/dashboard\/appointments$/,
+  /^\/dashboard\/appointments\/new$/,
   /^\/dashboard\/invoices$/,
+  /^\/dashboard\/invoices\/[^/]+$/,
+  /^\/dashboard\/reports$/,
+  /^\/dashboard\/plan$/,
+  /^\/dashboard\/settings$/,
+  /^\/dashboard\/staff$/,
+  /^\/dashboard\/activity$/,
   /^\/dashboard\/visits\/new$/,
   /^\/dashboard\/visits\/[^/]+\/edit$/,
+  /^\/dashboard\/patients$/,
+  /^\/dashboard\/patients\/new$/,
+  /^\/dashboard\/patients\/[^/]+$/,
+  /^\/dashboard\/patients\/[^/]+\/edit$/,
 ]
 
-function UserMenu() {
+/** ⌘K palette: search patients by name, phone, cédula or record number, or jump to a menu page. */
+function SearchPalette({ onClose }: { onClose: () => void }) {
+  const router = useRouter()
   const shell = useShell()
+  const [q, setQ] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    input.current?.focus()
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [onClose])
+  const pages = (shell?.groups ?? []).flatMap((g) => g.items).filter((i) => !q || i.label.toLowerCase().includes(q.toLowerCase()))
+  const go = (href: string) => {
+    onClose()
+    router.push(href)
+  }
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]" onClick={onClose}>
+      <div className="absolute inset-0 bg-[rgba(28,25,23,.45)]" />
+      <div
+        role="dialog"
+        aria-label="Buscar"
+        className="relative w-full max-w-[520px] animate-[md-up_.2s_ease-out] overflow-hidden rounded-[14px] border border-[#e7e5e4] bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (q.trim()) go(`/dashboard/patients?q=${encodeURIComponent(q.trim())}`)
+          }}
+        >
+          <input
+            ref={input}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar paciente por nombre, teléfono o cédula"
+            aria-label="Buscar paciente"
+            className="h-12 w-full border-b border-[#f0eeec] px-4 text-base outline-none"
+          />
+        </form>
+        <div className="max-h-[50vh] overflow-y-auto py-1.5 text-sm">
+          {q.trim() && (
+            <button type="button" onClick={() => go(`/dashboard/patients?q=${encodeURIComponent(q.trim())}`)} className="flex w-full justify-between gap-3 bg-[#f0eeec] px-4 py-2.5 text-left">
+              <span className="font-medium">Buscar «{q.trim()}» en pacientes</span>
+              <span className="text-[#57534e]">Enter</span>
+            </button>
+          )}
+          {pages.map((p) => (
+            <button key={p.href} type="button" onClick={() => go(p.href)} className="flex w-full justify-between gap-3 px-4 py-2.5 text-left hover:bg-[#fafaf7]">
+              <span>{p.label}</span>
+              <span className="text-[#57534e]">Ir</span>
+            </button>
+          ))}
+          {!q.trim() && (
+            <button type="button" onClick={() => go('/dashboard/appointments/new')} className="flex w-full justify-between gap-3 px-4 py-2.5 text-left hover:bg-[#fafaf7]">
+              <span>Nueva cita</span>
+              <span className="text-[#57534e]">Acción</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function SearchButton() {
   const [open, setOpen] = useState(false)
-  if (!shell) return null
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setOpen(true)
+      }
+    }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [])
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Menú de usuario"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e6f1ee] text-[11px] font-semibold text-[#0d6e60] lg:hidden"
+        className="ml-auto hidden h-[38px] max-w-[420px] min-w-0 flex-1 items-center gap-2 rounded-[10px] border border-[#e7e5e4] bg-white pr-2.5 pl-3 text-left text-sm text-[#57534e] transition-colors hover:border-[#a8a29e] md:flex"
       >
-        {initialsOf(shell.userName)}
+        <span className="min-w-0 flex-1 truncate">Buscar paciente o acción</span>
+        <kbd className="flex-none rounded-md border border-[#d6d3d1] px-1.5 py-px font-mono text-xs">Ctrl K</kbd>
       </button>
-      {/* Portal: the header's backdrop-blur would otherwise become the containing
-          block of this fixed overlay and trap it inside the 56px bar. */}
-      {open &&
-        createPortal(
-        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-[rgba(12,33,29,.45)]" />
-          <div
-            className="absolute inset-x-0 bottom-0 flex animate-[emr-up_.25s_ease-out] flex-col gap-1 rounded-t-[18px] bg-white px-4 pt-2.5 pb-[max(20px,env(safe-area-inset-bottom))]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span className="mb-2 h-1 w-10 self-center rounded-full bg-[#d7dddd]" />
-            <div className="px-2 pb-2">
-              <div className="truncate text-[15px] font-semibold">{shell.userName}</div>
-              <div className="truncate text-xs text-[#6b7577]">
-                {shell.roleText} · {shell.clinicName}
-              </div>
-            </div>
-            {shell.adminItems.map((i) => (
-              <Link
-                key={i.href}
-                href={i.href}
-                onClick={() => setOpen(false)}
-                className="flex min-h-12 items-center rounded-xl px-3 text-[15px] font-medium text-[#15201e] hover:bg-[#f4f6f6] hover:text-[#15201e]"
-              >
-                {i.label}
-              </Link>
-            ))}
-            <form action={logoutAction}>
-              <button type="submit" className="flex min-h-12 w-full items-center gap-2.5 rounded-xl px-3 text-[15px] font-medium text-[#b3261e] hover:bg-[#fbeceb]">
-                <IconLogout size={18} />
-                Cerrar sesión
-              </button>
-            </form>
-          </div>
-        </div>,
-          document.body,
-        )}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="h-9 flex-none rounded-lg border border-[#d6d3d1] bg-white px-2.5 text-[13px] font-medium md:hidden"
+      >
+        Buscar
+      </button>
+      {open && <SearchPalette onClose={() => setOpen(false)} />}
     </>
   )
 }
@@ -87,57 +140,58 @@ export function AppHeader({
 }: {
   title: string
   subtitle?: string
-  /** Non-root views show a back button. */
+  /** Child views show «Volver». */
   backHref?: string
-  /** Desktop/mobile actions on the right (e.g. "+ Nueva cita"). */
+  /** Page actions on the right (e.g. «Nueva cita»). */
   actions?: React.ReactNode
 }) {
   return (
-    <header className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-[#e3e7e7] bg-[rgba(244,246,246,.92)] px-4 py-3 backdrop-blur-md md:px-7 md:py-3.5">
-      {backHref && (
-        <Link
-          href={backHref}
-          aria-label="Volver"
-          className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-[#e3e7e7] bg-white text-[#15201e] hover:text-[#15201e]"
-        >
-          <IconBack size={20} />
-        </Link>
-      )}
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate font-display text-lg font-semibold tracking-[-.01em]">{title}</h1>
-        {subtitle && <div className="truncate text-xs text-[#6b7577]">{subtitle}</div>}
+    <header className="sticky top-0 z-20 border-b border-[#e7e5e4] bg-[rgba(250,250,247,.94)] backdrop-blur-md">
+      <div className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 md:px-5">
+        {backHref && (
+          <Link
+            href={backHref}
+            className="flex h-9 flex-none items-center rounded-lg border border-[#d6d3d1] bg-white px-2.5 text-[13px] font-medium text-[#1c1917] hover:text-[#1c1917]"
+          >
+            Volver
+          </Link>
+        )}
+        <div className="min-w-0 flex-[0_1_auto]">
+          <h1 className="truncate font-sans text-[17px] font-semibold tracking-[-.02em]">{title}</h1>
+          {subtitle && <div className="truncate text-xs text-[#57534e]">{subtitle}</div>}
+        </div>
+        <SearchButton />
+        {actions && <div className="flex flex-none flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions}
-      <UserMenu />
     </header>
   )
 }
 
-/** Padded content area for redesigned pages. */
+/** Padded content area: max width 1080, 20px gutter. */
 export function AppContent({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`px-3.5 pt-3.5 pb-6 md:px-7 md:pt-6 md:pb-10 ${className}`}>{children}</div>
+  return <div className={`mx-auto w-full max-w-[1080px] px-4 pt-4 pb-6 md:px-5 md:pt-5 md:pb-10 ${className}`}>{children}</div>
+}
+
+/** Title of the current page from the menu, for pages without their own AppHeader. */
+function useMenuTitle() {
+  const pathname = usePathname()
+  const shell = useShell()
+  const items = (shell?.groups ?? []).flatMap((g) => g.items)
+  return items.filter((i) => isActivePath(pathname, i.href)).sort((a, b) => b.href.length - a.href.length)[0]?.label ?? ''
 }
 
 /**
- * Wraps every dashboard page. Redesigned pages pass through untouched; older pages
- * get the previous padding plus a slim phone bar with the user menu, so admin pages
- * and sign-out stay reachable until they are redesigned.
+ * Wraps every dashboard page. Pages with their own AppHeader pass through; the rest
+ * get the shell header with the menu title and the content width of the design.
  */
 export function ContentFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  if (REDESIGNED.some((r) => r.test(pathname))) return <main className="flex-1 overflow-x-hidden pb-24 lg:pb-0">{children}</main>
+  const title = useMenuTitle()
+  if (REDESIGNED.some((r) => r.test(pathname))) return <main className="flex-1 overflow-x-clip pb-24 lg:pb-0">{children}</main>
   return (
-    <main className="flex-1 overflow-x-hidden pb-24 lg:pb-8">
-      <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e3e7e7] bg-[rgba(244,246,246,.92)] px-4 backdrop-blur-md lg:hidden">
-        <span className="flex items-center gap-2 font-display text-base font-bold">
-          <span aria-hidden className="flex size-6 items-center justify-center rounded-md bg-[#0d6e60] text-xs text-white">
-            +
-          </span>
-          {APP_NAME}
-        </span>
-        <UserMenu />
-      </div>
-      <div className="mx-auto max-w-7xl animate-fade-up px-4 pt-6 sm:px-6">{children}</div>
+    <main className="flex-1 overflow-x-clip pb-24 lg:pb-8">
+      <AppHeader title={title} />
+      <div className="mx-auto w-full max-w-[1080px] animate-fade-up px-4 pt-5 md:px-5">{children}</div>
     </main>
   )
 }

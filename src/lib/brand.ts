@@ -2,10 +2,10 @@
 // (NEXT_PUBLIC_APP_NAME) so the white-label / final name can change without a code
 // hunt. Never hardcode the product name in UI strings — import from here.
 
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'EMR'
-export const APP_TAGLINE = 'Historia Clínica Digital'
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'medira'
+export const APP_TAGLINE = 'Gestión médica inteligente'
 export const APP_LOCALE = 'es-DO'
-export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'soporte@example.com'
+export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'soporte@medira.do'
 
 /** Original project credit (MIT license requires keeping the notice). */
 export const BASED_ON = 'Basado en Matab (MIT)'

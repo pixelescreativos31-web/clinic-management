@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireDashboardSession, requireRole, getPayloadClient } from '@/lib/auth'
-import { PageTitle } from '@/components/primitives'
+import { AppHeader, AppContent } from '@/components/AppHeader'
 import { PlanPanel } from '@/components/PlanPanel'
 import { asPlan } from '@/lib/plans'
 import { doctorWhere } from '@/lib/practice'
@@ -31,24 +31,28 @@ export default async function PlanPage() {
   ])
 
   return (
-    <div>
-      <PageTitle subtitle="Su suscripción, el uso frente a sus límites y las mejoras de plan.">
-        Plan y uso
-      </PageTitle>
-      <PlanPanel
-        plan={asPlan(tenant.plan)}
-        doctorCount={doctors.totalDocs}
-        patientCount={patients.totalDocs}
-        metered={{ period: metered.period, used: metered.used }}
-        pendingRequest={
-          tenant.upgradeRequest?.requestedPlan
-            ? {
-                plan: asPlan(tenant.upgradeRequest.requestedPlan),
-                requestedAt: tenant.upgradeRequest.requestedAt ?? null,
-              }
-            : null
-        }
+    <>
+      <AppHeader
+        title="Mi plan"
+        subtitle="Su suscripción, el uso frente a sus límites y las mejoras de plan"
       />
-    </div>
+      <AppContent>
+        <PlanPanel
+          plan={asPlan(tenant.plan)}
+          status={tenant.status}
+          doctorCount={doctors.totalDocs}
+          patientCount={patients.totalDocs}
+          metered={{ period: metered.period, used: metered.used }}
+          pendingRequest={
+            tenant.upgradeRequest?.requestedPlan
+              ? {
+                  plan: asPlan(tenant.upgradeRequest.requestedPlan),
+                  requestedAt: tenant.upgradeRequest.requestedAt ?? null,
+                }
+              : null
+          }
+        />
+      </AppContent>
+    </>
   )
 }

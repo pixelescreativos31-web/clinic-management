@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
+import { AppHeader, AppContent } from '@/components/AppHeader'
 import { PatientForm } from '@/components/PatientForm'
 import { patientToInitial } from '@/lib/patientForm'
 import { isClinical } from '@/lib/practice'
@@ -30,15 +30,16 @@ export default async function EditPatientPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link
-        href={`/dashboard/patients/${id}`}
-        className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink"
-      >
-        ‹ {patient.name}
-      </Link>
-      <h1 className="mt-2 mb-6 text-[1.45rem] font-semibold">Editar paciente</h1>
-      <PatientForm patientId={id} initial={patientToInitial(patient)} clinical={isClinical(user)} />
-    </div>
+    <>
+      <AppHeader title="Editar paciente" subtitle={patient.name} backHref={`/dashboard/patients/${id}`} />
+      <AppContent className="max-w-[860px]">
+        <PatientForm
+          patientId={id}
+          initial={patientToInitial(patient)}
+          clinical={isClinical(user)}
+          cancelHref={`/dashboard/patients/${id}`}
+        />
+      </AppContent>
+    </>
   )
 }

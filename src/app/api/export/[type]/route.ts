@@ -36,7 +36,7 @@ const TYPE_LABELS: Record<ExportType, string> = {
 
 const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   scheduled: 'Programada',
-  'checked-in': 'En espera',
+  'checked-in': 'En sala',
   completed: 'Atendida',
   cancelled: 'Cancelada',
   'no-show': 'No asistió',

@@ -1,10 +1,9 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { PrintButton } from '@/components/PrintButton'
+import { Letterhead, PrintToolbar, numericDate } from '../../_components/Letterhead'
 import { formatLongDate, formatDate, ageFromDOB } from '@/lib/format'
-import { GENDER_LABELS, PRESCRIPTION_FREQUENCIES } from '@/lib/constants'
+import { GENDER_LABELS, PRESCRIPTION_FREQUENCIES, DEFAULT_TIMEZONE } from '@/lib/constants'
 import { vitalsLine } from '@/lib/clinical'
 import { APP_NAME } from '@/lib/brand'
 import type { Patient, User, Visit } from '@/payload-types'
@@ -49,35 +48,27 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
     : null
 
   return (
-    <main className="mx-auto flex min-h-[210mm] w-full max-w-[150mm] flex-col bg-white px-8 py-10 text-[13px] text-ink print:min-h-[208mm] print:max-w-none print:p-[11mm]">
+    <main className="mx-auto flex min-h-[210mm] w-full max-w-[150mm] flex-col bg-white px-8 py-10 text-[13px] text-[#1c1917] print:min-h-[208mm] print:max-w-none print:p-[11mm]">
       <style>{`@page { size: A5; margin: 0; } @media print { html, body { background: #fff; } }`}</style>
 
-      <div className="mb-6 flex items-center justify-between gap-3 print:hidden">
-        <Link href={`/dashboard/patients/${relId(patient)}?tab=historia`} className="text-[13px] font-medium text-muted-foreground hover:text-ink">
-          ‹ Volver al paciente
-        </Link>
-        <PrintButton />
-      </div>
+      <PrintToolbar backHref={`/dashboard/patients/${relId(patient)}?tab=historia`} backLabel="Volver al paciente" />
 
       {/* Letterhead — doctor first: a prescription is issued by a person, not a clinic. */}
-      <header className="flex items-start justify-between gap-4 border-b-2 border-primary pb-3">
-        <div>
-          <h1 className="font-display text-lg leading-tight font-semibold tracking-tight">{doctor?.name}</h1>
-          {doctor?.specialty && <div className="text-xs font-medium text-primary">{doctor.specialty}</div>}
-          {doctor?.licenseNumber && <div className="text-[11px] text-muted-foreground">Exequátur: {doctor.licenseNumber}</div>}
-        </div>
-        <div className="text-end text-[11px] leading-relaxed text-muted-foreground">
-          {tenant?.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={tenant.logo} alt={tenant.name} className="ms-auto mb-1 h-12 w-auto" />
-          ) : (
-            <div className="font-semibold text-ink">{tenant?.name}</div>
-          )}
-          {tenant?.address && <div>{tenant.address}</div>}
-          {[tenant?.city, tenant?.country].filter(Boolean).join(', ')}
-          {tenant?.phone && <div>Tel.: {tenant.phone}</div>}
-        </div>
-      </header>
+      <Letterhead
+        logo={tenant?.logo}
+        name={doctor?.name}
+        details={
+          <>
+            {[doctor?.specialty, doctor?.licenseNumber ? `Exequátur ${doctor.licenseNumber}` : null].filter(Boolean).join(' · ')}
+            {(doctor?.specialty || doctor?.licenseNumber) && <br />}
+            {[tenant?.name, tenant?.address, [tenant?.city, tenant?.country].filter(Boolean).join(', '), tenant?.phone ? `Tel. ${tenant.phone}` : null]
+              .filter(Boolean)
+              .join(' · ')}
+          </>
+        }
+        doc="Receta"
+        date={numericDate(visit.visitDate, tenant?.settings?.timezone || DEFAULT_TIMEZONE)}
+      />
 
       {/* Patient */}
       <section className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-[12px]">
@@ -103,7 +94,7 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
       </section>
 
       {patient?.allergies && (
-        <p className="mt-2 rounded border border-red/30 px-2 py-1 text-[11px] font-medium text-red">
+        <p className="mt-2 rounded-md border border-[#b91c1c] px-2 py-1 text-[12px] font-semibold text-[#b91c1c]">
           Alergias: {patient.allergies}
         </p>
       )}
@@ -116,13 +107,13 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
 
       {/* Rx */}
       <div className="mt-4 flex-1">
-        <div className="mb-1 font-display text-2xl font-semibold text-primary">℞</div>
+        <div className="mb-1 text-2xl font-semibold text-[#1c1917]">℞</div>
         {rx.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin medicamentos indicados.</p>
         ) : (
           <ol className="space-y-2.5">
             {rx.map((r, i) => (
-              <li key={i} className="border-b border-border/50 pb-2">
+              <li key={i} className="border-b border-[#f0eeec] pb-2">
                 <div className="font-medium">
                   {i + 1}. {r.medicine}
                   {r.dosage ? <span className="font-normal text-muted-foreground"> — {r.dosage}</span> : null}
@@ -144,13 +135,13 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
 
         {visit.treatmentPlan && (
           <div className="mt-4">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Indicaciones</div>
+            <div className="text-xs font-semibold text-[#1c1917]">Indicaciones</div>
             <p className="mt-0.5 whitespace-pre-line text-[12px] leading-relaxed">{visit.treatmentPlan}</p>
           </div>
         )}
         {visit.labOrders && (
           <div className="mt-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Estudios indicados</div>
+            <div className="text-xs font-semibold text-[#1c1917]">Estudios indicados</div>
             <p className="mt-0.5 whitespace-pre-line text-[12px] leading-relaxed">{visit.labOrders}</p>
           </div>
         )}
@@ -163,13 +154,13 @@ export default async function PrescriptionPrintPage({ params }: { params: Promis
 
       {/* Signature */}
       <div className="mt-10 flex justify-end">
-        <div className="w-52 border-t border-ink/60 pt-1 text-center text-[11px]">
+        <div className="w-52 border-t border-[#1c1917] pt-1 text-center text-[11px]">
           <div className="font-medium">{doctor?.name}</div>
           {doctor?.licenseNumber && <div className="text-muted-foreground">Exequátur {doctor.licenseNumber}</div>}
         </div>
       </div>
 
-      <footer className="mt-4 text-center text-[9px] text-faint">Generado con {APP_NAME}</footer>
+      <footer className="mt-4 text-center text-[9px] text-[#78716c]">Generado con {APP_NAME}</footer>
     </main>
   )
 }

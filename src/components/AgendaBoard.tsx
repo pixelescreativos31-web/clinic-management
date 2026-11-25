@@ -1,19 +1,20 @@
 'use client'
 
-// Redesigned Agenda (design handoff "Agenda"): day strip, Lista / Línea de tiempo
-// toggle, and appointment cards that offer only the actions valid for their state:
+// Agenda (design_handoff_medira «Agenda»): day strip, Lista / Línea de tiempo
+// toggle, «Nueva cita» and «Sin cita», and appointment cards that offer only the
+// actions valid for their state:
 //   Programada → Registrar llegada · WhatsApp · No asistió (· Cancelar)
 //   En sala / Sin cita → Atender ahora (clinical roles)
-//   Atendido → Cobrar consulta · Imprimir receta
-// The timeline shows free slots ("Libre · tocar para agendar") that open the
-// quick-booking sheet at that time.
+//   Atendida → Cobrar consulta / Ver cobro · Imprimir receta
+// The timeline shows free slots («Libre · agendar») that open the quick-booking
+// sheet at that time.
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateAppointmentStatus } from '@/app/(frontend)/dashboard/appointments/actions'
 import { createInvoiceFromVisit } from '@/app/(frontend)/dashboard/invoices/actions'
-import { apptStatusStyle, avatarTint, initialsOf } from '@/lib/apptStatus'
+import { apptStatusStyle } from '@/lib/apptStatus'
 import type { AppointmentStatus } from '@/lib/constants'
 import { QuickBookSheet, type QuickMode } from './QuickBookSheet'
 import { Toast, useToast } from './Toast'
@@ -46,7 +47,22 @@ const label12 = (m: number) => {
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, '0')}`
 }
 
-const BTN = 'flex min-h-11 items-center justify-center rounded-[10px] px-3.5 py-[11px] text-[13px] font-semibold'
+/** Appointment status chip (12/600, radius 6). Programada carries a grey border. */
+export function ApptChip({ status, isWalkIn, token, className = '' }: { status: AppointmentStatus; isWalkIn?: boolean; token?: string | null; className?: string }) {
+  const st = apptStatusStyle(status, { isWalkIn, token })
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${className}`}
+      style={{ background: st.bg, color: st.fg, borderColor: status === 'scheduled' ? '#d6d3d1' : st.bg }}
+    >
+      {st.label}
+    </span>
+  )
+}
+
+const BTN = 'inline-flex h-10 items-center justify-center gap-2 rounded-[10px] px-3.5 text-sm font-medium transition-colors disabled:opacity-60'
+const PRIMARY = `${BTN} bg-[#0f766e] text-white hover:bg-[#115e59] hover:text-white`
+const SECONDARY = `${BTN} border border-[#d6d3d1] bg-white text-[#1c1917] hover:border-[#1c1917] hover:text-[#1c1917]`
 
 function ApptCard({
   a,
@@ -63,8 +79,6 @@ function ApptCard({
   const [pending, start] = useTransition()
   const [cancelling, setCancelling] = useState(false)
   const [reason, setReason] = useState('')
-  const st = apptStatusStyle(a.status, { isWalkIn: a.isWalkIn, token: a.token })
-  const tint = avatarTint(a.patientName)
   const closed = a.status === 'cancelled' || a.status === 'no-show'
 
   const setStatus = (status: AppointmentStatus, msg: string, cancellationReason?: string) =>
@@ -85,93 +99,91 @@ function ApptCard({
       router.push(`/dashboard/invoices/${res.data.id}`)
     })
 
+  const note = [showDoctor ? a.doctorName : null, a.reason || null, a.online ? 'En línea' : null].filter(Boolean).join(' · ')
+
   return (
-    <div
-      className={`flex flex-col gap-2.5 rounded-[14px] border border-[#e3e7e7] bg-white px-3.5 py-3 ${closed ? 'opacity-70' : ''}`}
-      style={{ borderLeft: `4px solid ${st.fg}` }}
-    >
-      <div className="flex items-center gap-3">
-        <span className="tabular w-12 shrink-0 text-[15px] font-bold">{label12(a.startMin)}</span>
-        <Link href={`/dashboard/patients/${a.patientId}`} className="flex min-w-0 flex-1 items-center gap-2.5 text-[#15201e] hover:text-[#15201e]">
-          <span
-            className="flex size-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
-            style={{ background: tint.bg, color: tint.fg }}
-          >
-            {initialsOf(a.patientName)}
-          </span>
-          <span className="min-w-0">
-            <span className={`block truncate text-[15px] font-semibold ${a.status === 'cancelled' ? 'line-through' : ''}`}>{a.patientName}</span>
-            <span className="block truncate text-xs text-[#6b7577]">
-              {[showDoctor ? a.doctorName : null, a.reason || null, a.online ? 'En línea' : null].filter(Boolean).join(' · ') || ' '}
-            </span>
-          </span>
-        </Link>
-        <span className="shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold whitespace-nowrap" style={{ background: st.bg, color: st.fg }}>
-          {st.label}
-        </span>
+    <div className="flex flex-col gap-3 rounded-xl border border-[#e7e5e4] bg-white px-4 py-3.5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+        <span className={`tabular w-[52px] flex-none text-[17px] font-medium tracking-[-.02em] ${closed ? 'text-[#57534e]' : ''}`}>{label12(a.startMin)}</span>
+        <div className="min-w-0 flex-[1_1_200px]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <Link
+              href={`/dashboard/patients/${a.patientId}`}
+              className={`min-w-0 truncate font-semibold text-[#1c1917] hover:text-[#0f766e] ${a.status === 'cancelled' ? 'line-through' : ''}`}
+            >
+              {a.patientName}
+            </Link>
+            <ApptChip status={a.status} isWalkIn={a.isWalkIn} token={a.token} />
+          </div>
+          {note && <div className="truncate text-[13px] text-[#57534e]">{note}</div>}
+        </div>
+
+        {a.status === 'scheduled' && !cancelling && (
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" disabled={pending} onClick={() => setStatus('checked-in', `${a.patientName} en sala de espera`)} className={PRIMARY}>
+              Registrar llegada
+            </button>
+            {a.waHref && (
+              <a href={a.waHref} target="_blank" rel="noreferrer" className={SECONDARY}>
+                WhatsApp
+              </a>
+            )}
+            <button type="button" disabled={pending} onClick={() => setStatus('no-show', `${a.patientName}: no asistió`)} className={SECONDARY}>
+              No asistió
+            </button>
+            <button type="button" onClick={() => setCancelling(true)} className={`${BTN} px-2 text-[#57534e] underline underline-offset-2 hover:text-[#1c1917]`}>
+              Cancelar
+            </button>
+          </div>
+        )}
+        {a.status === 'checked-in' && clinical && (
+          <Link href={`/dashboard/visits/new?appointment=${a.id}`} className={PRIMARY}>
+            Atender ahora
+          </Link>
+        )}
+        {a.status === 'completed' && a.visitId && (
+          <div className="flex flex-wrap gap-1.5">
+            {a.invoiceId ? (
+              <Link href={`/dashboard/invoices/${a.invoiceId}`} className={SECONDARY}>
+                Ver cobro
+              </Link>
+            ) : (
+              <button type="button" disabled={pending} onClick={bill} className={PRIMARY}>
+                Cobrar consulta
+              </button>
+            )}
+            <a href={`/print/prescription/${a.visitId}`} target="_blank" rel="noreferrer" className={SECONDARY}>
+              Imprimir receta
+            </a>
+          </div>
+        )}
       </div>
 
-      {a.status === 'scheduled' && !cancelling && (
-        <div className="flex flex-wrap gap-2">
-          <button type="button" disabled={pending} onClick={() => setStatus('checked-in', `${a.patientName} en sala de espera`)} className={`${BTN} flex-1 bg-[#0d6e60] text-white`}>
-            Registrar llegada
-          </button>
-          {a.waHref && (
-            <a href={a.waHref} target="_blank" rel="noreferrer" className={`${BTN} border border-[#e3e7e7] bg-white text-[#1a7a50] hover:text-[#1a7a50]`}>
-              WhatsApp
-            </a>
-          )}
-          <button type="button" disabled={pending} onClick={() => setStatus('no-show', `${a.patientName}: no asistió`)} className={`${BTN} border border-[#e3e7e7] bg-white font-medium text-[#6b7577]`}>
-            No asistió
-          </button>
-          <button type="button" onClick={() => setCancelling(true)} className="px-1 text-xs font-medium text-[#6b7577] underline">
-            Cancelar
-          </button>
-        </div>
-      )}
       {cancelling && (
-        <div className="flex flex-col gap-2 rounded-xl bg-[#f4f6f6] p-2.5">
-          <input
-            autoFocus
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Motivo de la cancelación (obligatorio)"
-            className="h-11 rounded-[10px] border border-[#e3e7e7] bg-white px-3 text-base outline-none focus:border-[#0d6e60]"
-          />
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-2 rounded-[10px] bg-[#f0eeec] p-3">
+          <label className="flex flex-col gap-1 text-[13px] font-medium text-[#44403c]">
+            Motivo de la cancelación
+            <input
+              autoFocus
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Obligatorio"
+              className="h-11 rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-base font-normal text-[#1c1917] outline-none focus:border-[#0f766e]"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={pending || !reason.trim()}
               onClick={() => setStatus('cancelled', 'Cita cancelada', reason.trim())}
-              className={`${BTN} flex-1 bg-[#b3261e] text-white disabled:opacity-50`}
+              className={`${BTN} h-11 bg-[#1c1917] text-white hover:text-white disabled:opacity-50`}
             >
               Confirmar cancelación
             </button>
-            <button type="button" onClick={() => setCancelling(false)} className={`${BTN} border border-[#e3e7e7] bg-white font-medium`}>
+            <button type="button" onClick={() => setCancelling(false)} className={`${SECONDARY} h-11`}>
               Volver
             </button>
           </div>
-        </div>
-      )}
-      {a.status === 'checked-in' && clinical && (
-        <Link href={`/dashboard/visits/new?appointment=${a.id}`} className={`${BTN} bg-[#2563ab] text-white hover:text-white`}>
-          Atender ahora
-        </Link>
-      )}
-      {a.status === 'completed' && a.visitId && (
-        <div className="flex gap-2">
-          {a.invoiceId ? (
-            <Link href={`/dashboard/invoices/${a.invoiceId}`} className={`${BTN} flex-1 border border-[#0d6e60] text-[#0d6e60] hover:text-[#0d6e60]`}>
-              Ver cobro
-            </Link>
-          ) : (
-            <button type="button" disabled={pending} onClick={bill} className={`${BTN} flex-1 border border-[#0d6e60] text-[#0d6e60]`}>
-              Cobrar consulta
-            </button>
-          )}
-          <a href={`/print/prescription/${a.visitId}`} target="_blank" rel="noreferrer" className={`${BTN} border border-[#e3e7e7] bg-white font-medium text-[#15201e] hover:text-[#15201e]`}>
-            Imprimir receta
-          </a>
         </div>
       )}
     </div>
@@ -242,148 +254,139 @@ export function AgendaBoard({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
-        {days.map((d) => (
-          <Link
-            key={d.date}
-            href={d.href}
-            aria-current={d.active ? 'date' : undefined}
-            className={`w-[52px] flex-none rounded-xl border py-2 text-center ${
-              d.active ? 'border-[#15201e] bg-[#15201e] text-white hover:text-white' : 'border-[#e3e7e7] bg-white text-[#15201e] hover:text-[#15201e]'
-            }`}
-          >
-            <span className="block text-[10px] tracking-[.06em] uppercase opacity-80">{d.dow}</span>
-            <span className="tabular mt-0.5 block text-[17px] font-semibold">{d.num}</span>
-          </Link>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="-mx-1 flex min-w-0 max-w-full gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]">
+          {days.map((d) => (
+            <Link
+              key={d.date}
+              href={d.href}
+              aria-current={d.active ? 'date' : undefined}
+              className={`flex h-[58px] w-[54px] flex-none flex-col items-center justify-center rounded-[10px] border leading-tight transition-colors ${
+                d.active ? 'border-[#1c1917] bg-[#1c1917] text-white hover:text-white' : 'border-[#e7e5e4] bg-white text-[#1c1917] hover:border-[#d6d3d1] hover:text-[#1c1917]'
+              }`}
+            >
+              <span className="text-xs">{d.dow}</span>
+              <span className="tabular text-[17px] font-semibold">{d.num}</span>
+            </Link>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex gap-0.5 rounded-[10px] bg-[#f0eeec] p-[3px]" role="group" aria-label="Vista">
+            {(['list', 'timeline'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`h-[34px] rounded-lg px-3 text-sm font-medium ${view === v ? 'bg-white text-[#1c1917]' : 'text-[#57534e] hover:text-[#1c1917]'}`}
+              >
+                {v === 'list' ? 'Lista' : 'Línea de tiempo'}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setSheet({ mode: 'appt' })} className={PRIMARY}>
+            Nueva cita
+          </button>
+          <button type="button" onClick={() => setSheet({ mode: 'walkin' })} className={SECONDARY}>
+            Sin cita
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-[10px] border border-[#e3e7e7] bg-white p-[3px]">
-          {(['list', 'timeline'] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={view === v}
-              onClick={() => setView(v)}
-              className={`rounded-lg px-3.5 py-2 text-[13px] font-semibold ${view === v ? 'bg-[#15201e] text-white' : 'text-[#6b7577]'}`}
-            >
-              {v === 'list' ? 'Lista' : 'Línea de tiempo'}
-            </button>
-          ))}
-        </div>
-        <span className="flex-1" />
-        <span className="text-xs text-[#6b7577]">
+        {doctors.length > 1 && (
+          <div className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]">
+            {[{ id: 'all', name: 'Todos' }, ...doctors].map((d) => {
+              if (view === 'timeline' && d.id === 'all') return null
+              const on = doctorFilter === d.id || (view === 'timeline' && doctorFilter === 'all' && d.id === tlDoctor?.id)
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setDoctorFilter(d.id)}
+                  className={`h-10 flex-none rounded-[10px] border px-3.5 text-sm font-medium ${
+                    on ? 'border-[#1c1917] bg-[#1c1917] text-white' : 'border-[#d6d3d1] bg-white text-[#1c1917] hover:border-[#1c1917]'
+                  }`}
+                >
+                  {d.name}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        <span className="tabular ml-auto text-[13px] text-[#57534e]">
           {shown.length} {shown.length === 1 ? 'cita' : 'citas'}
           {waiting ? ` · ${waiting} en sala` : ''}
         </span>
-        <button type="button" onClick={() => setSheet({ mode: 'walkin' })} className="hidden rounded-[10px] border border-[#e3e7e7] bg-white px-3.5 py-2 text-[13px] font-semibold md:block">
-          Paciente sin cita
-        </button>
-        <button type="button" onClick={() => setSheet({ mode: 'appt' })} className="hidden rounded-[10px] bg-[#0d6e60] px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,110,96,.6)] md:block">
-          + Nueva cita
-        </button>
       </div>
-
-      {doctors.length > 1 && (
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]">
-          {[{ id: 'all', name: 'Todos' }, ...doctors].map((d) =>
-            view === 'timeline' && d.id === 'all' ? null : (
-              <button
-                key={d.id}
-                type="button"
-                aria-pressed={doctorFilter === d.id || (view === 'timeline' && doctorFilter === 'all' && d.id === tlDoctor?.id)}
-                onClick={() => setDoctorFilter(d.id)}
-                className={`flex-none rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                  doctorFilter === d.id || (view === 'timeline' && doctorFilter === 'all' && d.id === tlDoctor?.id)
-                    ? 'border-[#0d6e60] bg-[#e6f1ee] text-[#0d6e60]'
-                    : 'border-[#e3e7e7] bg-white text-[#6b7577]'
-                }`}
-              >
-                {d.name}
-              </button>
-            ),
-          )}
-        </div>
-      )}
 
       {view === 'list' ? (
         shown.length === 0 ? (
-          <div className="rounded-[14px] border border-dashed border-[#cfd6d6] bg-white px-4 py-8 text-center text-sm text-[#6b7577]">
-            No hay citas este día.{' '}
-            <button type="button" onClick={() => setSheet({ mode: 'appt' })} className="font-semibold text-[#0d6e60]">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-[#e7e5e4] bg-white px-4 py-8 text-sm text-[#57534e]">
+            No hay citas este día.
+            <button type="button" onClick={() => setSheet({ mode: 'appt' })} className="font-medium text-[#0f766e] hover:text-[#115e59]">
               Agendar una
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 pb-28 md:pb-0">
+          <div className="flex flex-col gap-2">
             {shown.map((a) => (
               <ApptCard key={a.id} a={a} clinical={clinical} showDoctor={doctors.length > 1 && doctorFilter === 'all'} onDone={say} />
             ))}
           </div>
         )
       ) : (
-        <div className="mb-28 overflow-hidden rounded-[14px] border border-[#e3e7e7] bg-white md:mb-0">
+        <div className="overflow-hidden rounded-xl border border-[#e7e5e4] bg-white">
           {tlDoctor?.fromMin === null && (
-            <div className="border-b border-[#eef1f1] px-3 py-2 text-xs text-[#6b7577]">{tlDoctor.name} no consulta este día según su horario.</div>
+            <div className="border-b border-[#f0eeec] px-4 py-2.5 text-[13px] text-[#57534e]">{tlDoctor.name} no consulta este día según su horario.</div>
           )}
           {[...extra.map((a) => ({ m: a.startMin, items: [a], covered: false })), ...rows].map((r) => {
             const now = nowMin !== null && nowMin >= r.m && nowMin < r.m + durationMins
             const past = isToday && nowMin !== null && r.m + durationMins <= nowMin
             return (
-              <div key={`${r.m}-${r.items[0]?.id ?? ''}`} className={`grid min-h-[52px] grid-cols-[56px_1fr] border-b border-[#eef1f1] last:border-0 ${past && !r.items.length ? 'bg-[#f4f6f6]' : 'bg-white'}`}>
-                <div className="tabular relative border-r border-[#eef1f1] pt-2.5 pl-3 text-xs text-[#6b7577]">
+              <div
+                key={`${r.m}-${r.items[0]?.id ?? ''}`}
+                className={`grid min-h-[52px] grid-cols-[56px_minmax(0,1fr)] border-t border-[#f0eeec] first:border-t-0 ${past && !r.items.length ? 'bg-[#fafaf7]' : 'bg-white'}`}
+              >
+                <div className={`tabular relative pt-2.5 pl-4 text-[13px] ${now ? 'font-semibold text-[#0f766e]' : 'text-[#57534e]'}`}>
                   {label12(r.m)}
-                  {now && <span aria-label="Ahora" className="absolute top-3.5 -right-[5px] size-[9px] rounded-full bg-[#b3261e]" />}
+                  {now && <span className="sr-only"> (ahora)</span>}
                 </div>
-                {r.items.length > 0 ? (
-                  <div className="flex flex-col">
-                    {r.items.map((a) => {
+                <div className="flex flex-col gap-1.5 py-1.5 pr-3">
+                  {r.items.length > 0 ? (
+                    r.items.map((a) => {
                       const st = apptStatusStyle(a.status, { isWalkIn: a.isWalkIn, token: a.token })
                       return (
                         <Link
                           key={a.id}
                           href={`/dashboard/patients/${a.patientId}`}
-                          className="mx-2.5 my-1.5 flex min-h-10 items-center gap-2 rounded-lg px-2.5 py-2 text-[#15201e] hover:text-[#15201e]"
-                          style={{ background: st.bg, borderLeft: `3px solid ${st.fg}` }}
+                          className="flex h-10 items-center justify-between gap-3 rounded-lg border px-3 text-sm"
+                          style={{ background: st.bg, color: st.fg, borderColor: a.status === 'scheduled' ? '#d6d3d1' : st.bg }}
                         >
-                          <span className="tabular shrink-0 text-[11px] text-[#6b7577]">{label12(a.startMin)}</span>
-                          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{a.patientName}</span>
-                          <span className="text-[11px] font-semibold" style={{ color: st.fg }}>
-                            {st.label}
+                          <span className="min-w-0 truncate font-medium">
+                            <span className="tabular mr-2 opacity-80">{label12(a.startMin)}</span>
+                            {a.patientName}
                           </span>
+                          <span className="flex-none text-xs font-semibold">{st.label}</span>
                         </Link>
                       )
-                    })}
-                  </div>
-                ) : r.covered ? (
-                  <span />
-                ) : past ? (
-                  <span />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setSheet({ mode: 'appt', time: hhmm(r.m) })}
-                    className="mx-2.5 my-1.5 flex min-h-10 items-center justify-center rounded-lg border border-dashed border-[#cfd6d6] text-xs text-[#6b7577] hover:border-[#0d6e60] hover:text-[#0d6e60]"
-                  >
-                    Libre · tocar para agendar
-                  </button>
-                )}
+                    })
+                  ) : r.covered || past ? null : (
+                    <button
+                      type="button"
+                      onClick={() => setSheet({ mode: 'appt', time: hhmm(r.m) })}
+                      className="h-10 w-full rounded-lg border border-dashed border-[#d6d3d1] px-3 text-left text-[13px] text-[#57534e] transition-colors hover:border-[#0f766e] hover:text-[#0f766e]"
+                    >
+                      Libre · agendar
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}
         </div>
       )}
-
-      {/* Floating actions (phones) — desktop has them in the header */}
-      <div className="fixed right-4 bottom-[92px] z-20 flex flex-col items-end gap-2 md:hidden">
-        <button type="button" onClick={() => setSheet({ mode: 'walkin' })} className="rounded-full border border-[#e3e7e7] bg-white px-4 py-2.5 text-[13px] font-semibold shadow-[0_8px_20px_-10px_rgba(0,0,0,.35)]">
-          Sin cita
-        </button>
-        <button type="button" onClick={() => setSheet({ mode: 'appt' })} className="rounded-full bg-[#0d6e60] px-4 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,110,96,.6)]">
-          + Nueva cita
-        </button>
-      </div>
 
       {sheet && (
         <QuickBookSheet

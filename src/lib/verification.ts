@@ -38,9 +38,9 @@ export async function sendVerificationEmail(
   const res = await send({
     to,
     subject: `Confirme su correo para ${clinicName}`,
-    html: `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
+    html: `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c1917;max-width:520px">
       <h2 style="margin:0 0 2px;font-size:18px">Solo falta un clic</h2>
-      <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
+      <p style="margin:0 0 16px;color:#44403c;font-size:14px">
         Confirme que este es su correo y ${clinicName} pasará a la fila de aprobación.
       </p>
       <p style="margin:0 0 18px">

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { btnGhost, btnPrimary, Spinner } from './primitives'
 import { enrollInProgram, updateProgram } from '@/app/(frontend)/dashboard/programs/actions'
 
-const INPUT = 'w-full rounded-[10px] border border-[#e3e7e7] bg-[#fafbfb] px-3 h-[42px] text-sm outline-none focus:border-[#0d6e60]'
+const INPUT = 'h-11 w-full rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-base text-[#1c1917] outline-none transition-colors focus:border-[#0f766e] md:text-[15px]'
 
 /** Enrol the patient and jump straight into the initial evaluation (week 0). */
 export function EnrollProgram({ patientId, programName, today }: { patientId: string; programName: string; today: string }) {
@@ -32,11 +32,11 @@ export function EnrollProgram({ patientId, programName, today }: { patientId: st
     <div className="flex flex-col gap-3">
       <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-[#6b7577]">Fecha de ingreso</span>
+          <span className="text-[13px] font-medium text-[#44403c]">Fecha de ingreso</span>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={INPUT} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-[#6b7577]">Meta (opcional)</span>
+          <span className="text-[13px] font-medium text-[#44403c]">Meta (opcional)</span>
           <input value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={200} placeholder="p. ej. Bajar 15 lb en 12 semanas" className={INPUT} />
         </label>
       </div>
@@ -44,7 +44,7 @@ export function EnrollProgram({ patientId, programName, today }: { patientId: st
         {pending && <Spinner />}
         Inscribir en {programName} y hacer evaluación inicial
       </button>
-      {error && <p className="text-xs text-red" role="alert">{error}</p>}
+      {error && <p className="text-[13px] text-[#b45309]" role="alert">{error}</p>}
     </div>
   )
 }
@@ -72,33 +72,33 @@ export function ProgramStatusButtons({ programId, status }: { programId: string;
           {pending && <Spinner />}
           Reactivar programa
         </button>
-        {error && <p className="text-xs text-red">{error}</p>}
+        {error && <p className="text-[13px] text-[#b45309]" role="alert">{error}</p>}
       </div>
     )
   }
   return (
     <div className="flex flex-col gap-1">
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           <span>{confirming === 'completed' ? '¿Marcar como completado?' : '¿Suspender el programa?'}</span>
-          <button type="button" disabled={pending} onClick={() => set(confirming)} className="rounded-full bg-[#15201e] px-3 py-1.5 font-semibold text-white">
+          <button type="button" disabled={pending} onClick={() => set(confirming)} className="inline-flex h-9 items-center rounded-[8px] bg-[#1c1917] px-3 text-[13px] font-medium text-white">
             {pending ? <Spinner /> : 'Sí'}
           </button>
-          <button type="button" onClick={() => setConfirming(null)} className="rounded-full border px-3 py-1.5 font-semibold">
+          <button type="button" onClick={() => setConfirming(null)} className="inline-flex h-9 items-center rounded-[8px] border border-[#d6d3d1] bg-white px-3 text-[13px] font-medium">
             No
           </button>
         </div>
       ) : (
         <div className="flex gap-2">
-          <button type="button" onClick={() => setConfirming('completed')} className={`${btnGhost} text-xs`}>
+          <button type="button" onClick={() => setConfirming('completed')} className={btnGhost}>
             Completar
           </button>
-          <button type="button" onClick={() => setConfirming('cancelled')} className={`${btnGhost} text-xs`}>
+          <button type="button" onClick={() => setConfirming('cancelled')} className={btnGhost}>
             Suspender
           </button>
         </div>
       )}
-      {error && <p className="text-xs text-red">{error}</p>}
+      {error && <p className="text-[13px] text-[#b45309]" role="alert">{error}</p>}
     </div>
   )
 }

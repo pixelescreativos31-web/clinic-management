@@ -40,6 +40,17 @@ export function canRecordVisits(user: UserLike): boolean {
   return isClinical(user) || isTherapist(user)
 }
 
+/**
+ * May this user START a new consultation/session? Only someone who sees patients:
+ * an owner who doesn't practise is an administrator (not counted as a doctor by the
+ * plan), so they may read and correct records but not open new ones. Mirrors the
+ * Visits create guard.
+ */
+export function canStartVisits(user: UserLike): boolean {
+  if (user?.role === 'owner') return user.practitioner === true
+  return canRecordVisits(user)
+}
+
 const PRACTISING_OWNER: Where = { and: [{ role: { equals: 'owner' } }, { practitioner: { equals: true } }] }
 
 /** Payload `where` selecting a tenant's bookable staff (doctors, therapists, practising owner). */

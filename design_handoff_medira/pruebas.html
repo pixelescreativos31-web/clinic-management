@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Pruebas medira</title>
+<style>body{font:13px/1.45 ui-monospace,Menlo,monospace;margin:16px;background:#fff;color:#111}pre{white-space:pre-wrap;margin:0}#f{margin-top:12px}</style></head>
+<body><div id="st" style="color:#b45309"></div><pre id="out">Ejecutando pruebas…</pre><div id="f"></div>
+<script>
+const out = document.getElementById('out'), host = document.getElementById('f'), L = [];
+const log = (s) => { L.push(s); out.textContent = L.join('\n'); };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const st = (s) => { document.getElementById('st').textContent = 'paso: ' + s; };
+window.addEventListener('error', (e) => log('ERROR GLOBAL: ' + e.message));
+window.addEventListener('unhandledrejection', (e) => log('RECHAZO: ' + (e.reason && e.reason.message)));
+async function open(file, w, hash) {
+  st('abriendo ' + file + (hash || ''));
+  host.innerHTML = '';
+  const fr = document.createElement('iframe'); fr.style.cssText = 'width:' + w + 'px;height:420px;border:1px solid #ccc';
+  const errs = [];
+  host.appendChild(fr);
+  await new Promise((r) => { fr.onload = r; setTimeout(r, 7000); fr.src = encodeURI(file) + (hash || ''); });
+  fr.contentWindow.addEventListener('error', (e) => errs.push(e.message));
+  const ce = null;
+  await wait(1800);
+  st('abierto ' + file);
+  return { fr, doc: fr.contentDocument, win: fr.contentWindow, errs, w };
+}
+function measure(p) {
+  const d = p.doc, de = d.documentElement, over = de.scrollWidth - de.clientWidth, bad = [];
+  if (over > 1) for (const el of d.body.querySelectorAll('*')) { const r = el.getBoundingClientRect(); if (r.width && r.right > p.w + 1 && !el.closest('[style*="overflow-x:auto"],[style*="overflow-x: auto"]')) { bad.push((el.textContent || el.tagName).trim().slice(0, 40) + ' →' + Math.round(r.right)); if (bad.length > 2) break; } }
+  const txt = (d.body.innerText || '').trim().length;
+  const holes = (d.body.innerText.match(/\{\{[^}]*\}\}/g) || []).slice(0, 3);
+  return { over, bad, txt, holes };
+}
+function btn(p, text) { return [...p.doc.querySelectorAll('button,a')].find((b) => b.offsetParent !== null && b.textContent.trim() === text); }
+function report(name, p, m) {
+  const fail = m.over > 1 || m.txt < 40 || m.holes.length || p.errs.length;
+  log((fail ? 'FALLA ' : 'ok    ') + name + (m.over > 1 ? ' | desborde ' + m.over + 'px: ' + m.bad.join(' ; ') : '') + (m.txt < 40 ? ' | vacío' : '') + (m.holes.length ? ' | huecos ' + m.holes.join(',') : '') + (p.errs.length ? ' | errores: ' + p.errs.slice(0, 2).join(' / ') : ''));
+  p.errs.length = 0; return fail;
+}
+(async () => {
+  let fails = 0; L.length = 0;
+  for (const w of [+(new URLSearchParams(location.search).get('w') || 390)]) {
+    log('== ANCHO ' + w + ' ==');
+    for (const f of ['medira Inicio.dc.html', 'medira Precios.dc.html', 'medira Sistema.dc.html']) { const p = await open(f, w); fails += report(f, p, measure(p)); }
+    // Sitio: cada pestaña
+    { const p = await open('medira Sitio.dc.html', w); for (const t of ['Seguridad y privacidad', 'Por especialidad', 'Hospitales', 'Ayuda', 'Estado', 'Legal']) { const b = btn(p, t); if (!b) { log('FALLA Sitio: no encuentro ' + t); fails++; continue; } b.click(); await wait(350); fails += report('Sitio · ' + t, p, measure(p)); } }
+    // Flujos: cada pantalla
+    { const p = await open('medira Flujos.dc.html', w, '#r0'); const ids = ['r0','r1','r1b','r2','r3','r4','r5','e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','c1','c1b','c2','c3','c3g','c4','c5','c6','c7','c8','c9','p1','p2','p3','p4','p5','p6','p6b','p7','p8','p9','p10','p11','p12','b1','b2','b3','o1','o2','o3','o4','o5','t1']; let bad = 0;
+      const q = p; for (let i = 0; i < ids.length; i++) { const id = ids[i]; st('flujos ' + id + ' a'); const sel = q.doc.querySelector('aside select'); if (sel) { Object.getOwnPropertyDescriptor(q.win.HTMLSelectElement.prototype, 'value').set.call(sel, id); sel.dispatchEvent(new q.win.Event('change', { bubbles: true })); } else { const bs = q.doc.querySelectorAll('aside button'); if (bs[i]) bs[i].click(); } await wait(160); st('flujos ' + id + ' b'); const m = measure(q); st('flujos ' + id + ' c'); const h1 = q.doc.querySelector('h1'); if (m.over > 1 || !h1 || !h1.textContent.trim() || m.holes.length || q.errs.length) { bad++; fails += report('Flujos · ' + id + ' «' + (h1 ? h1.textContent : '') + '»', q, m) || 1; } }
+      log((bad ? 'FALLA ' : 'ok    ') + 'Flujos · ' + ids.length + ' pantallas, ' + bad + ' con problema'); }
+    // Flujos: validación y recorrido del registro
+    { const p = await open('medira Flujos.dc.html', w, '#r1'); const set = (el, v) => { Object.getOwnPropertyDescriptor(p.win.HTMLInputElement.prototype, 'value').set.call(el, v); el.dispatchEvent(new p.win.Event('input', { bubbles: true })); };
+      const step = async (t) => { const b = btn(p, t); if (b) b.click(); await wait(300); return !!b; };
+      const h1 = () => (p.doc.querySelector('h1') || {}).textContent;
+      let ok = true, note = [];
+      const chk = [...p.doc.querySelectorAll('button')].find((b) => b.textContent.includes('Acepto los términos')); if (chk) chk.click(); await wait(200);
+      await step('Crear cuenta'); if (h1() !== 'Cree su cuenta' || !p.doc.body.innerText.includes('Escriba su nombre')) { ok = false; note.push('no valida nombre vacío'); }
+      const ins = () => [...p.doc.querySelectorAll('main input')];
+      set(ins()[0], 'Dra. Prueba Pérez'); set(ins()[1], 'prueba@correo.do'); set(ins()[2], 'clave-segura-123'); await wait(200);
+      await step('Crear cuenta'); if (h1() !== 'Verifique su correo' || !p.doc.body.innerText.includes('prueba@correo.do')) { ok = false; note.push('no llega a verificar o no muestra el correo: ' + h1()); }
+      set(ins()[0], '123456'); await wait(200); await step('Verificar'); if (h1() !== 'Su práctica') { ok = false; note.push('no llega a Su práctica: ' + h1()); }
+      const nom = ins().find((i) => i.closest('label') && i.closest('label').textContent.includes('Nombre de la clínica')); if (nom) set(nom, 'Consultorio de Prueba'); await wait(200);
+      await step('Continuar'); if (h1() !== 'Proteja su cuenta') { ok = false; note.push('no llega a 2FA: ' + h1()); }
+      set(ins()[0], '654321'); await wait(200); await step('Activar verificación en dos pasos');
+      const c2 = [...p.doc.querySelectorAll('button')].find((b) => b.textContent.includes('Ya guardé mis códigos')); if (c2) c2.click(); await wait(200); await step('Continuar');
+      const t = p.doc.body.innerText; if (h1() !== 'Resumen antes de pagar' || !t.includes('Consultorio de Prueba') || !t.includes('Dra. Prueba Pérez') || !t.includes('US$49.95')) { ok = false; note.push('resumen sin datos de la cuenta: ' + h1()); }
+      log((ok ? 'ok    ' : 'FALLA ') + 'Flujos · recorrido del registro con validación' + (note.length ? ' | ' + note.join(' ; ') : '')); if (!ok) fails++; }
+    // App: cada vista y rol
+    { const p = await open('medira App.dc.html', w); const movil = w < 860; let bad = 0, n = 0;
+      const views = ['Panel', 'Agenda', 'Pacientes', 'Estudios', 'Documentos', 'Programa de peso', 'Caja', 'Cuentas por cobrar', 'ARS', 'Comprobantes', 'Gastos', 'Honorarios', 'Informes', 'Inventario', 'Videoconsultas', 'Sucursales', 'Equipo', 'Actividad', 'Configuración', 'Plan y facturación'];
+      const goTo = async (t) => { if (movil) { const m = btn(p, 'Más'); if (m) m.click(); await wait(250); } const b = [...p.doc.querySelectorAll('button')].filter((x) => x.offsetParent !== null && x.textContent.trim() === t).pop(); if (!b) return false; b.click(); await wait(350); return true; };
+      for (const t of views) { n++; if (!(await goTo(t))) { log('FALLA App: no encuentro ' + t); bad++; continue; } const m = measure(p); if (m.over > 1 || m.txt < 40 || m.holes.length || p.errs.length) { bad++; report('App · ' + t, p, m); } }
+      // ficha → consulta → receta
+      await goTo('Pacientes'); const row = [...p.doc.querySelectorAll('button')].find((b) => b.textContent.includes('Luis García')); if (row) row.click(); await wait(350);
+      for (const t of ['Registrar consulta', 'Guardar y recetar']) { n++; const b = btn(p, t); if (!b) { log('FALLA App: no encuentro ' + t); bad++; continue; } b.click(); await wait(400); const m = measure(p); if (m.over > 1 || m.holes.length || p.errs.length) { bad++; report('App · tras ' + t, p, m); } }
+      // especialidades en consulta
+      await goTo('Pacientes'); const row2 = [...p.doc.querySelectorAll('button')].find((b) => b.textContent.includes('Ana Martínez')); if (row2) row2.click(); await wait(300); const rc = btn(p, 'Registrar consulta'); if (rc) rc.click(); await wait(350);
+      for (const e of ['Nutrición', 'Estética', 'Oftalmología', 'Odontología', 'Gineco-obstetricia', 'Pediatría', 'General']) { n++; const b = [...p.doc.querySelectorAll('button')].find((x) => x.offsetParent !== null && x.textContent.replace('pronto', '').trim() === e); if (!b) { log('FALLA App: no encuentro especialidad ' + e); bad++; continue; } b.click(); await wait(300); const m = measure(p); if (m.over > 1 || m.holes.length || p.errs.length) { bad++; report('App · consulta ' + e, p, m); } }
+      // modo oscuro: contraste de botones
+      const ajuste = async (t) => { if (movil) { const m = btn(p, 'Más'); if (m) m.click(); await wait(250); } const b = [...p.doc.querySelectorAll('button')].filter((x) => x.offsetParent !== null && x.textContent.trim() === t).pop(); if (b) b.click(); await wait(300); const c = btn(p, 'Cerrar'); if (c) c.click(); await wait(200); };
+      await ajuste('Oscuro');
+      const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(m[0]) + .7152 * f(m[1]) + .0722 * f(m[2]); };
+      const bgOf = (el) => { while (el) { const b = p.win.getComputedStyle(el).backgroundColor; const m = b.match(/[\d.]+/g); if (m && (m.length < 4 || +m[3] > .5)) return b; el = el.parentElement; } return 'rgb(12,10,9)'; };
+      let low = [];
+      for (const v of ['Panel', 'Agenda', 'Pacientes', 'Caja', 'Plan y facturación', 'Configuración']) { await goTo(v); for (const el of p.doc.querySelectorAll('button,span,div,label,input')) { if (el.offsetParent === null || !el.childNodes.length) continue; const own = [...el.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim()); if (!own && el.tagName !== 'INPUT') continue; const cs = p.win.getComputedStyle(el); const a = lum(cs.color), b = lum(bgOf(el)); const cr = (Math.max(a, b) + .05) / (Math.min(a, b) + .05); if (cr < 3) low.push(v + ': «' + (el.textContent || el.value || '').trim().slice(0, 24) + '» ' + cr.toFixed(1)); } }
+      log((low.length ? 'FALLA ' : 'ok    ') + 'App · contraste en modo oscuro (6 vistas)' + (low.length ? ' | ' + low.length + ' bajos: ' + low.slice(0, 6).join(' ; ') : '')); if (low.length) fails++;
+      await ajuste('Claro');
+      // roles
+      for (const r of ['Médico', 'Recepción', 'Contador', 'Dueño']) { n++; if (movil) { const m = btn(p, 'Más'); if (m) m.click(); await wait(250); } const b = [...p.doc.querySelectorAll('button')].filter((x) => x.offsetParent !== null && x.textContent.trim() === r).pop(); if (!b) { log('FALLA App: no encuentro rol ' + r); bad++; continue; } b.click(); await wait(400); const m = measure(p); if (m.over > 1 || m.txt < 40 || m.holes.length || p.errs.length) { bad++; report('App · rol ' + r, p, m); } }
+      log((bad ? 'FALLA ' : 'ok    ') + 'App · ' + n + ' vistas, flujos y roles, ' + bad + ' con problema'); fails += bad; }
+  }
+  log('== FIN: ' + (fails ? fails + ' fallas' : 'todo pasó') + ' ==');
+  document.title = 'FIN';
+})().catch((e) => log('ERROR DEL ARNÉS: ' + e.message));
+</script></body></html>

@@ -46,9 +46,9 @@ export async function notifySignupDecision(
 
 function approvedHtml(tenant: Pick<Tenant, 'name'>, owner: User): string {
   const link = `${appBaseUrl()}/login?email=${encodeURIComponent(owner.email)}`
-  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
+  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c1917;max-width:520px">
     <h2 style="margin:0 0 2px;font-size:18px">${tenant.name} está listo</h2>
-    <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
+    <p style="margin:0 0 16px;color:#44403c;font-size:14px">
       Su consultorio fue aprobado. Inicie sesión para configurar su agenda y empezar a dar citas.
     </p>
     <p style="margin:0 0 18px">
@@ -63,9 +63,9 @@ function approvedHtml(tenant: Pick<Tenant, 'name'>, owner: User): string {
 }
 
 function rejectedHtml(tenant: Pick<Tenant, 'name'>, _owner: User): string {
-  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
+  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c1917;max-width:520px">
     <h2 style="margin:0 0 2px;font-size:18px">Sobre el registro de ${tenant.name}</h2>
-    <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
+    <p style="margin:0 0 16px;color:#44403c;font-size:14px">
       Por el momento no pudimos aprobar el registro de su consultorio. Si cree que se trata de un
       error, responda a este correo y lo revisaremos de nuevo.
     </p>

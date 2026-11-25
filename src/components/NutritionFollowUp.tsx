@@ -2,7 +2,6 @@
 // trend, mirroring the paper "Seguimiento – Registro" sheet. Server component —
 // a hand-drawn SVG keeps it dependency-free and printable.
 
-import { Card } from './primitives'
 import { formatDate } from '@/lib/format'
 import { formatNutritionValue, NUTRITION_FIELDS, type NutritionValues } from '@/lib/nutrition'
 import type { Tenant, Visit } from '@/payload-types'
@@ -58,10 +57,10 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
   const goal = [...rows].reverse().find((v) => v.nutrition?.goal)?.nutrition?.goal
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3.5">
-        <h2 className="text-sm font-semibold">Seguimiento</h2>
-        <div className="tabular flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5">
+        <h2 className="text-[15px] font-semibold">Seguimiento</h2>
+        <div className="tabular flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
           {goal && <span>Meta: <span className="font-medium text-ink">{goal}</span></span>}
           {first != null && last != null && weighed.length > 1 && (
             <span>
@@ -76,27 +75,27 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
       </div>
 
       {weighed.length > 0 && (
-        <div className="border-b border-border px-3 pt-2">
+        <div className="border-t border-[#f0eeec] px-3 pt-2">
           <WeightChart points={weighed.map((v) => ({ label: formatDate(v.visitDate, tenant), kg: v.vitals!.weightKg! }))} />
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto border-t border-[#f0eeec]">
         <table className="w-full min-w-[820px] text-[13px]">
-          <thead className="bg-muted/40 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <thead className="text-left text-xs font-medium text-muted-foreground">
             <tr>
               {['#', 'Fecha', 'Peso', 'Cambio', 'IMC', 'Cintura', 'Ejercicio', 'Estreñim.', 'Ansiedad', 'Dieta', 'Tratamiento'].map((h) => (
-                <th key={h} className="px-3 py-2 font-semibold">{h}</th>
+                <th key={h} className="px-3 py-2.5 font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody>
             {rows.map((v, i) => {
               const w = v.vitals?.weightKg
               const prevW = rows.slice(0, i).reverse().find((p) => p.vitals?.weightKg)?.vitals?.weightKg
               const delta = w != null && prevW != null ? w - prevW : null
               return (
-                <tr key={v.id} className="align-top">
+                <tr key={v.id} className="border-t border-[#f0eeec] align-top">
                   <td className="tabular px-3 py-2 text-muted-foreground">{i + 1}</td>
                   <td className="tabular whitespace-nowrap px-3 py-2">{formatDate(v.visitDate, tenant)}</td>
                   <td className="tabular whitespace-nowrap px-3 py-2 font-medium">{w != null ? `${w} kg` : '—'}</td>
@@ -118,6 +117,6 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
           </tbody>
         </table>
       </div>
-    </Card>
+    </section>
   )
 }

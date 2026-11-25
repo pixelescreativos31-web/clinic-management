@@ -1,16 +1,16 @@
 'use client'
 
-// Consultation form — redesigned (design handoff "Consulta"). Only «Motivo» and
-// «Diagnóstico» are required; everything else lives in collapsible sections that
-// change with the format (General / Nutrición / Ficha de masajes — the formats on
-// offer come from the clinic's profile, see src/lib/profiles.ts). A sticky bar saves (and can print
-// the prescription). Saving a new consultation completes the appointment and
-// returns to the agenda.
+// Consultation form — design_handoff_medira «Consulta» (max width 860). Only
+// «Motivo» and «Diagnóstico» are required; everything else lives in collapsible
+// section cards that change with the format (General / Nutrición / Ficha de
+// masajes — the formats on offer come from the clinic's profile, see
+// src/lib/profiles.ts). A sticky bottom bar saves (and can print the
+// prescription). Saving a new consultation completes the appointment and returns
+// to the agenda.
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Spinner } from './primitives'
-import { IconAlert } from './icons'
 import { EMPTY_NUTRITION, GOOD_BAD, NUTRITION_FIELDS, YES_NO, waistHipRatio, type NutritionFormState } from '@/lib/nutrition'
 import { recordVisit, updateVisit, type PrescriptionRowInput, type VisitInput } from '@/app/(frontend)/dashboard/visits/actions'
 import { EMPTY_MASSAGE, type MassageFormState } from '@/lib/massage'
@@ -85,33 +85,35 @@ const addDays = (base: string, days: number) => {
 
 const blankRow = (): PrescriptionRowInput => ({ medicine: '', dosage: '', frequency: '', frequencyNote: '', durationDays: undefined, quantity: '', instructions: '' })
 
-const INPUT = 'w-full rounded-[10px] border border-[#e3e7e7] bg-[#fafbfb] px-3 text-base outline-none focus:border-[#0d6e60]'
-const AREA = `${INPUT} resize-none py-[11px]`
-const chip = (on: boolean, dark = false) =>
-  `rounded-full border px-3 py-2 text-[13px] font-semibold ${
-    on ? (dark ? 'border-[#15201e] bg-[#15201e] text-white' : 'border-[#0d6e60] bg-[#0d6e60] text-white') : 'border-[#e3e7e7] bg-white text-[#15201e]'
+// Look of the consultation sheet (MassageSheet mirrors it).
+const INPUT = 'w-full min-w-0 rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-base text-[#1c1917] outline-none focus:border-[#0f766e]'
+const AREA = `${INPUT} resize-y py-2.5 leading-normal`
+const FIELD_LABEL = 'text-[13px] font-medium text-[#44403c]'
+const chip = (on: boolean) =>
+  `min-h-10 rounded-[10px] border px-3.5 py-2 text-sm font-medium transition-colors ${
+    on ? 'border-[#1c1917] bg-[#1c1917] text-white' : 'border-[#d6d3d1] bg-white text-[#1c1917] hover:border-[#1c1917]'
   }`
 
+/** Collapsible section card: 15/600 title, hint, «Mostrar» / «Ocultar». */
 function Section({ title, hint, open, onToggle, children }: { title: string; hint: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[#e3e7e7] bg-white">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[52px] w-full items-center gap-2.5 p-3.5 text-start">
-        <span className="flex-1 text-sm font-semibold">{title}</span>
-        <span className="truncate text-xs text-[#6b7577]">{hint}</span>
-        <span aria-hidden className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f1f3f3] text-xs transition-transform ${open ? 'rotate-180' : ''}`}>
-          ▾
+    <section className="overflow-hidden rounded-xl border border-[#e7e5e4] bg-white">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[52px] w-full items-center justify-between gap-3 px-[18px] py-2.5 text-start">
+        <span className="min-w-0">
+          <span className="text-[15px] font-semibold">{title}</span> <span className="text-[13px] text-[#57534e]">{hint}</span>
         </span>
+        <span className="flex-none text-[13px] font-medium text-[#0f766e]">{open ? 'Ocultar' : 'Mostrar'}</span>
       </button>
-      {open && <div className="flex flex-col gap-2.5 border-t border-[#eef1f1] px-3.5 pt-3 pb-3.5">{children}</div>}
-    </div>
+      {open && <div className="flex flex-col gap-3 px-[18px] pb-[18px]">{children}</div>}
+    </section>
   )
 }
 
 function Num({ label, value, onChange, ph }: { label: string; value: string; onChange: (v: string) => void; ph?: string }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[11px] text-[#6b7577]">{label}</span>
-      <input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder={ph} className={`${INPUT} tabular h-[46px]`} />
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs font-medium text-[#57534e]">{label}</span>
+      <input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder={ph} className={`${INPUT} tabular h-11 font-medium`} />
     </label>
   )
 }
@@ -279,36 +281,41 @@ export function VisitForm({
     })
   }
 
+  const saveLabel = visitId ? 'Guardar cambios' : isMassage ? 'Guardar ficha' : isProgram ? 'Guardar control' : 'Guardar consulta'
+
   return (
-    <div className="flex max-w-[720px] flex-col gap-2.5 pb-24">
-      {allergies && (
-        <div className="flex items-center gap-2.5 rounded-[10px] bg-[#fbeceb] px-3 py-2.5 text-[13px] font-semibold text-[#b3261e]">
-          <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-[#b3261e] text-white">
-            <IconAlert size={11} strokeWidth={3} />
-          </span>
-          Alergias: {allergies}
+    <div className="mx-auto flex w-full max-w-[860px] flex-col gap-3 pb-28">
+      {(allergies || background) && (
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 rounded-xl border border-[#e7e5e4] bg-white px-[18px] py-3.5">
+          {background ? <p className="min-w-0 flex-[1_1_240px] text-[13px] leading-relaxed text-[#57534e]">{background}</p> : <span />}
+          {allergies && (
+            <span className="max-w-full rounded-md bg-[#b91c1c] px-2.5 py-1 text-[13px] font-semibold text-white" role="note">
+              Alergias: {allergies}
+            </span>
+          )}
         </div>
       )}
-      {background && <p className="px-1 text-xs leading-relaxed text-[#6b7577]">{background}</p>}
 
       {offered.length > 1 && (
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-[#6b7577]">Formato:</span>
-        {offered.map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={format === f}
-            onClick={() => {
-              setFormat(f)
-              if (f === 'nutrition') setOpen((o) => ({ ...o, vitals: true }))
-            }}
-            className={`rounded-full border px-3 py-[7px] text-xs font-semibold ${format === f ? 'border-[#0d6e60] bg-[#0d6e60] text-white' : 'border-[#e3e7e7] bg-white'}`}
-          >
-            {FORMAT_SHORT[f]}
-          </button>
-        ))}
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-[#57534e]">Ficha según la especialidad</span>
+          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none]">
+            {offered.map((f) => (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={format === f}
+                onClick={() => {
+                  setFormat(f)
+                  if (f === 'nutrition') setOpen((o) => ({ ...o, vitals: true }))
+                }}
+                className={`flex-none whitespace-nowrap ${chip(format === f)}`}
+              >
+                {FORMAT_SHORT[f]}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {isMassage && <MassageSheet value={massage} onChange={setMassage} prefilled={!initial?.massage && Boolean(massagePrefill)} />}
@@ -331,44 +338,48 @@ export function VisitForm({
       {!isProgram && (
       <>
       {/* Required */}
-      <div className="flex flex-col gap-2.5 rounded-[14px] border border-[#e3e7e7] bg-white p-3.5">
-        <label htmlFor="v-motivo" className="text-[13px] font-semibold">
-          Motivo de consulta
-        </label>
-        <textarea id="v-motivo" rows={2} value={chiefComplaint} onChange={(e) => {
-            setChiefComplaint(e.target.value)
-            setError(null)
-          }} placeholder="Fiebre de 2 días, dolor de garganta…" className={AREA} />
-        <label htmlFor="v-dx" className="mt-1 text-[13px] font-semibold">
-          Diagnóstico{nutri ? ' nutricional' : ''}
-        </label>
-        <input id="v-dx" value={diagnosis} onChange={(e) => {
-            setDiagnosis(e.target.value)
-            setError(null)
-          }} placeholder={nutri ? 'ej. Sobrepeso grado I' : 'ej. Faringitis viral'} className={`${INPUT} h-[46px]`} />
+      <section className="flex flex-col gap-3 rounded-xl border border-[#e7e5e4] bg-white px-[18px] py-4">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="v-motivo" className={FIELD_LABEL}>
+            Motivo de consulta
+          </label>
+          <textarea id="v-motivo" rows={2} value={chiefComplaint} onChange={(e) => {
+              setChiefComplaint(e.target.value)
+              setError(null)
+            }} placeholder="Fiebre de 2 días, dolor de garganta…" className={AREA} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="v-dx" className={FIELD_LABEL}>
+            Diagnóstico{nutri ? ' nutricional' : ''}
+          </label>
+          <input id="v-dx" value={diagnosis} onChange={(e) => {
+              setDiagnosis(e.target.value)
+              setError(null)
+            }} placeholder={nutri ? 'ej. Sobrepeso grado I' : 'ej. Faringitis viral'} className={`${INPUT} h-12`} />
+        </div>
         {frequentDiagnoses.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            <span className="self-center text-xs text-[#6b7577]">Frecuentes:</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[13px] text-[#57534e]">Frecuentes:</span>
             {frequentDiagnoses.map((d) => (
-              <button key={d} type="button" onClick={() => setDiagnosis(d)} className="rounded-full bg-[#f1f3f3] px-2.5 py-1.5 text-xs font-semibold hover:bg-[#e6f1ee]">
+              <button key={d} type="button" onClick={() => setDiagnosis(d)} className="min-h-9 rounded-lg bg-[#f0eeec] px-3 py-1.5 text-[13px] font-medium text-[#1c1917] hover:bg-[#e7e5e4]">
                 {d}
               </button>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Vitals / anthropometry */}
       <Section title={nutri ? 'Antropometría' : 'Signos vitales'} hint={bmi ? `IMC ${bmi}` : 'opcional'} open={open.vitals} onToggle={() => toggle('vitals')}>
         {nutri ? (
           <>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
               <Num label="Peso actual (kg)" value={vitals.weightKg} onChange={(v) => setV('weightKg', v)} ph="64" />
               <Num label="Peso habitual" value={nutrition.usualWeightKg ?? ''} onChange={(v) => setN('usualWeightKg', v)} ph="66" />
               <Num label="Talla (cm)" value={vitals.heightCm} onChange={(v) => setV('heightCm', v)} ph="163" />
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] text-[#6b7577]">IMC</span>
-                <span className="tabular flex h-[46px] items-center rounded-[10px] border border-[#eef1f1] bg-[#f4f6f6] px-3 text-base text-[#6b7577]">{bmi ?? '—'}</span>
+                <span className="text-xs font-medium text-[#57534e]">IMC</span>
+                <span className="tabular flex h-11 items-center rounded-[10px] bg-[#f0eeec] px-3 text-base font-medium text-[#44403c]">{bmi ?? '—'}</span>
               </div>
               {nutriFields('antropometria')
                 .filter((f) => f.kind === 'number' && f.key !== 'usualWeightKg')
@@ -376,13 +387,13 @@ export function VisitForm({
                   <Num key={f.key} label={`${f.label}${f.unit ? ` (${f.unit})` : ''}`} value={nutrition[f.key] ?? ''} onChange={(v) => setN(f.key, v)} />
                 ))}
             </div>
-            {ratio != null && <p className="tabular text-xs font-medium text-[#6b7577]">Relación cintura/cadera {ratio}</p>}
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] text-[#6b7577]">Meta</span>
-              <input value={nutrition.goal ?? ''} onChange={(e) => setN('goal', e.target.value)} placeholder="ej. Bajar a 60 kg en 4 meses" className={`${INPUT} h-[46px]`} />
+            {ratio != null && <p className="tabular text-[13px] font-medium text-[#57534e]">Relación cintura/cadera {ratio}</p>}
+            <label className="flex flex-col gap-1.5">
+              <span className={FIELD_LABEL}>Meta</span>
+              <input value={nutrition.goal ?? ''} onChange={(e) => setN('goal', e.target.value)} placeholder="ej. Bajar a 60 kg en 4 meses" className={`${INPUT} h-11`} />
             </label>
-            <span className="mt-1 text-[11px] font-semibold tracking-[.06em] text-[#6b7577] uppercase">Signos vitales</span>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+            <span className="mt-1 text-[13px] font-semibold text-[#44403c]">Signos vitales</span>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
               {VITALS.filter((v) => v.key !== 'weightKg' && v.key !== 'heightCm').map((v) => (
                 <Num key={v.key} label={v.label} value={vitals[v.key]} onChange={(x) => setV(v.key, x)} ph={v.ph} />
               ))}
@@ -390,12 +401,12 @@ export function VisitForm({
           </>
         ) : (
           <>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
               {VITALS.map((v) => (
                 <Num key={v.key} label={v.label} value={vitals[v.key]} onChange={(x) => setV(v.key, x)} ph={v.ph} />
               ))}
             </div>
-            {bmi && <p className="tabular text-xs font-medium text-[#6b7577]">IMC {bmi}</p>}
+            {bmi && <p className="tabular text-[13px] font-medium text-[#57534e]">IMC {bmi}</p>}
           </>
         )}
       </Section>
@@ -410,8 +421,8 @@ export function VisitForm({
                 const opts = f.kind === 'yesno' ? YES_NO : GOOD_BAD
                 const label = f.key === 'waterIntake' ? 'Consumo de agua adecuado' : f.label
                 return (
-                  <div key={f.key} className="flex min-h-11 items-center gap-2">
-                    <span className="flex-1 text-sm">{label}</span>
+                  <div key={f.key} className="flex min-h-11 flex-wrap items-center gap-2">
+                    <span className="min-w-[160px] flex-1 text-sm">{label}</span>
                     {[
                       ['Sí', opts[0].value],
                       ['No', opts[1].value],
@@ -422,9 +433,7 @@ export function VisitForm({
                         aria-pressed={nutrition[f.key] === v}
                         aria-label={`${label}: ${l}`}
                         onClick={() => setN(f.key, nutrition[f.key] === v ? '' : v)}
-                        className={`rounded-full border px-3.5 py-[9px] text-[13px] font-semibold ${
-                          nutrition[f.key] === v ? 'border-[#15201e] bg-[#15201e] text-white' : 'border-[#e3e7e7] bg-white'
-                        }`}
+                        className={chip(nutrition[f.key] === v)}
                       >
                         {l}
                       </button>
@@ -432,24 +441,29 @@ export function VisitForm({
                   </div>
                 )
               })}
-            <div className="grid grid-cols-[110px_1fr] gap-2">
+            <div className="grid grid-cols-[130px_minmax(0,1fr)] gap-3">
               <Num label="Sueño (h/día)" value={nutrition.sleepHours ?? ''} onChange={(v) => setN('sleepHours', v)} ph="7" />
-              <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-[#6b7577]">Calidad del sueño</span>
-                <input value={nutrition.sleepQuality ?? ''} onChange={(e) => setN('sleepQuality', e.target.value)} className={`${INPUT} h-[46px]`} />
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className="text-xs font-medium text-[#57534e]">Calidad del sueño</span>
+                <input value={nutrition.sleepQuality ?? ''} onChange={(e) => setN('sleepQuality', e.target.value)} className={`${INPUT} h-11`} />
               </label>
             </div>
           </>
         )}
-        <textarea
-          rows={2}
-          value={symptoms}
-          onChange={(e) => setSymptoms(e.target.value)}
-          placeholder={nutri ? 'APP, APF, otros hallazgos…' : 'Historia de la enfermedad actual, APP, APF, hábitos…'}
-          aria-label="Historia e interrogatorio"
-          className={AREA}
-        />
-        <textarea rows={2} value={physicalExam} onChange={(e) => setPhysicalExam(e.target.value)} placeholder="Examen físico…" aria-label="Examen físico" className={AREA} />
+        <label className="flex flex-col gap-1.5">
+          <span className={FIELD_LABEL}>Historia de la enfermedad actual</span>
+          <textarea
+            rows={2}
+            value={symptoms}
+            onChange={(e) => setSymptoms(e.target.value)}
+            placeholder={nutri ? 'APP, APF, otros hallazgos…' : 'Historia de la enfermedad actual, APP, APF, hábitos…'}
+            className={AREA}
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={FIELD_LABEL}>Examen físico</span>
+          <textarea rows={2} value={physicalExam} onChange={(e) => setPhysicalExam(e.target.value)} placeholder="Examen físico…" className={AREA} />
+        </label>
       </Section>
 
       </>
@@ -458,27 +472,27 @@ export function VisitForm({
       {/* Prescription */}
       <Section title="Receta" hint={`${rxCount} medicamento${rxCount === 1 ? '' : 's'}`} open={open.rx} onToggle={() => toggle('rx')}>
         {rows.map((r, i) => (
-          <div key={i} className="flex flex-col gap-2 rounded-[10px] bg-[#f4f6f6] p-2.5">
+          <div key={i} className="flex flex-col gap-2.5 rounded-[10px] border border-[#f0eeec] bg-[#fafaf7] p-3">
             <div className="flex gap-2">
               <input
                 value={r.medicine}
                 onChange={(e) => setRow(i, { medicine: e.target.value })}
                 placeholder="Medicamento y dosis (Amoxicilina 500 mg)"
                 aria-label="Medicamento y dosis"
-                className={`${INPUT} h-[46px] bg-white`}
+                className={`${INPUT} h-11 font-medium`}
               />
               {rows.length > 1 && (
                 <button
                   type="button"
                   onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}
                   aria-label="Quitar medicamento"
-                  className="h-[46px] shrink-0 rounded-[10px] border border-[#e3e7e7] bg-white px-3 text-[#6b7577]"
+                  className="h-11 shrink-0 rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-sm font-medium text-[#1c1917] hover:border-[#1c1917]"
                 >
-                  ✕
+                  Quitar
                 </button>
               )}
             </div>
-            {r.dosage ? <span className="text-xs text-[#6b7577]">Dosis registrada: {r.dosage}</span> : null}
+            {r.dosage ? <span className="text-[13px] text-[#57534e]">Dosis registrada: {r.dosage}</span> : null}
             <div className="flex flex-wrap gap-1.5">
               {FREQ_CHIPS.map((c) => {
                 const on = r.frequency === c.value && (c.value !== 'other' || r.frequencyNote === c.note)
@@ -488,17 +502,17 @@ export function VisitForm({
                     type="button"
                     aria-pressed={on}
                     onClick={() => setRow(i, on ? { frequency: '', frequencyNote: '' } : { frequency: c.value, frequencyNote: c.note ?? '' })}
-                    className={`rounded-full border px-3 py-2 text-xs font-semibold ${on ? 'border-[#0d6e60] bg-[#0d6e60] text-white' : 'border-[#e3e7e7] bg-white'}`}
+                    className={chip(on)}
                   >
                     {c.label}
                   </button>
                 )
               })}
               {r.frequency === 'other' && !FREQ_CHIPS.some((c) => c.note === r.frequencyNote) && (
-                <span className="rounded-full border border-[#0d6e60] bg-[#0d6e60] px-3 py-2 text-xs font-semibold text-white">{r.frequencyNote || 'Otra'}</span>
+                <span className={chip(true)}>{r.frequencyNote || 'Otra'}</span>
               )}
             </div>
-            <div className="grid grid-cols-[90px_1fr] gap-2">
+            <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-2">
               <input
                 inputMode="numeric"
                 value={r.durationDays ?? ''}
@@ -508,20 +522,20 @@ export function VisitForm({
                 }}
                 placeholder="Días"
                 aria-label="Días"
-                className={`${INPUT} h-[46px] bg-white`}
+                className={`${INPUT} tabular h-11`}
               />
               <input
                 value={r.instructions ?? ''}
                 onChange={(e) => setRow(i, { instructions: e.target.value })}
                 placeholder="Indicaciones (después de comer)"
                 aria-label="Indicaciones"
-                className={`${INPUT} h-[46px] bg-white`}
+                className={`${INPUT} h-11`}
               />
             </div>
           </div>
         ))}
-        <button type="button" onClick={() => setRows((r) => [...r, blankRow()])} className="self-start py-2.5 text-[13px] font-semibold text-[#0d6e60]">
-          + Agregar medicamento
+        <button type="button" onClick={() => setRows((r) => [...r, blankRow()])} className="self-start py-2 text-sm font-medium text-[#0f766e] hover:text-[#115e59]">
+          Agregar medicamento
         </button>
       </Section>
 
@@ -545,8 +559,8 @@ export function VisitForm({
         <textarea rows={2} value={labNote} onChange={(e) => setLabNote(e.target.value)} placeholder="Otros estudios u observaciones…" aria-label="Otros estudios" className={AREA} />
         {nutri && (
           <>
-            <span className="mt-1 text-[11px] font-semibold tracking-[.06em] text-[#6b7577] uppercase">Resultados</span>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2">
+            <span className="mt-1 text-[13px] font-semibold text-[#44403c]">Resultados</span>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
               {nutriFields('laboratorio')
                 .filter((f) => f.kind === 'number')
                 .map((f) => (
@@ -556,8 +570,8 @@ export function VisitForm({
             {nutriFields('laboratorio')
               .filter((f) => f.kind !== 'number')
               .map((f) => (
-                <label key={f.key} className="flex flex-col gap-1">
-                  <span className="text-[11px] text-[#6b7577]">{f.label}</span>
+                <label key={f.key} className="flex flex-col gap-1.5">
+                  <span className={FIELD_LABEL}>{f.label}</span>
                   <textarea rows={1} value={nutrition[f.key] ?? ''} onChange={(e) => setN(f.key, e.target.value)} className={AREA} />
                 </label>
               ))}
@@ -567,75 +581,88 @@ export function VisitForm({
 
       {/* Treatment & follow-up */}
       <Section title="Tratamiento y seguimiento" hint={followLabel ? `control en ${followLabel}` : 'sin cita de control'} open={open.follow} onToggle={() => toggle('follow')}>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {FOLLOW_CHIPS.map((c) => {
-            const date = addDays(baseDate, c.days)
-            const on = followUp === date
-            return (
-              <button key={c.label} type="button" aria-pressed={on} onClick={() => setFollowUp(on ? '' : date)} className={chip(on)}>
-                {c.label}
-              </button>
-            )
-          })}
-          <input
-            type="date"
-            value={followUp}
-            onChange={(e) => setFollowUp(e.target.value)}
-            aria-label="Otra fecha de control"
-            className="h-[38px] rounded-full border border-[#e3e7e7] bg-white px-3 text-[13px]"
-          />
+        <div className="flex flex-col gap-1.5">
+          <span className={FIELD_LABEL}>Próximo control</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {FOLLOW_CHIPS.map((c) => {
+              const date = addDays(baseDate, c.days)
+              const on = followUp === date
+              return (
+                <button key={c.label} type="button" aria-pressed={on} onClick={() => setFollowUp(on ? '' : date)} className={chip(on)}>
+                  {c.label}
+                </button>
+              )
+            })}
+            <input
+              type="date"
+              value={followUp}
+              onChange={(e) => setFollowUp(e.target.value)}
+              aria-label="Otra fecha de control"
+              className="tabular h-10 rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-sm text-[#1c1917]"
+            />
+          </div>
         </div>
-        <textarea
-          rows={2}
-          value={treatmentPlan}
-          onChange={(e) => setTreatmentPlan(e.target.value)}
-          placeholder="Plan / tratamiento no farmacológico… (se imprime en la receta)"
-          aria-label="Plan y tratamiento"
-          className={AREA}
-        />
+        <label className="flex flex-col gap-1.5">
+          <span className={FIELD_LABEL}>Plan y tratamiento</span>
+          <textarea
+            rows={2}
+            value={treatmentPlan}
+            onChange={(e) => setTreatmentPlan(e.target.value)}
+            placeholder="Plan / tratamiento no farmacológico… (se imprime en la receta)"
+            className={AREA}
+          />
+        </label>
         {nutri && (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {nutriFields('seguimiento').map((f) => (
-              <label key={f.key} className="flex flex-col gap-1">
-                <span className="text-[11px] text-[#6b7577]">{f.label}</span>
-                <input value={nutrition[f.key] ?? ''} onChange={(e) => setN(f.key, e.target.value)} placeholder={f.placeholder} className={`${INPUT} h-[46px]`} />
+              <label key={f.key} className="flex min-w-0 flex-col gap-1.5">
+                <span className={FIELD_LABEL}>{f.label}</span>
+                <input value={nutrition[f.key] ?? ''} onChange={(e) => setN(f.key, e.target.value)} placeholder={f.placeholder} className={`${INPUT} h-11`} />
               </label>
             ))}
           </div>
         )}
         {!isProgram && (
-          <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas privadas (no se imprimen)" aria-label="Notas privadas" className={AREA} />
+          <label className="flex flex-col gap-1.5">
+            <span className={FIELD_LABEL}>Nota personal</span>
+            <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="No se imprime ni la ve el paciente" className={AREA} />
+          </label>
         )}
       </Section>
       </>
       )}
 
       {error && (
-        <p className="rounded-[10px] bg-[#fbeceb] px-3 py-2 text-sm text-[#b3261e]" role="alert">
+        <p className="rounded-[10px] border border-[#b45309] bg-white px-3.5 py-2.5 text-sm text-[#b45309]" role="alert">
           {error}
         </p>
       )}
 
-      {/* Sticky save bar — sits above the phone tab bar */}
-      <div className="fixed inset-x-0 bottom-[82px] z-20 bg-[linear-gradient(to_top,#f4f6f6_70%,rgba(244,246,246,0))] px-3.5 py-2.5 lg:bottom-0 lg:left-[232px] md:px-7 md:pb-4">
-        <div className="flex w-full max-w-[720px] gap-2">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => save(false)}
-            className="flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-xl bg-[#0d6e60] p-3.5 text-[15px] font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,110,96,.6)]"
-          >
-            {pending && <Spinner />}
-            {visitId ? 'Guardar cambios' : isMassage ? 'Guardar ficha' : isProgram ? 'Guardar control' : 'Guardar consulta'}
-          </button>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => save(true)}
-            className="min-h-[50px] rounded-xl border border-[#0d6e60] bg-white px-4 py-3.5 text-[15px] font-semibold text-[#0d6e60]"
-          >
-            Guardar e imprimir
-          </button>
+      {/* Sticky save bar — above the phone tab bar, right of the desktop menu */}
+      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 border-t border-[#e7e5e4] bg-[rgba(250,250,247,.94)] px-4 py-2.5 backdrop-blur-md md:px-5 lg:bottom-0 lg:left-[232px]">
+        <div className="mx-auto flex w-full max-w-[860px] items-center justify-between gap-2">
+          <span className={`hidden min-w-0 truncate text-[13px] sm:block ${error ? 'text-[#b45309]' : 'text-[#57534e]'}`}>
+            {error ?? (isMassage || isProgram ? 'Revise los datos antes de guardar.' : 'Solo motivo y diagnóstico son obligatorios.')}
+          </span>
+          <div className="flex flex-1 gap-2 sm:flex-none">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => save(true)}
+              className="h-11 rounded-[10px] border border-[#d6d3d1] bg-white px-4 text-[15px] font-medium whitespace-nowrap text-[#1c1917] transition-colors hover:border-[#1c1917] disabled:opacity-60"
+            >
+              Guardar e imprimir
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => save(false)}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[10px] bg-[#0f766e] px-[18px] text-[15px] font-medium whitespace-nowrap text-white transition-colors hover:bg-[#115e59] disabled:opacity-60 sm:flex-none"
+            >
+              {pending && <Spinner />}
+              {saveLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>

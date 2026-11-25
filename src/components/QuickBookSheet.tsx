@@ -1,6 +1,7 @@
 'use client'
 
-// Bottom sheet for the redesigned Inicio / Agenda (design handoff "Sheet inferior"):
+// Sheet for the Panel / Agenda (design_handoff_medira «Hoja»: bottom on phones,
+// centred on desktop):
 // «Nueva cita» (patient + free time) and «Paciente sin cita» (walk-in turn).
 // Saves through the existing bookAppointment action, which re-validates the
 // doctor's availability and the double-booking guard.
@@ -94,118 +95,120 @@ export function QuickBookSheet({
     })
   }
 
-  return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={mode === 'walkin' ? 'Paciente sin cita' : 'Nueva cita'}>
-      <div className="absolute inset-0 bg-[rgba(12,33,29,.45)]" onClick={onClose} />
-      <div className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[90vh] max-w-[560px] animate-[emr-up_.25s_ease-out] flex-col gap-3 overflow-y-auto rounded-t-[18px] bg-white px-4 pt-2.5 pb-[max(20px,env(safe-area-inset-bottom))]">
-        <span className="h-1 w-10 self-center rounded-full bg-[#d7dddd]" />
-        <div className="font-display text-lg font-semibold">{mode === 'walkin' ? 'Paciente sin cita' : 'Nueva cita'}</div>
+  const field = 'h-12 w-full rounded-[10px] border border-[#d6d3d1] bg-white px-3.5 text-base text-[#1c1917] outline-none focus:border-[#0f766e]'
+  const label = 'text-[13px] font-medium text-[#44403c]'
+  const option = (on: boolean) =>
+    `h-10 rounded-[10px] border px-3.5 text-sm font-medium transition-colors ${on ? 'border-[#1c1917] bg-[#1c1917] text-white' : 'border-[#d6d3d1] bg-white text-[#1c1917] hover:border-[#1c1917]'}`
 
-        {patient ? (
-          <div className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-[#0d6e60] bg-[#e6f1ee] px-3.5">
-            <span className="min-w-0">
-              <span className="block truncate text-[15px] font-semibold">{patient.name}</span>
-              <span className="tabular block text-xs text-[#6b7577]">
-                {patient.phone} · {patient.mrn}
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6" role="dialog" aria-modal="true" aria-label={mode === 'walkin' ? 'Paciente sin cita' : 'Nueva cita'}>
+      <div className="absolute inset-0 bg-[rgba(28,25,23,.45)]" onClick={onClose} />
+      <div className="relative flex max-h-[90vh] w-full max-w-[520px] animate-[md-up_.2s_ease-out] flex-col gap-3.5 overflow-y-auto rounded-t-2xl border border-[#e7e5e4] bg-white px-5 pt-4 pb-[max(20px,env(safe-area-inset-bottom))] md:rounded-[14px] md:pb-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[17px] font-semibold tracking-[-.02em]">{mode === 'walkin' ? 'Paciente sin cita' : 'Nueva cita'}</h2>
+          <button type="button" onClick={onClose} className="h-9 rounded-lg px-2 text-sm font-medium text-[#57534e] hover:text-[#1c1917]">
+            Cerrar
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className={label}>Paciente</span>
+          {patient ? (
+            <div className="flex min-h-12 items-center justify-between gap-3 rounded-[10px] border border-[#0f766e] bg-white px-3.5">
+              <span className="min-w-0">
+                <span className="block truncate text-[15px] font-semibold">{patient.name}</span>
+                <span className="tabular block text-[13px] text-[#57534e]">
+                  {patient.phone} · <span className="font-mono">{patient.mrn}</span>
+                </span>
               </span>
-            </span>
-            <button type="button" onClick={() => setPatient(null)} className="text-xs font-semibold text-[#0d6e60] underline">
-              Cambiar
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Paciente (nombre o teléfono)"
-              aria-label="Buscar paciente"
-              className="h-12 w-full rounded-xl border border-[#e3e7e7] bg-[#fafbfb] px-3.5 text-base outline-none focus:border-[#0d6e60]"
-            />
-            {hits.map((h) => (
-              <button
-                key={h.id}
-                type="button"
-                onClick={() => {
-                  setPatient(h)
-                  setQuery('')
-                }}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-xl px-3 text-start hover:bg-[#f4f6f6]"
-              >
-                <span className="truncate text-sm font-semibold">{h.name}</span>
-                <span className="tabular shrink-0 text-xs text-[#6b7577]">{h.phone}</span>
+              <button type="button" onClick={() => setPatient(null)} className="text-sm font-medium text-[#0f766e] hover:text-[#115e59]">
+                Cambiar
               </button>
-            ))}
-            {query.trim().length >= 2 && hits.length === 0 && (
-              <Link href="/dashboard/patients/new" className="px-3 py-2 text-sm font-semibold text-[#0d6e60]">
-                + Registrar paciente nuevo
-              </Link>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <>
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Nombre o teléfono"
+                aria-label="Buscar paciente"
+                className={field}
+              />
+              {hits.length > 0 && (
+                <div className="overflow-hidden rounded-[10px] border border-[#e7e5e4]">
+                  {hits.map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => {
+                        setPatient(h)
+                        setQuery('')
+                      }}
+                      className="flex min-h-11 w-full items-center justify-between gap-3 border-t border-[#f0eeec] px-3.5 text-start first:border-t-0 hover:bg-[#fafaf7]"
+                    >
+                      <span className="truncate text-sm font-medium">{h.name}</span>
+                      <span className="tabular shrink-0 text-[13px] text-[#57534e]">{h.phone}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {query.trim().length >= 2 && hits.length === 0 && (
+                <p className="text-sm text-[#57534e]">
+                  Sin resultados.{' '}
+                  <Link href="/dashboard/patients/new" className="font-medium text-[#0f766e] hover:text-[#115e59]">
+                    Registrar paciente nuevo
+                  </Link>
+                </p>
+              )}
+            </>
+          )}
+        </div>
 
         {doctors.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
-            {doctors.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                aria-pressed={d.id === doctorId}
-                onClick={() => setDoctorId(d.id)}
-                className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold ${
-                  d.id === doctorId ? 'border-[#0d6e60] bg-[#0d6e60] text-white' : 'border-[#e3e7e7] bg-white'
-                }`}
-              >
-                {d.name}
-              </button>
-            ))}
+          <div className="flex flex-col gap-1.5">
+            <span className={label}>Médico</span>
+            <div className="flex flex-wrap gap-1.5">
+              {doctors.map((d) => (
+                <button key={d.id} type="button" aria-pressed={d.id === doctorId} onClick={() => setDoctorId(d.id)} className={option(d.id === doctorId)}>
+                  {d.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {mode === 'appt' ? (
-          <>
-            <div className="text-xs text-[#6b7577]">Horarios libres · {dateLabel}</div>
+          <div className="flex flex-col gap-1.5">
+            <span className={label}>Horarios libres · {dateLabel}</span>
             {slots === null ? (
-              <p className="flex items-center gap-2 text-sm text-[#6b7577]">
+              <p className="flex items-center gap-2 text-sm text-[#57534e]">
                 <Spinner /> Buscando horarios…
               </p>
             ) : slots.length === 0 ? (
-              <p className="text-sm text-[#6b7577]">No quedan horarios libres este día.</p>
+              <p className="text-sm text-[#57534e]">No quedan horarios libres este día.</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {slots.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={s === time}
-                    onClick={() => setTime(s)}
-                    className={`tabular rounded-full border px-3.5 py-2.5 text-sm font-semibold ${
-                      s === time ? 'border-[#0d6e60] bg-[#0d6e60] text-white' : 'border-[#e3e7e7] bg-white text-[#15201e]'
-                    }`}
-                  >
+                  <button key={s} type="button" aria-pressed={s === time} onClick={() => setTime(s)} className={`tabular ${option(s === time)}`}>
                     {short(s)}
                   </button>
                 ))}
               </div>
             )}
-          </>
-        ) : (
-          <div className="flex items-center gap-3 rounded-xl bg-[#e9f0f9] px-3.5 py-3 text-[#2563ab]">
-            <span className="tabular text-[22px] font-bold">T</span>
-            <span className="text-[13px]">Recibe el siguiente turno de hoy y aparece en la agenda sin mover las citas programadas.</span>
           </div>
+        ) : (
+          <p className="rounded-[10px] bg-[#f0eeec] px-3.5 py-3 text-sm text-[#44403c]">
+            Recibe el siguiente turno de hoy y aparece en la agenda sin mover las citas programadas.
+          </p>
         )}
 
-        <input
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Motivo (opcional)"
-          aria-label="Motivo"
-          className="h-12 w-full rounded-xl border border-[#e3e7e7] bg-[#fafbfb] px-3.5 text-base outline-none focus:border-[#0d6e60]"
-        />
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Motivo (opcional)</span>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} className={field} />
+        </label>
         {error && (
-          <p className="rounded-[10px] bg-[#fbeceb] px-3 py-2 text-sm text-[#b3261e]" role="alert">
+          <p className="rounded-[10px] border border-[#b45309] px-3 py-2 text-sm text-[#b45309]" role="alert">
             {error}
           </p>
         )}
@@ -213,8 +216,8 @@ export function QuickBookSheet({
           type="button"
           onClick={submit}
           disabled={pending}
-          className={`flex min-h-[50px] items-center justify-center gap-2 rounded-xl p-3.5 text-[15px] font-semibold ${
-            ready ? 'bg-[#0d6e60] text-white' : 'bg-[#dfe4e4] text-[#6b7577]'
+          className={`flex h-12 items-center justify-center gap-2 rounded-[10px] px-4 text-[15px] font-semibold transition-colors ${
+            ready ? 'bg-[#0f766e] text-white hover:bg-[#115e59]' : 'bg-[#f0eeec] text-[#57534e]'
           }`}
         >
           {pending && <Spinner />}

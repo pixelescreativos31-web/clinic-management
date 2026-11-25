@@ -2,19 +2,20 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { signupAction } from './actions'
-import { btnPrimary, inputClass, Field, Spinner } from '@/components/primitives'
+import { Field, Spinner } from '@/components/primitives'
 import { AppSelect } from '@/components/AppSelect'
-import { IconCheck } from '@/components/icons'
 import { COUNTRY_DEFAULTS, DEFAULT_COUNTRY, CURRENCIES, TIMEZONES } from '@/lib/constants'
-import { APP_NAME } from '@/lib/brand'
 import { ORG_TYPES, orgTypeDef, specialtiesFor, type OrgType } from '@/lib/specialties'
+import { AuthShell, AuthTitle, AuthNote, FormError, StepBar, authBtn, authBtn2, authInput, authLink } from '../login/AuthShell'
 
 // Hospitals are quoted and set up by us (plan institucional), not self-serve.
 const SIGNUP_ORG_TYPES = ORG_TYPES.filter((o) => o.value !== 'hospital')
 
-const PROMISES = ['Listo en un minuto', 'Datos de ejemplo para explorar', 'Plan de prueba gratis, sin tarjeta']
+// Steps are a client-side split of the same single signup submission:
+// 1 Cuenta → 2 Su práctica (submits) → 3 Verificar correo / pendiente de aprobación.
+const TOTAL_STEPS = 3
+const SELECT = 'h-12 rounded-[10px] text-base'
 
 const defaultsFor = (country: string) =>
   COUNTRY_DEFAULTS.find((c) => c.label === country) ?? COUNTRY_DEFAULTS[0]
@@ -23,6 +24,7 @@ export default function SignupPage() {
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<null | { verifyEmail: boolean }>(null)
+  const [step, setStep] = useState<1 | 2>(1)
   const [startedAt] = useState(() => Date.now())
 
   const initial = defaultsFor(DEFAULT_COUNTRY)
@@ -59,172 +61,148 @@ export default function SignupPage() {
     })
   }
 
+  if (done) {
+    return (
+      <AuthShell>
+        <StepBar step={TOTAL_STEPS} total={TOTAL_STEPS} />
+        {done.verifyEmail ? (
+          <AuthTitle
+            title="Verifique su correo"
+            sub={`Le enviamos un enlace de confirmación a ${form.email}. Haga clic para verificar su correo; luego su consultorio pasa a aprobación y podrá entrar cuando sea aprobado.`}
+          />
+        ) : (
+          <AuthTitle
+            title="Consultorio creado: pendiente de aprobación"
+            sub="Su consultorio fue creado y está pendiente de aprobación. Podrá entrar en cuanto sea aprobado."
+          />
+        )}
+        <Link href="/login" className={`${authBtn} mt-5`}>
+          Ir a entrar
+        </Link>
+      </AuthShell>
+    )
+  }
+
+  const individual = orgTypeDef(form.orgType).practiceType === 'individual'
+
   return (
-    <main className="flex min-h-screen">
-      {/* Brand panel */}
-      <aside className="relative hidden w-[44%] overflow-hidden bg-sidebar lg:block">
-        <Image
-          src="/images/login-doctor.jpg"
-          alt=""
-          fill
-          priority
-          sizes="44vw"
-          className="object-cover object-[50%_18%] opacity-85"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-sidebar via-sidebar/55 to-sidebar/25" />
-        <div className="relative flex h-full flex-col justify-between p-10 xl:p-14">
-          <Link href="/" className="flex w-fit items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/25 backdrop-blur">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4.5 text-sidebar-accent" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
-              </svg>
-            </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-white">{APP_NAME}</span>
+    <AuthShell
+      below={
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          ¿Ya tiene una cuenta?{' '}
+          <Link href="/login" className={authLink}>
+            Entrar
           </Link>
-          <div>
-            <h2 className="max-w-md font-display text-3xl leading-snug font-semibold text-white xl:text-4xl">
-              Su consultorio, funcionando al terminar esta página.
-            </h2>
-            <ul className="mt-7 space-y-3">
-              {PROMISES.map((p) => (
-                <li key={p} className="flex items-center gap-3 text-[15px] text-white/85">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-sidebar-accent/20 ring-1 ring-sidebar-accent/40">
-                    <IconCheck size={12} strokeWidth={3} className="text-sidebar-accent" />
-                  </span>
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-10 text-xs text-white/50">Agenda, expedientes, recetas y cobros en un solo lugar.</p>
-          </div>
-        </div>
-      </aside>
+        </p>
+      }
+    >
+      <StepBar step={step} total={TOTAL_STEPS} />
 
-      {/* Form panel */}
-      <section className="flex flex-1 items-center justify-center bg-canvas px-4 py-10">
-        <div className="w-full max-w-md animate-fade-up">
-          <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-white">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="size-3.5" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7h14" />
-              </svg>
-            </span>
-            <span className="font-display text-xl font-semibold tracking-tight text-primary">{APP_NAME}</span>
-          </Link>
-
-          {done ? (
-            <div className="rounded-2xl border border-primary/20 bg-secondary/30 p-7 text-center">
-              <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary text-white">
-                <IconCheck size={22} strokeWidth={3} />
-              </span>
-              <h1 className="font-display text-2xl font-semibold tracking-tight">
-                {done.verifyEmail ? 'Revise su correo' : 'Consultorio creado: pendiente de aprobación'}
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {done.verifyEmail
-                  ? '¡Gracias! Le enviamos un enlace de confirmación. Haga clic para verificar su correo; luego su consultorio pasa a aprobación y podrá iniciar sesión cuando sea aprobado.'
-                  : '¡Gracias! Su consultorio fue creado y está pendiente de aprobación. Podrá iniciar sesión en cuanto sea aprobado.'}
-              </p>
-              <Link href="/login" className={`${btnPrimary} mt-6 w-full`}>
-                Ir a iniciar sesión
-              </Link>
-            </div>
-          ) : (
-          <>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Cree su consultorio gratis</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Configuramos su consultorio con algunos datos de ejemplo para que pueda explorar de inmediato.
-          </p>
-
+      {step === 1 ? (
+        <>
+          <AuthTitle
+            title="Cree su cuenta"
+            sub="Configuramos su consultorio con algunos datos de ejemplo para que pueda explorar de inmediato."
+          />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setError(null)
+              setStep(2)
+            }}
+            className="mt-4 flex flex-col gap-3"
+          >
+            <Field label="Su nombre" htmlFor="ownerName">
+              <input id="ownerName" name="ownerName" required value={form.ownerName} onChange={(e) => set('ownerName', e.target.value)} placeholder="Dra. Carmen Rosario" autoComplete="name" className={authInput} />
+            </Field>
+            <Field label="Correo" htmlFor="email">
+              <input id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="su@correo.do" className={authInput} />
+            </Field>
+            <Field label="Contraseña" htmlFor="password" hint="Mínimo 8 caracteres.">
+              <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)} className={authInput} />
+            </Field>
+            <button type="submit" className={`${authBtn} mt-1.5`}>
+              Continuar
+            </button>
+          </form>
+        </>
+      ) : (
+        <>
+          <AuthTitle title="Su práctica" sub="Adaptamos las fichas, la agenda y el plan a su tipo de práctica. Puede cambiarlo luego en Configuración." />
           <form
             onSubmit={(e) => {
               e.preventDefault()
               submit()
             }}
-            className="mt-8 flex flex-col gap-4"
+            className="mt-4 flex flex-col gap-3"
           >
-            <Field label="¿Qué tipo de práctica tiene?" hint="Adaptamos las fichas, la agenda y el plan a su tipo de práctica. Puede cambiarlo luego en Configuración.">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup">
-                {SIGNUP_ORG_TYPES.map((o) => (
+            <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="Tipo de práctica">
+              {SIGNUP_ORG_TYPES.map((o) => {
+                const active = form.orgType === o.value
+                return (
                   <button
                     key={o.value}
                     type="button"
                     role="radio"
-                    aria-checked={form.orgType === o.value}
+                    aria-checked={active}
                     onClick={() => set('orgType', o.value)}
-                    className={`rounded-lg border px-3 py-2.5 text-start transition-colors ${
-                      form.orgType === o.value ? 'border-primary bg-secondary/60 ring-1 ring-primary/30' : 'border-border bg-card hover:border-primary/40'
+                    className={`min-h-[52px] rounded-[10px] border px-3.5 py-2.5 text-start transition-colors ${
+                      active ? 'border-inv bg-inv text-white' : 'border-line-3 bg-card hover:border-[#a8a29e]'
                     }`}
                   >
-                    <span className="block text-[13px] font-semibold">{o.label}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{o.hint}</span>
+                    <span className="block text-[15px] font-semibold">{o.label}</span>
+                    <span className={`block text-[13px] ${active ? 'text-white/75' : 'text-muted-foreground'}`}>{o.hint}</span>
                   </button>
-                ))}
-              </div>
-            </Field>
+                )
+              })}
+            </div>
 
             <Field label="Nombre del consultorio" htmlFor="clinicName" hint="Aparece en recetas, recibos y recordatorios.">
-              <input id="clinicName" name="clinicName" required value={form.clinicName} onChange={(e) => set('clinicName', e.target.value)} placeholder="Consultorio Dra. Carmen Rosario" className={inputClass} />
+              <input id="clinicName" name="clinicName" required value={form.clinicName} onChange={(e) => set('clinicName', e.target.value)} placeholder="Consultorio Dra. Carmen Rosario" className={authInput} />
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Teléfono del consultorio" htmlFor="phone">
-                <input id="phone" name="phone" required value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="809-555-1234" inputMode="tel" className={inputClass} />
+              <Field label="Teléfono" htmlFor="phone">
+                <input id="phone" name="phone" required value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="809-555-0100" inputMode="tel" className={`${authInput} tabular-nums`} />
               </Field>
               <Field label="Ciudad" htmlFor="city">
-                <input id="city" name="city" value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Santo Domingo" className={inputClass} />
+                <input id="city" name="city" value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Santo Domingo" className={authInput} />
               </Field>
             </div>
 
+            {individual && (
+              <>
+                <Field
+                  label="Su especialidad"
+                  hint={
+                    specialtiesFor(form.orgType).find((x) => x.key === form.specialtyKey)?.ready === false
+                      ? 'Su ficha especializada está en camino; mientras tanto usa la consulta general.'
+                      : 'Define su ficha de consulta, receta y resumen médico.'
+                  }
+                >
+                  <AppSelect className={SELECT}
+                    value={form.specialtyKey}
+                    onChange={(v) => set('specialtyKey', v)}
+                    options={specialtiesFor(form.orgType).map((x) => ({ value: x.key, label: x.ready ? x.label : `${x.label} (pronto)` }))}
+                  />
+                </Field>
+                <Field label="Exequátur" htmlFor="licenseNumber" hint="Se imprime en sus recetas.">
+                  <input id="licenseNumber" name="licenseNumber" value={form.licenseNumber} onChange={(e) => set('licenseNumber', e.target.value)} placeholder="12345-06" className={authInput} />
+                </Field>
+              </>
+            )}
+
             <Field label="País" hint="Define la moneda y la zona horaria; puede cambiarlas abajo.">
-              <AppSelect value={form.country} onChange={onCountry} options={COUNTRY_DEFAULTS.map((c) => ({ value: c.label, label: c.label }))} />
+              <AppSelect className={SELECT} value={form.country} onChange={onCountry} options={COUNTRY_DEFAULTS.map((c) => ({ value: c.label, label: c.label }))} />
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Moneda">
-                <AppSelect value={form.currency} onChange={(v) => set('currency', v)} options={CURRENCIES.map((c) => ({ value: c.value, label: c.value }))} />
+                <AppSelect className={SELECT} value={form.currency} onChange={(v) => set('currency', v)} options={CURRENCIES.map((c) => ({ value: c.value, label: c.value }))} />
               </Field>
               <Field label="Zona horaria">
-                <AppSelect value={form.timezone} onChange={(v) => set('timezone', v)} options={TIMEZONES.map((t) => ({ value: t.value, label: t.label }))} />
+                <AppSelect className={SELECT} value={form.timezone} onChange={(v) => set('timezone', v)} options={TIMEZONES.map((t) => ({ value: t.value, label: t.label }))} />
               </Field>
-            </div>
-
-            <div className="mt-2 border-t border-border pt-4">
-              <p className="mb-3 text-[13px] font-medium text-ink">Su cuenta</p>
-              <div className="flex flex-col gap-4">
-                <Field label="Su nombre" htmlFor="ownerName">
-                  <input id="ownerName" name="ownerName" required value={form.ownerName} onChange={(e) => set('ownerName', e.target.value)} placeholder="Dra. Carmen Rosario" className={inputClass} />
-                </Field>
-                {orgTypeDef(form.orgType).practiceType === 'individual' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                    <Field
-                      label="Especialidad"
-                      hint={
-                        specialtiesFor(form.orgType).find((x) => x.key === form.specialtyKey)?.ready === false
-                          ? 'Su ficha especializada está en camino; mientras tanto usa la consulta general.'
-                          : 'Define la ficha clínica que usará.'
-                      }
-                    >
-                      <AppSelect
-                        value={form.specialtyKey}
-                        onChange={(v) => set('specialtyKey', v)}
-                        options={specialtiesFor(form.orgType).map((x) => ({ value: x.key, label: x.ready ? x.label : `${x.label} (pronto)` }))}
-                      />
-                    </Field>
-                    </div>
-                    <Field label="Exequátur" htmlFor="licenseNumber" hint="Se imprime en sus recetas.">
-                      <input id="licenseNumber" name="licenseNumber" value={form.licenseNumber} onChange={(e) => set('licenseNumber', e.target.value)} placeholder="12345-06" className={inputClass} />
-                    </Field>
-                  </div>
-                )}
-                <Field label="Correo electrónico" htmlFor="email">
-                  <input id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="usted@consultorio.com" className={inputClass} />
-                </Field>
-                <Field label="Contraseña" htmlFor="password" hint="Al menos 8 caracteres.">
-                  <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)} placeholder="••••••••" className={inputClass} />
-                </Field>
-              </div>
             </div>
 
             {/* Honeypot — visually hidden, ignored by real users */}
@@ -233,28 +211,19 @@ export default function SignupPage() {
               <input id="company" name="company" tabIndex={-1} autoComplete="off" value={form.company} onChange={(e) => set('company', e.target.value)} />
             </div>
 
-            {error && (
-              <p className="rounded-lg border border-red/25 bg-red-soft px-3 py-2 text-sm text-red" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <FormError>{error}</FormError>}
 
-            <button type="submit" className={`${btnPrimary} mt-1 w-full`} disabled={pending}>
+            <button type="submit" className={`${authBtn} mt-1.5`} disabled={pending}>
               {pending && <Spinner />}
               {pending ? 'Creando su consultorio…' : 'Crear mi consultorio'}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            ¿Ya tiene una cuenta?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              Iniciar sesión
-            </Link>
-          </p>
-          </>
-          )}
-        </div>
-      </section>
-    </main>
+          <button type="button" className={`${authBtn2} mt-2`} onClick={() => setStep(1)} disabled={pending}>
+            Corregir mi cuenta
+          </button>
+          <AuthNote>Plan de prueba gratis, sin tarjeta.</AuthNote>
+        </>
+      )}
+    </AuthShell>
   )
 }

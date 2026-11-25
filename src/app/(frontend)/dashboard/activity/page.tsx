@@ -1,9 +1,13 @@
 import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { PageTitle, Card, Th, Td, EmptyState } from '@/components/primitives'
+import { AppHeader, AppContent } from '@/components/AppHeader'
 import { AUDIT_ACTIONS, DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { AuditLog, User } from '@/payload-types'
+
+const CARD = 'rounded-[12px] border border-[#e7e5e4] bg-white'
+const TH = 'px-3.5 py-2.5 text-left text-xs font-medium whitespace-nowrap text-[#57534e]'
+const TD = 'px-3.5 py-[11px] align-top'
 
 const actionLabel = (value: string) =>
   AUDIT_ACTIONS.find((a) => a.value === value)?.label ?? value
@@ -11,18 +15,26 @@ const actionLabel = (value: string) =>
 export default async function ActivityPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ action?: string }>
+  searchParams?: Promise<{ action?: string; q?: string }>
 }) {
   const { user, tenant } = await requireDashboardSession()
   // Owner-only — doctors/receptionists never see the audit trail (spec §2.2).
   if (user.role !== 'owner') {
     return (
-      <div>
-        <PageTitle subtitle="Registro de auditoría">Actividad</PageTitle>
-        <Card className="p-6">
-          <p className="text-sm text-muted-foreground">Solo el titular del consultorio puede ver el registro de actividad.</p>
-        </Card>
-      </div>
+      <>
+        <AppHeader title="Auditoría" subtitle="Registro de auditoría" />
+        <AppContent>
+          <div className={`${CARD} px-6 py-12 text-center`}>
+            <div className="text-[19px] font-semibold tracking-[-.02em]">Sin permiso</div>
+            <p className="mx-auto mt-1.5 max-w-[380px] text-sm text-[#57534e]">
+              Solo el titular del consultorio puede ver el registro de actividad.
+            </p>
+            <Link href="/dashboard" className="mt-4 inline-block text-sm font-medium text-[#0f766e]">
+              Volver al panel
+            </Link>
+          </div>
+        </AppContent>
+      </>
     )
   }
 
@@ -30,6 +42,7 @@ export default async function ActivityPage({
   const tenantID = getTenantID(user)!
   const params = (await searchParams) ?? {}
   const activeAction = params.action && AUDIT_ACTIONS.some((a) => a.value === params.action) ? params.action : undefined
+  const q = (params.q ?? '').trim()
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
 
   const res = await payload.find({
@@ -43,7 +56,14 @@ export default async function ActivityPage({
     depth: 1, // populate `user` for the name
     overrideAccess: true,
   })
-  const logs = res.docs as AuditLog[]
+  const allLogs = res.docs as AuditLog[]
+  // Text filter over the loaded rows: summary, person or action label.
+  const needle = q.toLowerCase()
+  const logs = needle
+    ? allLogs.filter((l) =>
+        [l.summary ?? '', (l.user as User)?.name ?? '', actionLabel(l.action)].some((v) => v.toLowerCase().includes(needle)),
+      )
+    : allLogs
 
   const fmt = (iso?: string | null) =>
     iso
@@ -52,16 +72,28 @@ export default async function ActivityPage({
         })
       : '—'
 
+  const people = new Set(allLogs.map((l) => (l.user as User)?.name).filter(Boolean)).size
+  const exports = allLogs.filter((l) => l.action === 'export.generated').length
+
+  const hrefFor = (action?: string) => {
+    const sp = new URLSearchParams()
+    if (action) sp.set('action', action)
+    if (q) sp.set('q', q)
+    const str = sp.toString()
+    return str ? `/dashboard/activity?${str}` : '/dashboard/activity'
+  }
+
   const chip = (label: string, value?: string) => {
     const active = value === activeAction || (!value && !activeAction)
     return (
       <Link
         key={value ?? 'all'}
-        href={value ? `/dashboard/activity?action=${value}` : '/dashboard/activity'}
-        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+        href={hrefFor(value)}
+        aria-current={active ? 'true' : undefined}
+        className={`flex h-9 items-center rounded-lg border px-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
           active
-            ? 'border-primary/30 bg-secondary text-primary'
-            : 'border-border bg-canvas text-muted-foreground hover:border-primary/30 hover:text-primary'
+            ? 'border-[#1c1917] bg-[#1c1917] text-white hover:text-white'
+            : 'border-[#d6d3d1] bg-white text-[#57534e] hover:border-[#a8a29e] hover:text-[#1c1917]'
         }`}
       >
         {label}
@@ -70,58 +102,93 @@ export default async function ActivityPage({
   }
 
   return (
-    <div>
-      <PageTitle subtitle="Registro de solo lectura de las acciones sensibles en su consultorio.">Actividad</PageTitle>
+    <>
+      <AppHeader title="Auditoría" subtitle="Registro de solo lectura de las acciones sensibles en su consultorio" />
+      <AppContent className="flex flex-col gap-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+          {[
+            ['Registros', allLogs.length],
+            ['Personas', people],
+            ['Exportaciones', exports],
+            ['Último registro', allLogs[0] ? fmt(allLogs[0].createdAt) : '—'],
+          ].map(([l, v]) => (
+            <div key={l} className={`${CARD} px-4 py-3.5`}>
+              <div className="text-xs text-[#57534e]">{l}</div>
+              <div className="tabular mt-0.5 truncate text-[22px] font-medium tracking-[-.03em]">{v}</div>
+            </div>
+          ))}
+        </div>
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {chip('Todas')}
-        {AUDIT_ACTIONS.map((a) => chip(a.label, a.value))}
-      </div>
+        <form method="get" className="flex max-w-[420px] items-center gap-2" role="search">
+          {activeAction && <input type="hidden" name="action" value={activeAction} />}
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Filtrar por persona o resumen"
+            aria-label="Filtrar la auditoría"
+            className="h-10 min-w-0 flex-1 rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-base outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f766e] md:text-sm"
+          />
+          {q && (
+            <Link
+              href={activeAction ? `/dashboard/activity?action=${activeAction}` : '/dashboard/activity'}
+              className="flex h-10 items-center rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-sm font-medium text-[#1c1917]"
+            >
+              Quitar
+            </Link>
+          )}
+        </form>
 
-      <Card className="overflow-hidden">
-        {logs.length === 0 ? (
-          <EmptyState message={activeAction ? 'Aún no hay actividad para este filtro.' : 'Aún no se ha registrado actividad.'} />
-        ) : (
-          <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-canvas/50">
-                <Th>Fecha</Th>
-                <Th className="hidden md:table-cell">Usuario</Th>
-                <Th className="hidden sm:table-cell">Acción</Th>
-                <Th>Resumen</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {logs.map((log) => {
-                const who = (log.user as User)?.name ?? '—'
-                return (
-                  <tr key={log.id} className="transition-colors hover:bg-canvas/60">
-                    <Td className="tabular align-top whitespace-nowrap text-muted-foreground md:align-middle">
-                      {fmt(log.createdAt)}
-                      {/* Narrow screens fold the user into this cell instead of a column. */}
-                      <div className="mt-0.5 max-w-[9rem] truncate font-medium text-ink md:hidden">{who}</div>
-                    </Td>
-                    <Td className="hidden whitespace-nowrap font-medium md:table-cell">{who}</Td>
-                    <Td className="hidden whitespace-nowrap sm:table-cell">
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                        {actionLabel(log.action)}
-                      </span>
-                    </Td>
-                    <Td className="break-words">
-                      <span className="mb-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs font-medium whitespace-nowrap text-muted-foreground sm:hidden">
-                        {actionLabel(log.action)}
-                      </span>
-                      <div>{log.summary}</div>
-                    </Td>
+        <div className="flex flex-wrap gap-1.5">
+          {chip('Todas')}
+          {AUDIT_ACTIONS.map((a) => chip(a.label, a.value))}
+        </div>
+
+        <section className={`${CARD} overflow-hidden`}>
+          {logs.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-[#57534e]">
+              {activeAction || q ? 'Aún no hay actividad para este filtro.' : 'Aún no se ha registrado actividad.'}
+              {(activeAction || q) && (
+                <>
+                  {' '}
+                  <Link href="/dashboard/activity" className="font-medium text-[#0f766e]">
+                    Ver todo
+                  </Link>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead>
+                  <tr className="bg-[#fafaf7]">
+                    <th className={TH}>Fecha</th>
+                    <th className={TH}>Usuario</th>
+                    <th className={TH}>Acción</th>
+                    <th className={TH}>Resumen</th>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          </div>
-        )}
-      </Card>
-    </div>
+                </thead>
+                <tbody>
+                  {logs.map((log) => {
+                    const who = (log.user as User)?.name ?? '—'
+                    return (
+                      <tr key={log.id} className="border-t border-[#f0eeec] transition-colors hover:bg-[#fafaf7]">
+                        <td className={`${TD} tabular whitespace-nowrap text-[#57534e]`}>{fmt(log.createdAt)}</td>
+                        <td className={`${TD} font-medium whitespace-nowrap`}>{who}</td>
+                        <td className={`${TD} whitespace-nowrap`}>
+                          <span className="rounded-md border border-[#d6d3d1] bg-white px-2 py-0.5 text-xs font-semibold text-[#57534e]">
+                            {actionLabel(log.action)}
+                          </span>
+                        </td>
+                        <td className={`${TD} break-words`}>{log.summary}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </AppContent>
+    </>
   )
 }
