@@ -77,6 +77,7 @@ export interface Config {
     bookingRequests: BookingRequest;
     programs: Program;
     progressPhotos: ProgressPhoto;
+    usageCounters: UsageCounter;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,6 +95,7 @@ export interface Config {
     bookingRequests: BookingRequestsSelect<false> | BookingRequestsSelect<true>;
     programs: ProgramsSelect<false> | ProgramsSelect<true>;
     progressPhotos: ProgressPhotosSelect<false> | ProgressPhotosSelect<true>;
+    usageCounters: UsageCountersSelect<false> | UsageCountersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -729,6 +731,22 @@ export interface ProgressPhoto {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usageCounters".
+ */
+export interface UsageCounter {
+  id: string;
+  tenant: string | Tenant;
+  /**
+   * AAAA-MM en la zona horaria del consultorio, o "total" para almacenamiento.
+   */
+  period: string;
+  resource: 'aiStudies' | 'whatsappMessages' | 'opticalOrders' | 'storageBytes';
+  count: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -790,6 +808,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'progressPhotos';
         value: string | ProgressPhoto;
+      } | null)
+    | ({
+        relationTo: 'usageCounters';
+        value: string | UsageCounter;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1278,6 +1300,18 @@ export interface ProgressPhotosSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usageCounters_select".
+ */
+export interface UsageCountersSelect<T extends boolean = true> {
+  tenant?: T;
+  period?: T;
+  resource?: T;
+  count?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

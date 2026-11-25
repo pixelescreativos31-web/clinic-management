@@ -4,7 +4,23 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, btnPrimary, btnGhost, textareaClass, Spinner } from './primitives'
 import { IconCheck, IconClock } from './icons'
-import { PLANS, PLAN_LIMITS, planLabel, planPriceLabel, usage, type Plan, type LimitedResource } from '@/lib/plans'
+import {
+  METERED_LABELS,
+  METERED_RESOURCES,
+  PLANS,
+  PLAN_LIMITS,
+  formatMetered,
+  isMonthlyResource,
+  periodLabel,
+  planLabel,
+  planPriceLabel,
+  quotaLine,
+  quotaStatus,
+  usage,
+  type LimitedResource,
+  type MeteredResource,
+  type Plan,
+} from '@/lib/plans'
 import { requestUpgrade } from '@/app/(frontend)/dashboard/plan/actions'
 
 const RESOURCE_LABELS: Record<LimitedResource, string> = {
@@ -41,6 +57,53 @@ function UsageBar({ resource, plan, count }: { resource: LimitedResource; plan: 
   )
 }
 
+/**
+ * One metered quota (roadmap B1). Soft cap: the warnings say what stops (the
+ * metered action) and what never does (records and care).
+ */
+function QuotaBar({ resource, plan, used }: { resource: MeteredResource; plan: Plan; used: number }) {
+  const q = quotaStatus(plan, resource, used)
+  const monthly = isMonthlyResource(resource)
+  const fmt = (n: number) => formatMetered(resource, n)
+  return (
+    <div data-quota={resource}>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[13px] font-medium text-ink">{METERED_LABELS[resource]}</span>
+        <span className="tabular shrink-0 text-[13px] text-muted-foreground">
+          {!q.included ? 'No incluido' : q.limit === null ? `${fmt(q.used)} · ilimitado` : `${fmt(q.used)} de ${fmt(q.limit)}`}
+        </span>
+      </div>
+      {q.included && q.limit !== null && (
+        <>
+          <div
+            className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+            aria-label={METERED_LABELS[resource]}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(q.ratio * 100)}
+          >
+            <div
+              className={`h-full rounded-full transition-all ${q.atLimit ? 'bg-red' : q.near ? 'bg-amber' : 'bg-primary'}`}
+              style={{ width: `${Math.round(q.ratio * 100)}%` }}
+            />
+          </div>
+          {q.atLimit ? (
+            <p className="mt-1.5 text-xs text-red">
+              {q.over > 0 ? `Excedido por ${fmt(q.over)}. ` : 'Límite alcanzado. '}
+              {monthly ? 'Se pausa hasta el próximo mes' : 'Se pausa'} o hasta mejorar su plan; sus expedientes siguen
+              disponibles.
+            </p>
+          ) : q.near ? (
+            <p className="mt-1.5 text-xs text-amber">Ha usado el {Math.floor(q.ratio * 100)}% de su plan{monthly ? ' este mes' : ''}.</p>
+          ) : null}
+        </>
+      )}
+      {!q.included && <p className="mt-1.5 text-xs text-muted-foreground">Disponible en planes de pago.</p>}
+    </div>
+  )
+}
+
 const limitLine = (limit: number | null, singular: string, plural: string) =>
   limit === null ? `${plural.charAt(0).toUpperCase()}${plural.slice(1)} ilimitados` : `${limit} ${limit === 1 ? singular : plural}`
 
@@ -48,11 +111,14 @@ export function PlanPanel({
   plan,
   doctorCount,
   patientCount,
+  metered,
   pendingRequest,
 }: {
   plan: Plan
   doctorCount: number
   patientCount: number
+  /** Current-period usage of each metered resource ("YYYY-MM" period in the clinic's timezone). */
+  metered: { period: string; used: Record<MeteredResource, number> }
   pendingRequest: { plan: Plan; requestedAt: string | null } | null
 }) {
   const router = useRouter()
@@ -88,6 +154,25 @@ export function PlanPanel({
         <div className="grid gap-5 sm:grid-cols-2">
           <UsageBar resource="doctors" plan={plan} count={doctorCount} />
           <UsageBar resource="patients" plan={plan} count={patientCount} />
+        </div>
+      </Card>
+
+      {/* Metered monthly quotas (soft cap) */}
+      <Card className="p-6">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Consumo del mes</h2>
+          <span className="text-xs text-muted-foreground">
+            {periodLabel(metered.period).replace(/^./, (c) => c.toUpperCase())}
+          </span>
+        </div>
+        <p className="mb-5 text-xs text-muted-foreground">
+          Le avisamos al 80% y al 100%. Al llegar al límite solo se pausa ese servicio; la atención y los expedientes
+          nunca se bloquean. El almacenamiento es el total acumulado.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {METERED_RESOURCES.map((r) => (
+            <QuotaBar key={r} resource={r} plan={plan} used={metered.used[r] ?? 0} />
+          ))}
         </div>
       </Card>
 
@@ -136,6 +221,9 @@ export function PlanPanel({
               <ul className="mt-3 flex-1 space-y-1.5 text-[13px] text-muted-foreground">
                 <li>{limitLine(limits.doctors, 'médico', 'médicos')}</li>
                 <li>{limitLine(limits.patients, 'paciente', 'pacientes')}</li>
+                {METERED_RESOURCES.map((r) => (
+                  <li key={r}>{quotaLine(p, r)}</li>
+                ))}
               </ul>
               {isUpgrade && !pendingRequest && (
                 <button
