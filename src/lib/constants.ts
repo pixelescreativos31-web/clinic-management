@@ -217,6 +217,8 @@ export const AUDIT_ACTIONS = [
   { value: '2fa.backup-used', label: 'Código de respaldo usado para entrar' },
   { value: '2fa.required-changed', label: 'Exigencia de verificación en dos pasos cambiada' },
   { value: 'password.changed', label: 'Contraseña cambiada' },
+  // Fase 2 — quota packs (spec §2).
+  { value: 'quota.pack-added', label: 'Paquete de cuota agregado' },
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]['value']
 

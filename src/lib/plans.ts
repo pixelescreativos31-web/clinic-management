@@ -199,10 +199,24 @@ export function usage(
 // allowance). Not implemented. When it is, it belongs in `effectiveQuota()` below
 // (limit + min(limit, unused last period)), so callers and the UI pick it up.
 
-export type MeteredResource = 'aiStudies' | 'whatsappMessages' | 'opticalOrders' | 'storageBytes'
+export type MeteredResource =
+  | 'whatsappMessages'
+  | 'aiDictations'
+  | 'aiStudies'
+  | 'aiSummaries'
+  | 'opticalOrders'
+  | 'emailReminders'
+  | 'storageBytes'
 
-/** Resources counted per calendar month (in the clinic's timezone). */
-export const MONTHLY_RESOURCES = ['aiStudies', 'whatsappMessages', 'opticalOrders'] as const
+/** Resources counted per calendar month (in the clinic's timezone), in display order (spec §2). */
+export const MONTHLY_RESOURCES = [
+  'whatsappMessages',
+  'aiDictations',
+  'aiStudies',
+  'aiSummaries',
+  'opticalOrders',
+  'emailReminders',
+] as const
 export type MonthlyResource = (typeof MONTHLY_RESOURCES)[number]
 
 /** Every metered resource, in display order. `storageBytes` is a running total, not monthly. */
@@ -212,14 +226,56 @@ export const isMonthlyResource = (r: MeteredResource): r is MonthlyResource => r
 
 const GB = 1024 ** 3
 
-/** Quota per plan; `null` = unlimited, `0` = not included in the plan. */
+/**
+ * Quota per plan; `null` = unlimited, `0` = not included in the plan.
+ *
+ * Dictations, summaries and email reminders follow spec §2. Clínica privada's
+ * dictations are «100 por médico» pooled for the clinic; until per-doctor pooling
+ * lands this is the 4-doctor minimum (400). Gratis aiStudies/storage and
+ * Consultorio storage differ from the spec (5 / 1 GB / 100 GB) and stay as they
+ * are until the owner decides (lowering a quota would affect live accounts).
+ */
 export const PLAN_QUOTAS = {
-  free: { aiStudies: 10, whatsappMessages: 0, opticalOrders: 15, storageBytes: 2 * GB },
-  pro: { aiStudies: 60, whatsappMessages: 500, opticalOrders: null, storageBytes: 25 * GB },
-  clinic: { aiStudies: 150, whatsappMessages: 1000, opticalOrders: null, storageBytes: 50 * GB },
-  plus: { aiStudies: 250, whatsappMessages: 2000, opticalOrders: null, storageBytes: 200 * GB },
-  public: { aiStudies: null, whatsappMessages: null, opticalOrders: null, storageBytes: null },
+  free: { whatsappMessages: 0, aiDictations: 5, aiStudies: 10, aiSummaries: 10, opticalOrders: 15, emailReminders: 100, storageBytes: 2 * GB },
+  pro: { whatsappMessages: 500, aiDictations: 100, aiStudies: 60, aiSummaries: 150, opticalOrders: null, emailReminders: null, storageBytes: 25 * GB },
+  clinic: { whatsappMessages: 1000, aiDictations: 300, aiStudies: 150, aiSummaries: 400, opticalOrders: null, emailReminders: null, storageBytes: 50 * GB },
+  plus: { whatsappMessages: 2000, aiDictations: 400, aiStudies: 250, aiSummaries: 1000, opticalOrders: null, emailReminders: null, storageBytes: 200 * GB },
+  public: { whatsappMessages: null, aiDictations: null, aiStudies: null, aiSummaries: null, opticalOrders: null, emailReminders: null, storageBytes: null },
 } as const satisfies Record<Plan, Record<MeteredResource, number | null>>
+
+// ---- Quota packs (spec §2) ---------------------------------------------------
+// One-off purchases that add units on top of the monthly quota for 90 days (or
+// until used up). The monthly quota is spent first, then the pack that expires
+// soonest. Gratis may buy AI packs but not WhatsApp. Monthly add-ons (+50 GB,
+// +1 user, +1 doctor) are billed with the subscription and belong to phase 3.
+
+export const PACK_VALID_DAYS = 90
+
+export type PackResource = 'whatsappMessages' | 'aiDictations' | 'aiStudies' | 'aiSummaries'
+
+export const QUOTA_PACKS: readonly { resource: PackResource; units: number; priceUsd: number }[] = [
+  { resource: 'whatsappMessages', units: 500, priceUsd: 10 },
+  { resource: 'aiDictations', units: 100, priceUsd: 10 },
+  { resource: 'aiStudies', units: 50, priceUsd: 10 },
+  { resource: 'aiSummaries', units: 200, priceUsd: 10 },
+]
+
+export const PACK_RESOURCES: readonly PackResource[] = QUOTA_PACKS.map((p) => p.resource)
+
+export const isPackResource = (r: unknown): r is PackResource =>
+  typeof r === 'string' && (PACK_RESOURCES as readonly string[]).includes(r)
+
+/** Can a clinic on `plan` buy (or be given) packs of `resource`? */
+export function packAllowed(plan: Plan, resource: MeteredResource): resource is PackResource {
+  if (!isPackResource(resource)) return false
+  if (quotaFor(plan, resource) === null) return false // unlimited: nothing to add
+  return !(asPlan(plan) === 'free' && resource === 'whatsappMessages')
+}
+
+/** Units left in a clinic's live packs for one resource, and the soonest expiry. */
+export type PackBalance = { remaining: number; nextExpiry: string | null }
+
+export const NO_PACKS: PackBalance = { remaining: 0, nextExpiry: null }
 
 /** Warning threshold: "se está acercando al límite". */
 export const QUOTA_NEAR_RATIO = 0.8
@@ -230,11 +286,14 @@ export function quotaFor(plan: Plan, resource: MeteredResource): number | null {
 }
 
 /**
- * The quota actually in force for a period. Today it is just the plan quota; this
- * is the single place to add carry-over or purchased top-ups later.
+ * The quota in force right now: the plan's monthly quota plus what is left in
+ * live packs. `null` = unlimited. Unused monthly units do not carry over (spec §2,
+ * first version).
  */
-export function effectiveQuota(plan: Plan, resource: MeteredResource): number | null {
-  return quotaFor(plan, resource)
+export function effectiveQuota(plan: Plan, resource: MeteredResource, packRemaining = 0): number | null {
+  const q = quotaFor(plan, resource)
+  if (q === null) return null
+  return q + Math.max(0, packRemaining)
 }
 
 export type QuotaStatus = {
@@ -249,8 +308,12 @@ export type QuotaStatus = {
   atLimit: boolean
   /** Units used beyond the limit (after a downgrade, or a concurrent overshoot). */
   over: number
-  /** False when the plan's quota is 0 (feature not in the plan). */
+  /** False when the plan's quota is 0 (feature not in the plan) and no pack adds units. */
   included: boolean
+  /** Units left in live packs (spent only after the monthly quota). */
+  packRemaining: number
+  /** ISO date the soonest-expiring live pack ends, if any. */
+  packNextExpiry: string | null
 }
 
 /**
@@ -258,31 +321,52 @@ export type QuotaStatus = {
  * deletes) reads as 0. The 80% test uses integer arithmetic (used·5 ≥ limit·4)
  * so it is exact for every limit.
  */
-export function quotaStatus(plan: Plan, resource: MeteredResource, used: number): QuotaStatus {
+export function quotaStatus(
+  plan: Plan,
+  resource: MeteredResource,
+  used: number,
+  packs: PackBalance = NO_PACKS,
+): QuotaStatus {
   const u = Number.isFinite(used) && used > 0 ? used : 0
-  const limit = effectiveQuota(plan, resource)
-  if (limit === null) return { used: u, limit: null, ratio: 0, near: false, atLimit: false, over: 0, included: true }
-  if (limit <= 0) return { used: u, limit: 0, ratio: 1, near: true, atLimit: true, over: u, included: false }
+  const packRemaining = Math.max(0, packs.remaining || 0)
+  const packNextExpiry = packRemaining > 0 ? packs.nextExpiry : null
+  const monthly = quotaFor(plan, resource)
+  if (monthly === null) {
+    return { used: u, limit: null, ratio: 0, near: false, atLimit: false, over: 0, included: true, packRemaining: 0, packNextExpiry: null }
+  }
+  if (monthly <= 0 && packRemaining === 0) {
+    return { used: u, limit: 0, ratio: 1, near: true, atLimit: true, over: u, included: false, packRemaining: 0, packNextExpiry: null }
+  }
+  // `limit` is the monthly quota (the bar); packs are reported apart. Usage beyond
+  // the monthly quota was paid from packs, so with units left it is not "over".
+  const withPacks = packRemaining > 0
   return {
     used: u,
-    limit,
-    ratio: Math.min(1, u / limit),
-    near: u * 5 >= limit * 4, // ≥ QUOTA_NEAR_RATIO (80%), in exact integer arithmetic
-    atLimit: u >= limit,
-    over: Math.max(0, u - limit),
+    limit: monthly,
+    ratio: monthly > 0 ? Math.min(1, u / monthly) : 1,
+    near: withPacks ? false : u * 5 >= monthly * 4, // ≥ 80%, exact integer arithmetic
+    atLimit: withPacks ? false : u >= monthly,
+    over: withPacks ? 0 : Math.max(0, u - monthly),
     included: true,
+    packRemaining,
+    packNextExpiry,
   }
 }
 
-/** Would consuming `n` more units stay within the quota? */
+/** Would consuming `n` more units fit in what is left (monthly quota, then packs)? */
 export function quotaAllows(status: QuotaStatus, n = 1): boolean {
-  return status.limit === null || status.used + n <= status.limit
+  if (status.limit === null) return true
+  const monthlyLeft = Math.max(0, status.limit - status.used)
+  return n <= monthlyLeft + status.packRemaining
 }
 
 export const METERED_LABELS: Record<MeteredResource, string> = {
-  aiStudies: 'Estudios interpretados con IA',
   whatsappMessages: 'Mensajes de WhatsApp',
+  aiDictations: 'Consultas dictadas con IA',
+  aiStudies: 'Estudios con IA',
+  aiSummaries: 'Resúmenes con IA',
   opticalOrders: 'Órdenes de óptica',
+  emailReminders: 'Recordatorios por correo',
   storageBytes: 'Almacenamiento',
 }
 
@@ -291,6 +375,12 @@ export function meteredUnit(resource: MeteredResource, n: number): string {
   switch (resource) {
     case 'aiStudies':
       return n === 1 ? 'estudio con IA' : 'estudios con IA'
+    case 'aiDictations':
+      return n === 1 ? 'consulta dictada con IA' : 'consultas dictadas con IA'
+    case 'aiSummaries':
+      return n === 1 ? 'resumen con IA' : 'resúmenes con IA'
+    case 'emailReminders':
+      return n === 1 ? 'recordatorio por correo' : 'recordatorios por correo'
     case 'whatsappMessages':
       return n === 1 ? 'mensaje de WhatsApp' : 'mensajes de WhatsApp'
     case 'opticalOrders':
@@ -320,7 +410,8 @@ export function quotaLine(plan: Plan, resource: MeteredResource): string {
   if (q === null) {
     if (resource === 'storageBytes') return 'Almacenamiento ilimitado'
     const unit = meteredUnit(resource, 2)
-    return `${unit.charAt(0).toUpperCase()}${unit.slice(1)} ${resource === 'opticalOrders' ? 'ilimitadas' : 'ilimitados'}`
+    const fem = resource === 'opticalOrders' || resource === 'aiDictations'
+    return `${unit.charAt(0).toUpperCase()}${unit.slice(1)} ${fem ? 'ilimitadas' : 'ilimitados'}`
   }
   if (q === 0) return `Sin ${meteredUnit(resource, 2)}`
   if (resource === 'storageBytes') return `${formatBytes(q)} de almacenamiento`
@@ -336,10 +427,26 @@ export function quotaExceededMessage(plan: Plan, resource: MeteredResource, stat
   if (!status.included) {
     return `Su plan ${label} no incluye ${meteredUnit(resource, 2)}. Solicite una mejora de plan para usarlo.`
   }
+  if (resource === 'storageBytes') return 'No se pueden subir más archivos. Nada se borra.'
+  const way = packAllowed(plan, resource) ? 'compre un paquete o mejore su plan' : 'mejore su plan'
+  return `Se agotó su cuota de ${meteredUnit(resource, 2)} de este mes. Sus expedientes siguen disponibles; ${way} para continuar.`
+}
+
+/** Spec §2 80% notice: «Va por el 80 % de sus mensajes de WhatsApp de este mes (400 de 500). Se reinician el 1 de diciembre.» */
+export function quotaNearMessage(resource: MeteredResource, status: QuotaStatus, period: string): string {
   const limit = status.limit ?? 0
-  const amount = resource === 'storageBytes' ? `${formatBytes(limit)} de almacenamiento` : `${formatMetered(resource, limit)} ${meteredUnit(resource, limit)}`
-  const when = isMonthlyResource(resource) ? ' de este mes' : ''
-  return `Alcanzó el límite${when} de su plan ${label} (${amount}). Sus expedientes siguen disponibles; solicite una mejora de plan para continuar.`
+  if (resource === 'storageBytes') {
+    return `Va por el 80 % de su almacenamiento (${formatBytes(status.used)} de ${formatBytes(limit)}).`
+  }
+  return `Va por el 80 % de sus ${meteredUnit(resource, 2)} de este mes (${formatMetered(resource, status.used)} de ${formatMetered(resource, limit)}). Se reinician el ${resetLabel(period)}.`
+}
+
+/** "1 de diciembre": the first day of the month after `period` ("YYYY-MM"). */
+export function resetLabel(period: string): string {
+  const [y, m] = period.split('-').map(Number)
+  if (!y || !m) return 'próximo mes'
+  const next = new Date(Date.UTC(m === 12 ? y + 1 : y, m % 12, 1))
+  return `1 de ${next.toLocaleDateString('es-DO', { month: 'long', timeZone: 'UTC' })}`
 }
 
 /** Period key used by `storageBytes` (a running total, never reset). */

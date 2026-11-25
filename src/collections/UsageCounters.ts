@@ -52,6 +52,9 @@ export const UsageCounters: CollectionConfig = {
       options: METERED_RESOURCES.map((r) => ({ label: METERED_LABELS[r], value: r })),
     },
     { name: 'count', type: 'number', label: 'Uso', required: true, defaultValue: 0 },
+    // Spec §2: the owner is told once per period at 80% and at 100% (set natively by usage.ts).
+    { name: 'notified80At', type: 'date', label: 'Aviso del 80 %', admin: { readOnly: true } },
+    { name: 'notified100At', type: 'date', label: 'Aviso del 100 %', admin: { readOnly: true } },
   ],
   indexes: [{ fields: ['tenant', 'period', 'resource'], unique: true }],
 }

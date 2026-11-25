@@ -1,5 +1,7 @@
 import React from 'react'
-import { requireDashboardSession } from '@/lib/auth'
+import { getPayloadClient, requireDashboardSession } from '@/lib/auth'
+import { getQuotaAlert } from '@/lib/usage'
+import { QuotaAlertStrip } from '@/components/QuotaAlertStrip'
 import { REQUIREMENT_TEXT, twoFactorRequirement } from '@/lib/twoFactorPolicy'
 import { TwoFactorEnrollScreen, TwoFactorGraceStrip } from '@/components/security/TwoFactorGate'
 import { Sidebar } from '@/components/Sidebar'
@@ -30,6 +32,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     return <TwoFactorEnrollScreen email={user.email} reason={REQUIREMENT_TEXT[requirement]} />
   }
 
+  // Quota notice for the owner (spec §2); best effort, never blocks the dashboard.
+  const quotaAlert =
+    user.role === 'owner' && tenant
+      ? await getQuotaAlert(await getPayloadClient(), tenant.id).catch(() => null)
+      : null
+
   return (
     <Sidebar
       clinicName={tenant?.name ?? 'Consultorio'}
@@ -40,6 +48,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       individual={isIndividualPractice(tenant)}
     >
       {gate.kind === 'grace' && <TwoFactorGraceStrip until={gate.until.toISOString()} daysLeft={gate.daysLeft} />}
+      {quotaAlert && <QuotaAlertStrip alert={quotaAlert} />}
       <ContentFrame>{children}</ContentFrame>
     </Sidebar>
   )

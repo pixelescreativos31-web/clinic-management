@@ -42,7 +42,7 @@ export default async function PlanPage() {
           status={tenant.status}
           doctorCount={doctors.totalDocs}
           patientCount={patients.totalDocs}
-          metered={{ period: metered.period, used: metered.used }}
+          metered={{ period: metered.period, used: metered.used, packs: metered.packs, packList: metered.packList }}
           pendingRequest={
             tenant.upgradeRequest?.requestedPlan
               ? {

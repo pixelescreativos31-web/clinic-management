@@ -98,15 +98,15 @@ describe('quotaAllows — the action gate', () => {
     expect(s).toMatchObject({ limit: 500, ratio: 1, atLimit: true, over: 1000 })
     expect(quotaAllows(s)).toBe(false)
     const msg = quotaExceededMessage('pro', 'whatsappMessages', s)
-    expect(msg).toContain('Médico independiente')
-    expect(msg).toContain('500 mensajes de WhatsApp')
-    expect(msg).toContain('expedientes siguen disponibles')
+    expect(msg).toBe(
+      'Se agotó su cuota de mensajes de WhatsApp de este mes. Sus expedientes siguen disponibles; compre un paquete o mejore su plan para continuar.',
+    )
   })
 
   it('storage message speaks GB and is not monthly', () => {
     const s = quotaStatus('free', 'storageBytes', 3 * 1024 ** 3)
     const msg = quotaExceededMessage('free', 'storageBytes', s)
-    expect(msg).toContain('2 GB de almacenamiento')
+    expect(msg).toBe('No se pueden subir más archivos. Nada se borra.')
     expect(msg).not.toContain('este mes')
   })
 })

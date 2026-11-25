@@ -10,23 +10,35 @@ import { btnPrimary, btnGhost, textareaClass, Spinner } from './primitives'
 import {
   METERED_LABELS,
   METERED_RESOURCES,
+  MONTHLY_RESOURCES,
+  PACK_VALID_DAYS,
   PLANS,
+  QUOTA_PACKS,
   PLAN_LIMITS,
   formatMetered,
   isMonthlyResource,
+  meteredUnit,
   periodLabel,
   planLabel,
+  packAllowed,
   planPriceLabel,
+  quotaExceededMessage,
   quotaLine,
+  quotaNearMessage,
   quotaStatus,
+  resetLabel,
   usage,
   type LimitedResource,
   type MeteredResource,
+  type PackBalance,
   type Plan,
 } from '@/lib/plans'
+import { SUPPORT_EMAIL } from '@/lib/brand'
 import { requestUpgrade } from '@/app/(frontend)/dashboard/plan/actions'
 
 const CARD = 'rounded-[12px] border border-[#e7e5e4] bg-white'
+const SMALL_BTN =
+  'inline-flex h-9 items-center rounded-[10px] border border-[#d6d3d1] bg-white px-3 text-[13px] font-medium text-[#1c1917] hover:bg-[#f5f5f4] hover:text-[#1c1917]'
 
 const RESOURCE_LABELS: Record<LimitedResource, string> = {
   doctors: 'Médicos activos',
@@ -96,23 +108,31 @@ function UsageRow({
   )
 }
 
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', timeZone: 'America/Santo_Domingo' })
+
 /**
- * One metered quota (roadmap B1). Soft cap: the warnings say what stops (the
- * metered action) and what never does (records and care).
+ * One metered quota (spec §2). Soft cap: the warnings say what stops (the metered
+ * action) and what never does (records and care). A live pack shows under the bar.
  */
 function QuotaRow({
   resource,
   plan,
   used,
+  packs,
+  period,
 }: {
   resource: MeteredResource
   plan: Plan
   used: number
+  packs: PackBalance
+  period: string
 }) {
-  const q = quotaStatus(plan, resource, used)
-  const monthly = isMonthlyResource(resource)
+  const q = quotaStatus(plan, resource, used, packs)
   const fmt = (n: number) => formatMetered(resource, n)
   const warn = q.included && q.limit !== null && (q.near || q.atLimit)
+  const canBuy = packAllowed(plan, resource)
+  const overMonthly = q.limit !== null && q.limit > 0 && q.used > q.limit
   return (
     <div data-quota={resource}>
       <div className="flex items-baseline justify-between gap-3 text-sm">
@@ -124,28 +144,103 @@ function QuotaRow({
             ? 'No incluido'
             : q.limit === null
               ? `${fmt(q.used)} · ilimitado`
-              : `${fmt(q.used)} de ${fmt(q.limit)}`}
+              : `${fmt(Math.min(q.used, q.limit || q.used))} de ${fmt(q.limit)}`}
         </span>
       </div>
       {q.included && q.limit !== null && (
         <>
           <Bar ratio={q.ratio} warn={warn} label={METERED_LABELS[resource]} />
+          {q.packRemaining > 0 && (
+            <p className="tabular mt-1.5 text-xs text-[#0f766e]" data-pack={resource}>
+              {overMonthly ? `Cuota del mes agotada; usando paquete. ` : ''}Paquete: {fmt(q.packRemaining)} restantes
+              {q.packNextExpiry ? `, vence el ${shortDate(q.packNextExpiry)}` : ''}
+            </p>
+          )}
           {q.atLimit ? (
-            <p className="mt-1.5 text-xs text-[#b45309]">
-              {q.over > 0 ? `Excedido por ${fmt(q.over)}. ` : 'Límite alcanzado. '}
-              {monthly ? 'Se pausa hasta el próximo mes' : 'Se pausa'} o hasta mejorar su plan; sus
-              expedientes siguen disponibles.
-            </p>
+            <div className="mt-1.5">
+              <p className="text-xs text-[#b45309]">{quotaExceededMessage(plan, resource, q)}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {canBuy && (
+                  <a href="#paquetes" className={SMALL_BTN}>
+                    Comprar paquete
+                  </a>
+                )}
+                <a href="#planes" className={SMALL_BTN}>
+                  Mejorar plan
+                </a>
+              </div>
+            </div>
           ) : q.near ? (
-            <p className="mt-1.5 text-xs text-[#b45309]">
-              Aviso al 80%: ha usado el {Math.floor(q.ratio * 100)}% de su plan
-              {monthly ? ' este mes' : ''}.
-            </p>
+            <p className="mt-1.5 text-xs text-[#b45309]">{quotaNearMessage(resource, q, period)}</p>
           ) : null}
         </>
       )}
       {!q.included && <p className="mt-1 text-xs text-[#57534e]">Disponible en planes de pago.</p>}
     </div>
+  )
+}
+
+/** Quotas shown in «Cuotas de este mes»: optical orders and email reminders only where they are capped (Gratis). */
+const monthlyRowsFor = (plan: Plan) =>
+  MONTHLY_RESOURCES.filter(
+    (r) => !((r === 'opticalOrders' || r === 'emailReminders') && quotaStatus(plan, r, 0).limit === null),
+  )
+
+const SOURCE_LABELS: Record<string, string> = { gift: 'Regalo', admin: 'Asignado por medira', paypal: 'Compra' }
+
+/** «Comprar paquete» (spec §2): one-off packs, 90 days. Payment arrives in phase 3. */
+function PacksSection({
+  plan,
+  packList,
+}: {
+  plan: Plan
+  packList: { id: string; resource: MeteredResource; units: number; used: number; expiresAt: string | null; source: string }[]
+}) {
+  const offers = QUOTA_PACKS.filter((p) => packAllowed(plan, p.resource))
+  if (offers.length === 0 && packList.length === 0) return null
+  return (
+    <section className={`${CARD} scroll-mt-20 px-[18px] py-4`} id="paquetes">
+      <h2 className="font-semibold">Paquetes</h2>
+      <p className="mt-1 text-[13px] text-[#57534e]">
+        Pago único. Se suman a la cuota del mes y duran {PACK_VALID_DAYS} días o hasta agotarse.
+      </p>
+      {offers.length > 0 && (
+        <ul className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2">
+          {offers.map((p) => (
+            <li key={p.resource} className="rounded-[10px] border border-[#e7e5e4] px-3 py-2.5" data-offer={p.resource}>
+              <div className="text-sm font-medium">
+                {formatMetered(p.resource, p.units)} {meteredUnit(p.resource, p.units)}
+              </div>
+              <div className="tabular text-[13px] text-[#57534e]">US${p.priceUsd} · {PACK_VALID_DAYS} días</div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {offers.length > 0 && (
+        <p className="mt-3 text-[13px] text-[#57534e]">
+          El pago con PayPal llega pronto. Mientras tanto, escriba a {SUPPORT_EMAIL} y le activamos el
+          paquete.
+        </p>
+      )}
+      {packList.length > 0 && (
+        <div className="mt-4 border-t border-[#f0eeec] pt-3">
+          <h3 className="text-sm font-semibold">Mis paquetes</h3>
+          <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
+            {packList.map((p) => (
+              <li key={p.id} className="flex flex-wrap justify-between gap-x-3" data-mypack={p.resource}>
+                <span>
+                  {METERED_LABELS[p.resource]} · {SOURCE_LABELS[p.source] ?? p.source}
+                </span>
+                <span className="tabular text-[#57534e]">
+                  quedan {formatMetered(p.resource, p.units - p.used)} de {formatMetered(p.resource, p.units)}
+                  {p.expiresAt ? ` · vence el ${shortDate(p.expiresAt)} o al agotarse` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -168,7 +263,12 @@ export function PlanPanel({
   doctorCount: number
   patientCount: number
   /** Current-period usage of each metered resource ("YYYY-MM" period in the clinic's timezone). */
-  metered: { period: string; used: Record<MeteredResource, number> }
+  metered: {
+    period: string
+    used: Record<MeteredResource, number>
+    packs: Record<MeteredResource, PackBalance>
+    packList: { id: string; resource: MeteredResource; units: number; used: number; expiresAt: string | null; source: string }[]
+  }
   pendingRequest: { plan: Plan; requestedAt: string | null } | null
 }) {
   const router = useRouter()
@@ -224,26 +324,52 @@ export function PlanPanel({
             )}
           </section>
 
-          <section className={`${CARD} px-[18px] py-4`}>
-            <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
-              <h2 className="font-semibold">Uso del mes</h2>
-              <span className="text-[13px] text-[#57534e]">
-                {periodLabel(metered.period).replace(/^./, (c) => c.toUpperCase())} · se reinicia el
-                día 1
-              </span>
-            </div>
+          <section className={`${CARD} px-[18px] py-4`} id="uso">
+            <h2 className="font-semibold">Topes de su cuenta</h2>
             <div className="mt-3.5 flex flex-col gap-3.5">
               <UsageRow resource="doctors" plan={plan} count={doctorCount} />
               <UsageRow resource="patients" plan={plan} count={patientCount} />
-              {METERED_RESOURCES.map((r) => (
-                <QuotaRow key={r} resource={r} plan={plan} used={metered.used[r] ?? 0} />
+              <QuotaRow
+                resource="storageBytes"
+                plan={plan}
+                used={metered.used.storageBytes ?? 0}
+                packs={metered.packs.storageBytes}
+                period={metered.period}
+              />
+            </div>
+            <p className="mt-3.5 text-[13px] text-[#57534e]">
+              El almacenamiento es el total acumulado; no se reinicia.
+            </p>
+          </section>
+
+          <section className={`${CARD} px-[18px] py-4`}>
+            <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
+              <h2 className="font-semibold">Cuotas de este mes</h2>
+              <span className="text-[13px] text-[#57534e]">
+                {periodLabel(metered.period).replace(/^./, (c) => c.toUpperCase())} · se reinicia el{' '}
+                {resetLabel(metered.period)}
+              </span>
+            </div>
+            <div className="mt-3.5 flex flex-col gap-3.5">
+              {monthlyRowsFor(plan).map((r) => (
+                <QuotaRow
+                  key={r}
+                  resource={r}
+                  plan={plan}
+                  used={metered.used[r] ?? 0}
+                  packs={metered.packs[r]}
+                  period={metered.period}
+                />
               ))}
             </div>
             <p className="mt-3.5 text-[13px] text-[#57534e]">
-              Le avisamos al 80% y al 100%. Al llegar al límite solo se pausa ese servicio; la
-              atención y los expedientes nunca se bloquean. El almacenamiento es el total acumulado.
+              Le avisamos al 80 % y al 100 %. Al llegar al límite solo se pausa ese servicio; la
+              atención y los expedientes nunca se bloquean. Se usa primero la cuota del mes y después
+              el paquete que vence antes.
             </p>
           </section>
+
+          <PacksSection plan={plan} packList={metered.packList} />
         </div>
 
         {/* Right: pending request + request form */}
@@ -302,7 +428,9 @@ export function PlanPanel({
               <ul className="mt-3 flex-1 space-y-1.5 border-t border-[#f0eeec] pt-3 text-[13px] text-[#44403c]">
                 <li>{limitLine(limits.doctors, 'médico', 'médicos')}</li>
                 <li>{limitLine(limits.patients, 'paciente', 'pacientes')}</li>
-                {METERED_RESOURCES.map((r) => (
+                {METERED_RESOURCES.filter(
+                  (r) => !((r === 'opticalOrders' || r === 'emailReminders') && quotaStatus(p, r, 0).limit === null),
+                ).map((r) => (
                   <li key={r}>{quotaLine(p, r)}</li>
                 ))}
               </ul>

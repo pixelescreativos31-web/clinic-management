@@ -78,6 +78,7 @@ export interface Config {
     programs: Program;
     progressPhotos: ProgressPhoto;
     usageCounters: UsageCounter;
+    quotaPacks: QuotaPack;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -96,6 +97,7 @@ export interface Config {
     programs: ProgramsSelect<false> | ProgramsSelect<true>;
     progressPhotos: ProgressPhotosSelect<false> | ProgressPhotosSelect<true>;
     usageCounters: UsageCountersSelect<false> | UsageCountersSelect<true>;
+    quotaPacks: QuotaPacksSelect<false> | QuotaPacksSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -697,7 +699,8 @@ export interface AuditLog {
     | '2fa.backup-regenerated'
     | '2fa.backup-used'
     | '2fa.required-changed'
-    | 'password.changed';
+    | 'password.changed'
+    | 'quota.pack-added';
   targetCollection: string;
   targetId: string;
   /**
@@ -771,8 +774,38 @@ export interface UsageCounter {
    * AAAA-MM en la zona horaria del consultorio, o "total" para almacenamiento.
    */
   period: string;
-  resource: 'aiStudies' | 'whatsappMessages' | 'opticalOrders' | 'storageBytes';
+  resource:
+    | 'whatsappMessages'
+    | 'aiDictations'
+    | 'aiStudies'
+    | 'aiSummaries'
+    | 'opticalOrders'
+    | 'emailReminders'
+    | 'storageBytes';
   count: number;
+  notified80At?: string | null;
+  notified100At?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Unidades extra de una cuota mensual. Duran 90 días o hasta agotarse.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotaPacks".
+ */
+export interface QuotaPack {
+  id: string;
+  tenant: string | Tenant;
+  resource: 'whatsappMessages' | 'aiDictations' | 'aiStudies' | 'aiSummaries';
+  units: number;
+  used?: number | null;
+  /**
+   * Por defecto, 90 días desde hoy.
+   */
+  expiresAt?: string | null;
+  source: 'gift' | 'admin' | 'paypal';
+  note?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -843,6 +876,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'usageCounters';
         value: string | UsageCounter;
+      } | null)
+    | ({
+        relationTo: 'quotaPacks';
+        value: string | QuotaPack;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1361,6 +1398,23 @@ export interface UsageCountersSelect<T extends boolean = true> {
   period?: T;
   resource?: T;
   count?: T;
+  notified80At?: T;
+  notified100At?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotaPacks_select".
+ */
+export interface QuotaPacksSelect<T extends boolean = true> {
+  tenant?: T;
+  resource?: T;
+  units?: T;
+  used?: T;
+  expiresAt?: T;
+  source?: T;
+  note?: T;
   updatedAt?: T;
   createdAt?: T;
 }
