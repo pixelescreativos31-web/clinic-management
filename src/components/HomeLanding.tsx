@@ -4,6 +4,7 @@
 // ("Clinical Calm"). Copy follows the current spec doc, not the older package:
 // prices come from PLAN_LIMITS, no tax features, roles Titular / Asistente.
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
@@ -338,12 +339,15 @@ function Producto({ tick, animate }: { tick: number; animate: boolean }) {
   )
   return (
     <section id="dia" className="mx-auto max-w-[1160px] px-5 pt-[calc(120px+clamp(48px,6vw,80px))]">
-      <div className="max-w-[620px]">
-        <h2 className={H2}>Cambie la especialidad. Cambia la consulta. No cambie de sistema.</h2>
-        <p className={LEAD}>
-          Listas hoy: General, Nutrición y Estética. Oftalmología, Odontología, Gineco-obstetricia y Pediatría llegan pronto y mientras tanto usan
-          la ficha general.
-        </p>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-center gap-x-12 gap-y-6">
+        <div className="max-w-[620px]">
+          <h2 className={H2}>Cambie la especialidad. Cambia la consulta. No cambie de sistema.</h2>
+          <p className={LEAD}>
+            Listas hoy: General, Nutrición y Estética. Oftalmología, Odontología, Gineco-obstetricia y Pediatría llegan pronto y mientras tanto
+            usan la ficha general.
+          </p>
+        </div>
+        <Photo src="/images/hero-doctor2.jpg" alt="Médica atendiendo en su consultorio" className="aspect-[4/3] rounded-xl" sizes="(min-width: 760px) 540px, 100vw" />
       </div>
       <div className="mt-8 flex flex-wrap gap-3">
         <div className={`${CARD} flex flex-[2_1_440px] flex-col gap-4`}>
@@ -446,6 +450,72 @@ function Producto({ tick, animate }: { tick: number; animate: boolean }) {
             ))}
           </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+/** Photo in a fixed-ratio frame (design «image-slot»): fills and crops, stone background while loading. */
+function Photo({ src, alt, className, sizes, position }: { src: string; alt: string; className: string; sizes: string; position?: string }) {
+  return (
+    <div className={`relative overflow-hidden bg-[#e7e5e4] ${className}`}>
+      <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" style={position ? { objectPosition: position } : undefined} />
+    </div>
+  )
+}
+
+const ROLES = [
+  { t: 'El médico', d: 'Atiende, dicta y firma sin buscar.', src: '/images/login-doctor.jpg', alt: 'Médico atendiendo a un paciente' },
+  { t: 'La recepción', d: 'Agenda, registra llegadas y cobra.', src: null, alt: '' },
+  { t: 'El paciente', d: 'Confirma su cita y recibe su receta por WhatsApp.', src: null, alt: '' },
+] as const
+
+const RECEPCION = [
+  ['9:00', 'Ana Martínez', 'Atendida'],
+  ['9:30', 'Luis Peña', 'En consulta'],
+  ['10:00', 'Rosa Díaz', 'En sala'],
+  ['10:30', 'Carlos Gil', 'Confirmada'],
+] as const
+
+function ParaTodos() {
+  return (
+    <section className="mx-auto max-w-[1160px] px-5 pt-[clamp(56px,7vw,96px)]">
+      <h2 className={`${H2} max-w-[620px]`}>Para todo el consultorio</h2>
+      <div className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3">
+        {ROLES.map((r) => (
+          <div key={r.t} className="min-w-0 overflow-hidden rounded-xl border border-[#e7e5e4] bg-white">
+            {r.src ? (
+              <Photo src={r.src} alt={r.alt} className="aspect-[4/5]" sizes="(min-width: 860px) 370px, 100vw" />
+            ) : r.t === 'La recepción' ? (
+              // No reception photo yet: the day's agenda the front desk works from.
+              <div className="flex aspect-[4/5] flex-col justify-center gap-2 bg-[#f0eeec] p-5" aria-hidden="true">
+                <div className="text-[13px] font-medium text-[#57534e]">Hoy · 4 citas</div>
+                {RECEPCION.map(([h, n, st]) => (
+                  <div key={h} className="flex items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2.5 text-sm">
+                    <span className="tabular text-[#57534e]">{h}</span>
+                    <span className="min-w-0 flex-1 truncate">{n}</span>
+                    <Chip s={st} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // No patient photo yet: the WhatsApp exchange the patient actually sees.
+              <div className="flex aspect-[4/5] flex-col justify-end gap-2 bg-[#f0eeec] p-5" aria-hidden="true">
+                <div className="max-w-[85%] rounded-[12px_12px_12px_2px] bg-white px-3.5 py-3 text-sm leading-[1.45]">
+                  Hola Ana, le recordamos su cita mañana a las <strong>9:30 a. m.</strong> con la Dra. Rosario.
+                </div>
+                <div className="max-w-[60%] self-end rounded-[12px_12px_2px_12px] bg-[#0f766e] px-3.5 py-2.5 text-sm text-white">Confirmar</div>
+                <div className="max-w-[85%] rounded-[12px_12px_12px_2px] bg-white px-3.5 py-3 text-sm leading-[1.45]">
+                  Listo, su cita quedó confirmada. Aquí tiene su receta en PDF.
+                </div>
+              </div>
+            )}
+            <div className="px-[18px] pt-4 pb-[18px]">
+              <div className="text-[17px] font-semibold tracking-[-.01em]">{r.t}</div>
+              <div className="mt-0.5 text-[15px] text-[#57534e]">{r.d}</div>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )
@@ -692,24 +762,26 @@ export function HomeLanding({ plans, hospitalItems, supportEmail, demoBase }: Pr
         </div>
       </section>
       <Producto tick={tick} animate={animate} />
+      <ParaTodos />
       <Seguridad tick={tick} animate={animate} />
       <Planes plans={plans} hospitalItems={hospitalItems} demoHref={demoHref} />
       {demoBase !== null && <Demo demoBase={demoBase} />}
       <Faq supportEmail={supportEmail} />
       <section className="mx-auto max-w-[1160px] px-5 pb-[clamp(56px,7vw,96px)]">
-        <div className={`flex flex-wrap items-center justify-between gap-6 rounded-[14px] p-[clamp(28px,5vw,56px)] ${DEEP}`}>
-          <div className="max-w-[520px]">
+        <div className={`flex flex-wrap overflow-hidden rounded-[14px] ${DEEP}`}>
+          <div className="flex flex-[1.2_1_320px] flex-col justify-center p-[clamp(28px,5vw,56px)]">
             <h2 className={H2}>Atienda su primera consulta hoy</h2>
             <p className="mt-2.5 text-[17px] text-[#b6d4cf]">Del registro a la primera consulta en menos de 10 minutos.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/signup" className={BTN_LIGHT}>
+                Crear cuenta
+              </Link>
+              <a href={demoHref} className={BTN_GHOST}>
+                Hospitales: pedir demo
+              </a>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/signup" className={BTN_LIGHT}>
-              Crear cuenta
-            </Link>
-            <a href={demoHref} className={BTN_GHOST}>
-              Hospitales: pedir demo
-            </a>
-          </div>
+          <Photo src="/images/reception.jpg" alt="Recepción de un consultorio" className="min-h-[280px] flex-[1_1_300px] bg-[#134e4a]" sizes="(min-width: 760px) 500px, 100vw" />
         </div>
       </section>
       <footer className="border-t border-[#e7e5e4]">
