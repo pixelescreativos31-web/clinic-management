@@ -792,7 +792,7 @@ export function HomeLanding({ plans, hospitalItems, supportEmail, demoBase }: Pr
             <a href="#seguridad" className="text-[#57534e] hover:text-[#1c1917]">Seguridad</a>
             <Link href="/login" className="text-[#57534e] hover:text-[#1c1917]">Entrar</Link>
           </div>
-          <span className="text-[#57534e]">© 2026 Pixeles Creativos · Basado en Matab (MIT)</span>
+          <span className="text-[#57534e]">© 2026 Pixeles Creativos</span>
         </div>
       </footer>
     </div>

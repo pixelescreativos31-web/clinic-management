@@ -2,7 +2,7 @@
 
 Producto: SaaS económico para médicos independientes. Cliente inicial: una doctora con su consultorio y, opcionalmente, una asistente. Precio objetivo: ~US$10/mes por médico.
 
-Base: [Matab — Clinic Management](https://github.com/abdulrehmankz1/clinic-management) (MIT). Se conserva el aviso de licencia y el crédito (`BASED_ON` en `src/lib/brand.ts`, pie de la landing y `LICENSE`).
+Base: [Matab — Clinic Management](https://github.com/abdulrehmankz1/clinic-management) (MIT). Se conserva el aviso de licencia en `LICENSE` (lo que exige la MIT); la web no muestra el crédito.
 
 ---
 

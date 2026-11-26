@@ -7,5 +7,3 @@ export const APP_TAGLINE = 'Gestión médica inteligente'
 export const APP_LOCALE = 'es-DO'
 export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'soporte@medira.do'
 
-/** Original project credit (MIT license requires keeping the notice). */
-export const BASED_ON = 'Basado en Matab (MIT)'
