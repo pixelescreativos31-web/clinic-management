@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;--bg:#fafaf7;--bg-a:rgba(250,250,247,.94);--surface:#ffffff;--sunken:#f0eeec;--line:#e7e5e4;--line-2:#f0eeec;--line-3:#d6d3d1;--ink:#1c1917;--muted:#57534e;--muted-2:#44403c;--inv:#1c1917;--brand-t:#0f766e;--ok-t:#15803d;--warn-t:#b45309;background:var(--bg);color:var(--ink);font-family:Geist,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--brand-t);text-decoration:none}
+a:hover{color:#115e59}
+body[data-tema="oscuro"]{--bg:#0c0a09;--bg-a:rgba(12,10,9,.92);--surface:#1c1917;--sunken:#292524;--line:#2e2a27;--line-2:#292524;--line-3:#44403c;--ink:#fafaf9;--muted:#a8a29e;--muted-2:#d6d3d1;--inv:#57534e;--brand-t:#2dd4bf;--ok-t:#4ade80;--warn-t:#fbbf24}
+input,textarea,select{background:var(--surface);color:var(--ink)}
+button{color:inherit}
+*{box-sizing:border-box}
+button,input,textarea,select{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #0f766e;outline-offset:1px}
+@keyframes md-up{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</helmet>
+
+<sc-if value="{{ escritorio }}" hint-placeholder-val="{{ true }}">
+<aside style="position:fixed;top:0;left:0;bottom:0;width:232px;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:30">
+  <div style="height:56px;padding:0 20px;display:flex;align-items:center;font-size:21px;font-weight:600;letter-spacing:-.04em">medira</div>
+  <nav style="flex:1;overflow-y:auto;padding:4px 12px 12px">
+    <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="3">
+      <div style="padding:14px 8px 6px;font-size:12px;font-weight:500;color:var(--muted)">{{ g.g }}</div>
+      <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="4">
+        <button onClick="{{ n.pick }}" style="width:100%;height:36px;padding:0 10px;border:0;border-radius:8px;background:{{ n.bg }};color:{{ n.fg }};font-size:14px;font-weight:{{ n.w }};text-align:left;cursor:pointer" style-hover="background:var(--sunken)">{{ n.t }}</button>
+      </sc-for>
+    </sc-for>
+  </nav>
+  <div style="padding:12px;border-top:1px solid var(--line)">
+    <div style="padding:0 8px;font-size:14px;font-weight:600">{{ usuario }}</div>
+    <div style="padding:0 8px;font-size:12px;color:var(--muted)">{{ clinicaN }}</div>
+    <sc-if value="{{ puedeVer }}" hint-placeholder-val="{{ true }}"><div style="margin-top:10px;padding:0 8px;font-size:12px;color:var(--muted)">Ver como</div>
+    <div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;border-radius:10px;background:var(--sunken)">
+      <sc-for list="{{ roles }}" as="r" hint-placeholder-count="4">
+        <button onClick="{{ r.pick }}" style="height:28px;border:0;border-radius:7px;background:{{ r.bg }};color:{{ r.fg }};font-size:12px;font-weight:500;cursor:pointer">{{ r.t }}</button>
+      </sc-for>
+    </div>
+    </sc-if>
+    <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;border-radius:10px;background:var(--sunken)">
+      <sc-for list="{{ ajustes }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.pick }}" style="height:28px;border:0;border-radius:7px;background:{{ r.bg }};color:{{ r.fg }};font-size:12px;font-weight:500;cursor:pointer">{{ r.t }}</button></sc-for>
+    </div>
+  </div>
+</aside>
+</sc-if>
+
+<header style="position:sticky;top:0;z-index:20;margin-left:{{ ml }};background:var(--bg-a);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)">
+  <div style="height:56px;padding:0 20px;display:flex;align-items:center;gap:12px">
+    <sc-if value="{{ atras.on }}" hint-placeholder-val="{{ false }}"><button onClick="{{ atras.run }}" style="flex:none;height:36px;padding:0 10px;border:1px solid var(--line-3);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500;cursor:pointer">Volver</button></sc-if>
+    <div style="flex:none;font-size:17px;font-weight:600;letter-spacing:-.02em;white-space:nowrap">{{ titulo }}</div>
+    <button onClick="{{ abrirPaleta }}" style="flex:1 1 0;min-width:0;max-width:420px;margin-left:auto;height:38px;padding:0 10px 0 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);font-size:14px;cursor:pointer;text-align:left" style-hover="border-color:#a8a29e">
+      <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Buscar paciente o acción</span>
+      <span style="flex:none;padding:1px 6px;border:1px solid var(--line-3);border-radius:6px;font-family:'Geist Mono',monospace;font-size:12px">⌘K</span>
+    </button>
+    <button onClick="{{ abrirNotif }}" style="flex:none;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px" style-hover="border-color:#a8a29e">Avisos <span style="padding:0 6px;border-radius:6px;background:#0f766e;color:#ffffff;font-size:12px">3</span></button>
+  </div>
+  <sc-if value="{{ banner.on }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:9px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;background:{{ banner.bg }};color:{{ banner.fg }};font-size:14px">
+      <span>{{ banner.t }}</span>
+      <sc-if value="{{ banner.hasBtn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ banner.run }}" style="height:32px;padding:0 12px;border:0;border-radius:8px;background:#FFFFFF;color:#1C1917;font-size:13px;font-weight:600;cursor:pointer">{{ banner.btn }}</button></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ vista.on }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:9px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;background:#1d4ed8;color:#ffffff;font-size:14px">
+      <span>{{ vista.t }}</span>
+      <button onClick="{{ vista.volver }}" style="height:32px;padding:0 12px;border:0;border-radius:8px;background:#FFFFFF;color:#1C1917;font-size:13px;font-weight:600;cursor:pointer">Volver a mi vista</button>
+    </div>
+  </sc-if>
+</header>
+
+<sc-if value="{{ v.panel }}" hint-placeholder-val="{{ true }}">
+<section data-screen-label="Panel" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="font-size:22px;font-weight:600;letter-spacing:-.03em">{{ saludo }}</div>
+  <div style="font-size:14px;color:var(--muted)">Miércoles 25 de noviembre de 2026</div>
+  <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px">
+        <div style="font-size:12px;color:var(--muted)">{{ k.l }}</div>
+        <div style="margin-top:2px;font-size:24px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ k.v }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1.4 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ p.sig }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#042f2e;color:#ffffff;border-radius:12px;padding:18px 20px">
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 16px">
+            <div>
+              <div style="font-size:12px;color:#b6d4cf">Siguiente paciente · {{ sig.h }}</div>
+              <div style="font-size:22px;font-weight:600;letter-spacing:-.03em">{{ sig.n }}</div>
+              <div style="font-size:14px;color:#b6d4cf">{{ sig.nota }}</div>
+            </div>
+            <sc-if value="{{ clinico }}" hint-placeholder-val="{{ true }}"><span style="padding:4px 10px;border-radius:6px;background:#b91c1c;color:#ffffff;font-size:12px;font-weight:600">Alergia: penicilina</span></sc-if>
+          </div>
+          <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+            <button onClick="{{ sig.run }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#FFFFFF;color:#042f2e;font-size:15px;font-weight:600;cursor:pointer">{{ sig.btn }}</button>
+            <button onClick="{{ irFicha }}" style="height:44px;padding:0 18px;border:1px solid #2b6b65;border-radius:10px;background:none;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Expediente</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ p.agenda }}" hint-placeholder-val="{{ true }}"><div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px"><span style="font-weight:600">Agenda de hoy</span><button onClick="{{ irAgenda }}" style="border:0;background:none;color:var(--brand-t);font-size:14px;font-weight:500;cursor:pointer">Ver agenda</button></div>
+        <sc-for list="{{ lista }}" as="c" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line-2);font-size:14px">
+            <span style="color:var(--muted);font-variant-numeric:tabular-nums">{{ c.h }}</span>
+            <span style="min-width:0"><span style="display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.n }}</span><span style="display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.nota }}</span></span>
+            <span style="padding:3px 8px;border-radius:6px;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:600">{{ c.e }}</span>
+          </div>
+        </sc-for>
+      </div></sc-if>
+      <sc-if value="{{ p.caja }}" hint-placeholder-val="{{ false }}"><div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 16px;font-weight:600">Movimientos de caja de hoy</div>
+        <sc-for list="{{ movsC }}" as="m" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--line-2);font-size:14px"><span style="color:var(--muted);font-variant-numeric:tabular-nums">{{ m.h }}</span><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.t }}</span><span style="font-weight:500;font-variant-numeric:tabular-nums">{{ m.m }}</span></div></sc-for>
+      </div></sc-if>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px">
+        <div style="font-weight:600">Acciones</div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <sc-for list="{{ rapidas }}" as="a" hint-placeholder-count="4">
+            <button onClick="{{ a.run }}" style="min-height:48px;padding:8px 12px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;text-align:left;cursor:pointer" style-hover="border-color:var(--ink)">{{ a.t }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ p.pend }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <div style="padding:14px 16px;font-weight:600">Pendientes</div>
+          <sc-for list="{{ pend }}" as="x" hint-placeholder-count="3">
+            <button onClick="{{ x.run }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border:0;border-top:1px solid var(--line-2);background:none;font-size:14px;text-align:left;cursor:pointer" style-hover="background:var(--bg)"><span>{{ x.t }}</span><span style="color:var(--brand-t);font-weight:500">Abrir</span></button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ p.uso }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;gap:12px"><span style="font-weight:600">Uso del plan</span><button onClick="{{ irPlan }}" style="border:0;background:none;color:var(--brand-t);font-size:14px;font-weight:500;cursor:pointer">Ver plan</button></div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px;font-size:14px">
+            <sc-for list="{{ cuotas3 }}" as="q" hint-placeholder-count="3">
+              <div>
+                <div style="display:flex;justify-content:space-between;gap:12px"><span>{{ q.l }}</span><span style="color:{{ q.fg }};font-weight:500;font-variant-numeric:tabular-nums">{{ q.v }}</span></div>
+                <div style="margin-top:6px;height:6px;border-radius:3px;background:var(--sunken);overflow:hidden"><div style="height:100%;width:{{ q.pct }};background:{{ q.bar }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ p.bienvenida }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <div style="padding:14px 16px"><div style="display:flex;justify-content:space-between;gap:12px"><span style="font-weight:600">Lista de bienvenida</span><span style="font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums">43%</span></div>
+          <div style="margin-top:8px;height:6px;border-radius:3px;background:var(--sunken);overflow:hidden"><div style="height:100%;width:43%;background:#0f766e"></div></div></div>
+          <sc-for list="{{ bienvenida }}" as="b" hint-placeholder-count="7">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-top:1px solid var(--line-2);font-size:14px;color:{{ b.fg }}"><span style="text-decoration:{{ b.td }}">{{ b.t }}</span><span style="flex:none;font-size:12px;font-weight:600">{{ b.e }}</span></div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.agenda }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Agenda" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+    <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">
+      <sc-for list="{{ dias }}" as="d" hint-placeholder-count="7">
+        <button onClick="{{ d.pick }}" style="flex:none;width:54px;height:58px;border:1px solid {{ d.bd }};border-radius:10px;background:{{ d.bg }};color:{{ d.fg }};cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2"><span style="font-size:12px">{{ d.d }}</span><span style="font-size:17px;font-weight:600;font-variant-numeric:tabular-nums">{{ d.n }}</span></button>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sunken)">
+        <sc-for list="{{ modos }}" as="m" hint-placeholder-count="3"><button onClick="{{ m.pick }}" style="height:34px;padding:0 12px;border:0;border-radius:8px;background:{{ m.bg }};color:{{ m.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ m.t }}</button></sc-for>
+      </div>
+      <button onClick="{{ abrirCita }}" style="height:40px;padding:0 16px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:14px;font-weight:500;cursor:pointer">Nueva cita</button>
+      <button onClick="{{ sinCita }}" style="height:40px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer">Sin cita</button>
+    </div>
+  </div>
+  <sc-if value="{{ ag.lista }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ lista }}" as="c" hint-placeholder-count="6">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px">
+          <div style="flex:none;width:52px;font-size:17px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ c.h }}</div>
+          <div style="flex:1 1 200px;min-width:0">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px"><span style="font-weight:600">{{ c.n }}</span><span style="padding:2px 8px;border-radius:6px;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:600">{{ c.e }}</span></div>
+            <div style="font-size:13px;color:var(--muted)">{{ c.nota }}<span style="color:{{ c.wfg }}">{{ c.w }}</span></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ c.acciones }}" as="a" hint-placeholder-count="2"><button onClick="{{ a.run }}" style="height:40px;padding:0 14px;border:1px solid {{ a.bd }};border-radius:10px;background:{{ a.bg }};color:{{ a.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ a.t }}</button></sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ ag.tiempo }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <sc-for list="{{ horas }}" as="h" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:56px minmax(0,1fr);border-top:1px solid {{ h.sep }};min-height:52px">
+          <div style="padding:10px 0 0 16px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums">{{ h.h }}</div>
+          <div style="padding:6px 12px 6px 0">
+            <sc-if value="{{ h.ocupada }}" hint-placeholder-val="{{ true }}"><div style="height:40px;padding:0 12px;border-radius:8px;border:1px solid {{ h.bd }};background:{{ h.bg }};color:{{ h.fg }};display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px"><span style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.n }}</span><span style="flex:none;font-size:12px;font-weight:600">{{ h.e }}</span></div></sc-if>
+            <sc-if value="{{ h.libre }}" hint-placeholder-val="{{ false }}"><button onClick="{{ abrirCita }}" style="width:100%;height:40px;border:1px dashed var(--line-3);border-radius:8px;background:none;color:var(--muted);font-size:13px;cursor:pointer;text-align:left;padding:0 12px" style-hover="border-color:#0f766e;color:var(--brand-t)">Libre · agendar</button></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ ag.semana }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+      <sc-for list="{{ semana }}" as="s" hint-placeholder-count="6">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:180px">
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:600">{{ s.d }}</span><span style="color:var(--muted)">{{ s.n }} citas</span></div>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+            <sc-for list="{{ s.items }}" as="i" hint-placeholder-count="4"><div style="padding:5px 8px;border-radius:6px;background:var(--sunken);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:var(--muted);font-variant-numeric:tabular-nums">{{ i.h }}</span> {{ i.n }}</div></sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.pacientes }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Pacientes" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    <input value="{{ q }}" onChange="{{ setQ }}" placeholder="Buscar por nombre, teléfono o expediente" style="flex:1 1 240px;height:44px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;color:var(--ink)">
+    <button onClick="{{ nuevoPaciente }}" style="height:44px;padding:0 16px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:14px;font-weight:500;cursor:pointer">Nuevo paciente</button>
+    <button onClick="{{ importar }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer">Importar desde Excel</button>
+  </div>
+  <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+    <sc-for list="{{ pacientes }}" as="x" hint-placeholder-count="6">
+      <button onClick="{{ x.abrir }}" style="width:100%;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 16px;border:0;border-top:1px solid {{ x.sep }};background:none;text-align:left;cursor:pointer;font-size:14px" style-hover="background:var(--bg)">
+        <span style="width:40px;height:40px;border-radius:50%;background:var(--sunken);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--muted)">{{ x.ini }}</span>
+        <span style="min-width:0"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px"><span style="font-weight:600;font-size:15px">{{ x.n }}</span><sc-if value="{{ x.alergia }}" hint-placeholder-val="{{ false }}"><span style="padding:1px 7px;border-radius:6px;background:#b91c1c;color:#ffffff;font-size:11px;font-weight:600">Alergia</span></sc-if><sc-if value="{{ x.ejemplo }}" hint-placeholder-val="{{ false }}"><span style="padding:1px 7px;border-radius:6px;border:1px dashed var(--line-3);font-size:11px;color:var(--muted)">Ejemplo</span></sc-if></span><span style="display:block;color:var(--muted);font-size:13px">{{ x.sub }}</span></span>
+        <span style="color:var(--muted);font-family:'Geist Mono',monospace;font-size:12px">{{ x.exp }}</span>
+      </button>
+    </sc-for>
+    <sc-if value="{{ sinPacientes }}" hint-placeholder-val="{{ false }}"><div style="padding:32px 16px;text-align:center;color:var(--muted)">Ningún paciente coincide con la búsqueda. <button onClick="{{ nuevoPaciente }}" style="border:0;background:none;color:var(--brand-t);font-size:15px;font-weight:500;cursor:pointer">Crear paciente</button></div></sc-if>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.tabla }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Tabla" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px">
+    <div style="max-width:560px;font-size:14px;color:var(--muted)">{{ tabla.sub }}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button onClick="{{ tabla.exportar }}" style="height:40px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer">Exportar</button>
+      <button onClick="{{ tabla.run }}" style="height:40px;padding:0 16px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:14px;font-weight:500;cursor:pointer">{{ tabla.accion }}</button>
+    </div>
+  </div>
+  <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+    <sc-for list="{{ tabla.kpis }}" as="k" hint-placeholder-count="4">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:var(--muted)">{{ k.l }}</div><div style="margin-top:2px;font-size:22px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ k.v }}</div></div>
+    </sc-for>
+  </div>
+  <sc-if value="{{ tabla.conBarras }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+      <div style="font-weight:600">{{ tabla.barT }}</div>
+      <div style="margin-top:14px;height:150px;display:flex;align-items:flex-end;gap:10px;border-bottom:1px solid var(--line)"><sc-for list="{{ tabla.barras }}" as="b" hint-placeholder-count="6"><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px"><span style="font-size:12px;font-variant-numeric:tabular-nums">{{ b.v }}</span><div style="width:100%;max-width:64px;height:{{ b.h }};border-radius:6px 6px 0 0;background:{{ b.bg }}"></div></div></sc-for></div>
+      <div style="display:flex;gap:10px;margin-top:6px"><sc-for list="{{ tabla.barras }}" as="b" hint-placeholder-count="6"><span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">{{ b.l }}</span></sc-for></div>
+    </div>
+  </sc-if>
+  <input value="{{ tabla.q }}" onChange="{{ tabla.setQ }}" placeholder="Filtrar esta tabla" aria-label="Filtrar esta tabla" style="margin-top:12px;width:100%;max-width:320px;height:40px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:14px">
+  <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow-x:auto">
+    <div style="min-width:780px">
+      <div style="display:grid;grid-template-columns:{{ tabla.grid }};background:var(--bg);font-size:12px;font-weight:600;color:var(--muted)">
+        <sc-for list="{{ tabla.cols }}" as="c" hint-placeholder-count="5"><div style="padding:10px 14px">{{ c }}</div></sc-for>
+      </div>
+      <sc-for list="{{ tabla.rows }}" as="r" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:{{ tabla.grid }};align-items:center;border-top:1px solid var(--line-2);font-size:14px" style-hover="background:var(--bg)">
+          <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="5">
+            <div style="padding:11px 14px;font-weight:{{ c.w }};font-variant-numeric:tabular-nums;min-width:0">
+              <sc-if value="{{ c.chip }}" hint-placeholder-val="{{ false }}"><span style="padding:2px 8px;border-radius:6px;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:600;white-space:nowrap">{{ c.t }}</span></sc-if>
+              <sc-if value="{{ c.txt }}" hint-placeholder-val="{{ true }}">{{ c.t }}</sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.form }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Formulario" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+  <sc-if value="{{ form.hasNav }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1 1 200px;max-width:100%;display:flex;flex-wrap:wrap;gap:4px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px">
+      <sc-for list="{{ form.nav }}" as="n" hint-placeholder-count="8"><button onClick="{{ n.pick }}" style="flex:1 1 180px;height:36px;padding:0 10px;border:0;border-radius:8px;background:{{ n.bg }};color:{{ n.fg }};font-size:14px;font-weight:500;text-align:left;cursor:pointer;white-space:nowrap">{{ n.t }}</button></sc-for>
+    </div>
+  </sc-if>
+  <div style="flex:3 1 420px;min-width:0;display:flex;flex-direction:column;gap:12px">
+    <sc-for list="{{ form.secciones }}" as="s" hint-placeholder-count="3">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 20px">
+        <div style="font-size:16px;font-weight:600;letter-spacing:-.01em">{{ s.t }}</div>
+        <div style="font-size:13px;color:var(--muted)">{{ s.hint }}</div>
+        <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:14px">
+          <sc-for list="{{ s.campos }}" as="c" hint-placeholder-count="4">
+            <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:var(--muted-2)">
+              {{ c.l }}
+              <sc-if value="{{ c.esTxt }}" hint-placeholder-val="{{ true }}"><input value="{{ c.val }}" onChange="{{ c.set }}" placeholder="{{ c.ph }}" style="height:44px;padding:0 12px;border:1px solid {{ c.bd }};border-radius:10px;background:var(--surface);font-size:15px;font-weight:400;color:var(--ink);width:100%"></sc-if>
+              <sc-if value="{{ c.esSw }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ c.toggle }}" style="align-self:flex-start;width:48px;height:28px;padding:3px;border:0;border-radius:14px;background:{{ c.swBg }};cursor:pointer;display:flex;justify-content:{{ c.swJ }};transition:background .15s"><span style="width:22px;height:22px;border-radius:50%;background:#FFFFFF"></span></button></sc-if>
+            </label>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button onClick="{{ form.guardar }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">{{ form.btn }}</button>
+      <button onClick="{{ atras.run }}" style="height:44px;padding:0 18px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+
+<sc-if value="{{ v.ficha }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Ficha del paciente" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px 20px">
+      <div>
+        <div style="font-size:24px;font-weight:600;letter-spacing:-.03em">{{ pac.n }}</div>
+        <div style="font-size:14px;color:var(--muted)">{{ pac.linea }}</div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+          <sc-if value="{{ pac.tieneAlergia }}" hint-placeholder-val="{{ true }}"><span style="padding:4px 10px;border-radius:6px;background:#b91c1c;color:#ffffff;font-size:13px;font-weight:600">{{ pac.alergia }}</span></sc-if>
+          <sc-if value="{{ pac.asma }}" hint-placeholder-val="{{ true }}"><span style="padding:4px 10px;border-radius:6px;border:1px solid #b45309;color:var(--warn-t);font-size:13px;font-weight:500">Asma leve</span></sc-if>
+          <span style="padding:4px 10px;border-radius:6px;border:1px solid var(--line-3);color:var(--muted);font-size:13px">WhatsApp: acepta recibir</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-if value="{{ clinico }}" hint-placeholder-val="{{ true }}"><button onClick="{{ irConsulta }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Registrar consulta</button></sc-if>
+        <sc-if value="{{ clinico }}" hint-placeholder-val="{{ true }}"><button onClick="{{ irDocumento }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Generar documento</button></sc-if>
+        <button onClick="{{ abrirCita }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Nueva cita</button>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:20px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)">
+    <sc-for list="{{ ftabs }}" as="t" hint-placeholder-count="8"><button onClick="{{ t.pick }}" style="flex:none;height:44px;padding:0;border:0;border-bottom:2px solid {{ t.line }};background:none;color:{{ t.fg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap">{{ t.t }}</button></sc-for>
+  </div>
+  <sc-if value="{{ fx.resumen }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+      <div style="flex:1.3 1 340px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px"><span style="font-weight:600">Resumen previo a la consulta</span><span style="padding:1px 8px;border:1px solid #b45309;border-radius:6px;color:var(--warn-t);font-size:12px;font-weight:500">Generado por IA · revisar</span></div>
+          <sc-for list="{{ previo }}" as="l" hint-placeholder-count="5"><div style="padding:9px 0;border-top:1px solid var(--line-2);margin-top:9px;font-size:14px"><span style="color:var(--muted)">{{ l.l }}</span> {{ l.v }}</div></sc-for>
+          <div style="margin-top:10px;font-size:12px;color:var(--muted)">{{ pac.fuente }}</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <div style="padding:14px 18px;font-weight:600">{{ pac.medT }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--sunken);border-top:1px solid var(--line-2)">
+            <sc-for list="{{ medicion }}" as="c" hint-placeholder-count="6"><div style="background:var(--surface);padding:12px 18px"><div style="font-size:12px;color:var(--muted)">{{ c.l }}</div><div style="margin-top:2px;font-size:18px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ c.v }} <span style="font-size:12px;font-weight:400;letter-spacing:0;color:var(--muted)">{{ c.u }}</span></div></div></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1 1 300px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;font-weight:600">Antecedentes</div>
+        <sc-for list="{{ antecedentes }}" as="a" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr);gap:12px;padding:10px 18px;border-top:1px solid var(--line-2);font-size:14px"><span style="color:var(--muted)">{{ a.l }}</span><span>{{ a.v }}</span></div></sc-for>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ fx.contacto }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px;font-weight:600">Contacto y citas</div>
+      <sc-for list="{{ contacto }}" as="a" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr);gap:12px;padding:10px 18px;border-top:1px solid var(--line-2);font-size:14px"><span style="color:var(--muted)">{{ a.l }}</span><span>{{ a.v }}</span></div></sc-for>
+      <div style="padding:12px 18px;border-top:1px solid var(--line-2);font-size:13px;color:var(--muted)">Su rol no ve datos clínicos de este expediente.</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ fx.lista }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <sc-for list="{{ flista }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:12px 18px;border-top:1px solid {{ r.sep }};font-size:14px">
+          <span style="flex:none;width:92px;color:var(--muted);font-variant-numeric:tabular-nums">{{ r.a }}</span>
+          <span style="flex:1 1 200px;min-width:0"><span style="display:block;font-weight:500">{{ r.b }}</span><span style="display:block;font-size:13px;color:var(--muted)">{{ r.c }}</span></span>
+          <span style="padding:2px 8px;border-radius:6px;border:1px solid {{ r.bd }};background:{{ r.bg }};color:{{ r.fg }};font-size:12px;font-weight:600;white-space:nowrap">{{ r.e }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ fx.vacia }}" hint-placeholder-val="{{ false }}"><div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:36px 20px;text-align:center"><div style="font-weight:600">Todavía no hay registros</div><div style="color:var(--muted)">Aparecerán aquí cuando se registren para este paciente.</div></div></sc-if>
+  <sc-if value="{{ fx.fotos }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:14px;color:var(--muted)"><span>Consentimiento: uso clínico firmado · publicidad no autorizada. Recepción no ve fotos clínicas.</span><button onClick="{{ comparar }}" style="height:40px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer">Comparar antes y después</button></div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
+      <sc-for list="{{ fotos }}" as="x" hint-placeholder-count="6"><div style="aspect-ratio:3/4;border-radius:10px;background:repeating-linear-gradient(135deg,#e7e5e4 0 10px,#f5f5f4 10px 20px);display:flex;align-items:flex-end;padding:10px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted)">{{ x }}</div></sc-for>
+    </div>
+  </sc-if>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.consulta }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Consulta" style="margin-left:{{ ml }};padding:20px 20px 140px">
+ <div style="max-width:860px;margin:0 auto">
+  <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px">
+    <div><div style="font-size:18px;font-weight:600;letter-spacing:-.02em">{{ pac.n }}</div><div style="font-size:13px;color:var(--muted)">{{ pac.linea }}</div></div>
+    <sc-if value="{{ pac.tieneAlergia }}" hint-placeholder-val="{{ true }}"><span style="padding:4px 10px;border-radius:6px;background:#b91c1c;color:#ffffff;font-size:13px;font-weight:600">{{ pac.alergia }}</span></sc-if>
+  </div>
+  <div style="margin-top:12px;font-size:12px;font-weight:500;color:var(--muted)">Ficha según la especialidad</div>
+  <div style="margin-top:6px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">
+    <sc-for list="{{ esps }}" as="e" hint-placeholder-count="7"><button onClick="{{ e.pick }}" style="flex:none;height:40px;padding:0 14px;border:1px solid {{ e.bd }};border-radius:10px;background:{{ e.bg }};color:{{ e.fg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">{{ e.t }}<sc-if value="{{ e.pronto }}" hint-placeholder-val="{{ false }}"><span style="padding:0 6px;border:1px dashed currentColor;border-radius:5px;font-size:11px">pronto</span></sc-if></button></sc-for>
+  </div>
+  <sc-if value="{{ espPronto }}" hint-placeholder-val="{{ false }}"><div style="margin-top:10px;padding:10px 14px;border:1px dashed var(--line-3);border-radius:10px;font-size:14px;color:var(--muted)">Esta ficha está en preparación. Hasta que se publique, la especialidad usa la ficha general.</div></sc-if>
+  <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px">
+    <sc-if value="{{ dic.idle }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px">
+        <div><div style="font-weight:600">Dictar con IA</div><div style="font-size:13px;color:var(--muted)">Confirme que informó al paciente. Cuenta 1 por paciente por día · 41 de 100 este mes.</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px"><button onClick="{{ dic.empezar }}" style="height:44px;padding:0 16px;border:0;border-radius:10px;background:var(--inv);color:#ffffff;font-size:14px;font-weight:500;cursor:pointer">Dictar aquí</button><button onClick="{{ dic.celular }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer">Dictar con mi celular</button></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ dic.grabando }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px">
+        <div><div style="font-weight:600">Grabando · 03:12</div><div style="font-size:13px;color:var(--muted)">El audio se guarda cifrado y se borra al firmar.</div></div>
+        <button onClick="{{ dic.terminar }}" style="height:44px;padding:0 16px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:14px;font-weight:500;cursor:pointer">Terminar y transcribir</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ dic.listo }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px">
+        <div><div style="font-weight:600">Borrador listo</div><div style="font-size:13px;color:var(--muted)">Revise cada campo sugerido: acepte, edite o descarte.</div></div>
+        <button onClick="{{ dic.aceptarTodo }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer">Aceptar todo</button>
+      </div>
+    </sc-if>
+  </div>
+  <sc-for list="{{ secs }}" as="s" hint-placeholder-count="6">
+    <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <button onClick="{{ s.toggle }}" style="width:100%;min-height:52px;padding:10px 18px;border:0;background:none;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer"><span><span style="font-size:15px;font-weight:600">{{ s.t }}</span> <span style="font-size:13px;color:var(--muted)">{{ s.hint }}</span></span><span style="flex:none;font-size:13px;font-weight:500;color:var(--brand-t)">{{ s.signo }}</span></button>
+      <sc-if value="{{ s.abierta }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:0 18px 18px">
+          <sc-if value="{{ s.ia }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-bottom:10px;padding:10px 12px;border:1px solid #b45309;border-radius:10px;font-size:14px">
+              <div style="font-size:12px;font-weight:500;color:var(--warn-t)">Generado por IA · revisar</div>
+              <div style="margin-top:2px">{{ s.iaTxt }}</div>
+              <div style="margin-top:8px;display:flex;gap:8px"><button onClick="{{ s.aceptar }}" style="height:34px;padding:0 12px;border:0;border-radius:8px;background:var(--inv);color:#ffffff;font-size:13px;font-weight:500;cursor:pointer">Aceptar</button><button onClick="{{ s.descartar }}" style="height:34px;padding:0 12px;border:1px solid var(--line-3);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500;cursor:pointer">Descartar</button></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s.x }}" hint-placeholder-val="{{ false }}"><textarea value="{{ s.val }}" onChange="{{ s.set }}" placeholder="{{ s.ph }}" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;line-height:1.5;color:var(--ink);resize:vertical"></textarea></sc-if>
+          <sc-if value="{{ s.c }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px">
+              <sc-for list="{{ s.campos }}" as="c" hint-placeholder-count="6"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">{{ c.l }}<input value="{{ c.val }}" onChange="{{ c.set }}" inputMode="{{ c.im }}" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:16px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;width:100%"></label></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s.o }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:8px 10px;align-items:center;font-size:14px">
+              <span></span><span style="font-size:12px;font-weight:600;color:var(--muted)">OD · derecho</span><span style="font-size:12px;font-weight:600;color:var(--muted)">OS · izquierdo</span>
+              <sc-for list="{{ s.filas }}" as="r" hint-placeholder-count="4">
+                <span style="color:var(--muted-2)">{{ r.l }}</span>
+                <input value="{{ r.od }}" onChange="{{ r.setOd }}" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;width:100%;min-width:0">
+                <input value="{{ r.os }}" onChange="{{ r.setOs }}" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;width:100%;min-width:0">
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s.h }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ s.chips }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" style="height:40px;padding:0 14px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s.d }}" hint-placeholder-val="{{ false }}">
+            <div style="overflow-x:auto"><div style="min-width:560px;display:grid;grid-template-columns:repeat(16,1fr);gap:4px">
+              <sc-for list="{{ s.dientes }}" as="t" hint-placeholder-count="32"><button onClick="{{ t.pick }}" style="height:44px;border:1px solid {{ t.bd }};border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;cursor:pointer;padding:0">{{ t.n }}</button></sc-for>
+            </div></div>
+            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)"><span>Toque una pieza para cambiar su estado:</span><span style="color:var(--ink)">Sana</span><span style="color:var(--warn-t);font-weight:500">Caries</span><span style="color:var(--brand-t);font-weight:500">Restaurada</span><span style="font-weight:500;color:var(--ink);text-decoration:line-through">Ausente</span></div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </sc-for>
+ </div>
+ <div style="position:fixed;left:{{ ml }};right:0;bottom:{{ barB }};z-index:15;padding:10px 20px;background:var(--bg-a);border-top:1px solid var(--line)">
+   <div style="max-width:860px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between">
+     <span style="font-size:13px;color:var(--muted)">Borrador guardado hace un momento</span>
+     <div style="display:flex;gap:8px"><button onClick="{{ guardarConsulta }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Guardar consulta</button><button onClick="{{ irReceta }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Guardar y recetar</button></div>
+   </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.receta }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Receta y órdenes" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+  <div style="flex:1.3 1 400px;min-width:0">
+    <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sunken);overflow-x:auto;scrollbar-width:none">
+      <sc-for list="{{ rxTabs }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.pick }}" style="flex:1 0 auto;height:36px;padding:0 12px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap">{{ t.t }}</button></sc-for>
+    </div>
+    <sc-if value="{{ rx.meds }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ meds }}" as="m" hint-placeholder-count="2">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px"><div><div style="font-size:16px;font-weight:600">{{ m.g }}</div><div style="font-size:13px;color:var(--muted)">{{ m.c }}</div></div><button onClick="{{ m.quitar }}" style="border:0;background:none;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;height:32px">Quitar</button></div>
+            <sc-if value="{{ m.alerta }}" hint-placeholder-val="{{ false }}"><div style="margin-top:8px;padding:8px 12px;border-radius:8px;background:#b91c1c;color:#ffffff;font-size:13px;font-weight:500">Alergia registrada: penicilina. Revise antes de firmar.</div></sc-if>
+            <div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--sunken);border:1px solid var(--line-2);border-radius:8px;overflow:hidden;font-size:14px">
+              <div style="background:var(--surface);padding:8px 12px"><div style="font-size:12px;color:var(--muted)">Dosis y frecuencia</div>{{ m.dosis }}</div>
+              <div style="background:var(--surface);padding:8px 12px"><div style="font-size:12px;color:var(--muted)">Días</div>{{ m.dias }}</div>
+              <div style="background:var(--surface);padding:8px 12px"><div style="font-size:12px;color:var(--muted)">Cantidad</div>{{ m.cant }}</div>
+              <div style="background:var(--surface);padding:8px 12px"><div style="font-size:12px;color:var(--muted)">Indicaciones</div>{{ m.ind }}</div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px">
+          <div style="font-size:13px;font-weight:500;color:var(--muted)">Agregar desde favoritos y plantillas</div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ favoritos }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" style="height:40px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer" style-hover="border-color:var(--ink)">{{ c.t }}</button></sc-for></div>
+          <div style="margin-top:10px;font-size:13px;color:var(--muted)">Los medicamentos controlados no salen en esta receta: registre el número del formulario 2064.</div>
+          <button onClick="{{ abrir2064 }}" style="margin-top:8px;height:40px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer">Registrar formulario 2064</button>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ rx.lab }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ labGrupos }}" as="g" hint-placeholder-count="4"><div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px"><div style="font-weight:600">{{ g.t }}</div><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ g.chips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" style="height:40px;padding:0 14px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div></div></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ rx.campos }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px">
+        <sc-for list="{{ rxCampos }}" as="c" hint-placeholder-count="5"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">{{ c.l }}<input value="{{ c.val }}" onChange="{{ c.set }}" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;width:100%"></label></sc-for>
+      </div>
+    </sc-if>
+  </div>
+  <div style="flex:1 1 320px;min-width:0">
+    <div style="background:#FFFFFF;border:1px solid #D6D3D1;border-radius:8px;padding:22px;font-size:14px;color:#1C1917">
+      <div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:2px solid #1C1917"><div><div style="font-size:16px;font-weight:600">Consultorio Dra. Carmen Rosario</div><div style="font-size:12px;color:#57534E">Medicina general · Exequátur 000-00 · 809-555-0100</div></div><div style="text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#57534E;white-space:nowrap">N.º 0142<br>25/11/2026</div></div>
+      <div style="margin-top:10px;font-size:13px">{{ pac.n }} · {{ pac.linea }}</div>
+      <div style="margin-top:4px;font-size:13px"><span style="color:#57534E">Diagnóstico:</span> Faringoamigdalitis aguda · <strong>{{ pac.alergia }}</strong></div>
+      <div style="margin-top:16px;font-size:18px;font-weight:600;letter-spacing:-.02em">{{ prev.t }}</div>
+      <sc-for list="{{ prev.rows }}" as="d" hint-placeholder-count="2"><div style="padding:9px 0;border-top:1px solid #F0EEEC;margin-top:9px"><div style="font-weight:500">{{ d.a }}</div><div style="font-size:13px;color:#57534E">{{ d.b }}</div></div></sc-for>
+      <div style="margin-top:18px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px">
+        <div style="width:52px;height:52px;background:repeating-linear-gradient(135deg,#1C1917 0 3px,#FFFFFF 3px 6px);display:flex;align-items:center;justify-content:center"><span style="background:#FFFFFF;padding:1px 3px;font-family:'Geist Mono',monospace;font-size:9px">QR</span></div>
+        <div style="text-align:center;font-size:12px;color:#57534E"><div style="height:24px;font-size:13px;font-weight:600;color:#0F766E">{{ prev.firma }}</div><div style="padding-top:4px;border-top:1px solid #1C1917;min-width:150px">Firma y sello</div></div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:#78716C">Página 1 de 1 · {{ papelTxt }}</div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sunken)">
+      <sc-for list="{{ papeles }}" as="t" hint-placeholder-count="3"><button onClick="{{ t.pick }}" style="flex:1;height:34px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:500;cursor:pointer">{{ t.t }}</button></sc-for>
+    </div>
+    <sc-if value="{{ sinFirmar }}" hint-placeholder-val="{{ true }}"><button onClick="{{ firmar }}" style="margin-top:12px;width:100%;height:48px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:600;cursor:pointer">Firmar</button><div style="margin-top:8px;font-size:13px;color:var(--muted)">Al firmar se guarda una copia fija. Si luego corrige la consulta, emite una versión nueva.</div></sc-if>
+    <sc-if value="{{ firmada }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;padding:12px 14px;border:1px solid #15803d;border-radius:10px;color:var(--ok-t);font-size:14px;font-weight:500">Firmada · no cambia aunque se edite la consulta</div>
+      <div style="margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><sc-for list="{{ canales }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.run }}" style="height:44px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div>
+    </sc-if>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.programa }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Programa de peso" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="font-size:14px;color:var(--muted)">Luis García · Impulso Vital · control 4 de 12</div>
+  <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+    <sc-for list="{{ progKpis }}" as="k" hint-placeholder-count="4"><div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:var(--muted)">{{ k.l }}</div><div style="margin-top:2px;font-size:24px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ k.v }}</div></div></sc-for>
+  </div>
+  <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1.3 1 340px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+      <div style="font-weight:600">Evolución del peso (kg)</div>
+      <div style="margin-top:16px;height:180px;display:flex;align-items:flex-end;gap:10px;border-bottom:1px solid var(--line)">
+        <sc-for list="{{ progBarras }}" as="b" hint-placeholder-count="5"><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px"><span style="font-size:12px;font-variant-numeric:tabular-nums">{{ b.v }}</span><div style="width:100%;max-width:56px;height:{{ b.h }};border-radius:6px 6px 0 0;background:{{ b.bg }}"></div></div></sc-for>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px"><sc-for list="{{ progBarras }}" as="b" hint-placeholder-count="5"><span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">{{ b.l }}</span></sc-for></div>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px;font-weight:600">Controles</div>
+      <sc-for list="{{ progControles }}" as="c" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:72px 1fr 1fr auto;gap:10px;align-items:center;padding:10px 18px;border-top:1px solid var(--line-2);font-size:14px;font-variant-numeric:tabular-nums"><span style="color:var(--muted)">{{ c.f }}</span><span>{{ c.p }}</span><span>{{ c.c }}</span><span style="font-size:12px;color:var(--muted)">{{ c.foto }}</span></div></sc-for>
+    </div>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.documento }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Generar documento" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ docTipos }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.pick }}" style="height:40px;padding:0 14px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div>
+  <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1 1 300px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px;font-weight:600">Datos de origen</div>
+      <sc-for list="{{ docOrigen }}" as="a" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1fr);gap:12px;padding:10px 18px;border-top:1px solid var(--line-2);font-size:14px"><span style="color:var(--muted)">{{ a.l }}</span><span>{{ a.v }}</span></div></sc-for>
+    </div>
+    <div style="flex:1.4 1 380px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px">
+        <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sunken)"><sc-for list="{{ docModos }}" as="t" hint-placeholder-count="2"><button onClick="{{ t.pick }}" style="height:34px;padding:0 12px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font-size:13px;font-weight:500;cursor:pointer">{{ t.t }}</button></sc-for></div>
+        <sc-if value="{{ docIA }}" hint-placeholder-val="{{ true }}"><span style="padding:1px 8px;border:1px solid #b45309;border-radius:6px;color:var(--warn-t);font-size:12px;font-weight:500">Borrador con IA · 38 de 150 este mes</span></sc-if>
+      </div>
+      <textarea value="{{ docTxt }}" onChange="{{ setDoc }}" rows="11" style="margin-top:12px;width:100%;padding:12px 14px;border:1px solid var(--line-3);border-radius:10px;font-size:15px;line-height:1.6;color:var(--ink);resize:vertical"></textarea>
+      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px"><button onClick="{{ docFirmar }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Firmar y enviar</button><sc-if value="{{ docIA }}" hint-placeholder-val="{{ true }}"><button onClick="{{ docRegenerar }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Regenerar con IA</button></sc-if></div>
+    </div>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.caja }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Caja" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+    <div style="font-size:14px;color:var(--muted)">Caja abierta por Mariela Peña a las 7:55 a. m. · monto inicial RD$3,000 · tasa del día RD$60.50 por US$1</div>
+    <div style="display:flex;gap:8px"><button onClick="{{ abrirCobrar }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Cobrar</button><button onClick="{{ cerrarCaja }}" style="height:44px;padding:0 16px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Cerrar caja</button></div>
+  </div>
+  <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+    <sc-for list="{{ cajaKpis }}" as="k" hint-placeholder-count="4"><div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px"><div style="font-size:12px;color:var(--muted)">{{ k.l }}</div><div style="margin-top:2px;font-size:22px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ k.v }}</div></div></sc-for>
+  </div>
+  <sc-if value="{{ cerrando }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:12px;background:var(--surface);border:1px solid #1c1917;border-radius:12px;padding:16px 18px">
+      <div style="font-size:16px;font-weight:600">Arqueo de cierre</div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end">
+        <div><div style="font-size:12px;color:var(--muted)">Efectivo esperado</div><div style="font-size:22px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">RD$12,500</div></div>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">Efectivo contado<input value="{{ arqueo.val }}" onChange="{{ arqueo.set }}" inputMode="numeric" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;width:100%"></label>
+        <div><div style="font-size:12px;color:var(--muted)">Diferencia</div><div style="font-size:22px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:{{ arqueo.fg }}">{{ arqueo.dif }}</div></div>
+        <button onClick="{{ confirmarCierre }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:var(--inv);color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Confirmar cierre</button>
+      </div>
+    </div>
+  </sc-if>
+  <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+    <div style="padding:14px 18px;font-weight:600">Movimientos de hoy</div>
+    <sc-for list="{{ movs }}" as="m" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 18px;border-top:1px solid var(--line-2);font-size:14px"><span style="color:var(--muted);font-variant-numeric:tabular-nums">{{ m.h }}</span><span style="min-width:0"><span style="display:block;font-weight:500">{{ m.t }}</span><span style="display:block;font-size:13px;color:var(--muted)">{{ m.sub }}</span></span><span style="font-weight:500;font-variant-numeric:tabular-nums">{{ m.m }}</span></div></sc-for>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.plan }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Plan y facturación" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+  <div style="flex:1.3 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px">
+    <div style="background:#042f2e;color:#ffffff;border-radius:12px;padding:20px">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 16px">
+        <div><div style="font-size:12px;color:#b6d4cf">Su plan</div><div style="font-size:24px;font-weight:600;letter-spacing:-.03em">{{ plan.nombre }}</div><div style="font-size:14px;color:#b6d4cf">{{ plan.linea }}</div></div>
+        <span style="padding:4px 10px;border-radius:6px;background:#FFFFFF;color:#042f2e;font-size:12px;font-weight:600">{{ plan.estado }}</span>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+        <button onClick="{{ plan.run }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#FFFFFF;color:#042f2e;font-size:15px;font-weight:600;cursor:pointer">{{ plan.btn }}</button>
+        <a href="medira Precios.dc.html" style="height:44px;padding:0 18px;border:1px solid #2b6b65;border-radius:10px;color:#ffffff;font-size:15px;font-weight:500;display:flex;align-items:center">Cambiar plan</a>
+        <button onClick="{{ plan.cancelar }}" style="height:44px;padding:0 14px;border:0;background:none;color:#b6d4cf;font-size:15px;font-weight:500;cursor:pointer">Cancelar</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font-weight:600">Uso del mes</span><span style="font-size:13px;color:var(--muted)">Se reinicia el día 1</span></div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px;font-size:14px">
+        <sc-for list="{{ cuotas }}" as="q" hint-placeholder-count="5"><div><div style="display:flex;justify-content:space-between;gap:12px"><span>{{ q.l }}</span><span style="color:{{ q.fg }};font-weight:500;font-variant-numeric:tabular-nums">{{ q.v }}</span></div><div style="margin-top:6px;height:6px;border-radius:3px;background:var(--sunken);overflow:hidden"><div style="height:100%;width:{{ q.pct }};background:{{ q.bar }}"></div></div></div></sc-for>
+      </div>
+      <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)"><span>Fotos 5.4 GB</span><span>Estudios 3.1 GB</span><span>Documentos 0.5 GB</span><span>Audio 0.2 GB</span></div>
+    </div>
+  </div>
+  <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:12px">
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px;font-weight:600">Extras sin cambiar de plan</div>
+      <sc-for list="{{ paquetes }}" as="x" hint-placeholder-count="4"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;border-top:1px solid var(--line-2);font-size:14px"><span>{{ x.t }}</span><button onClick="{{ x.run }}" style="flex:none;height:36px;padding:0 12px;border:1px solid var(--line-3);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500;cursor:pointer;font-variant-numeric:tabular-nums">{{ x.p }}</button></div></sc-for>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px;font-weight:600">Recibos</div>
+      <sc-for list="{{ recibos }}" as="x" hint-placeholder-count="3"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;border-top:1px solid var(--line-2);font-size:14px;font-variant-numeric:tabular-nums"><span>{{ x.f }}</span><span style="color:var(--muted)">{{ x.m }}</span><button onClick="{{ x.run }}" style="border:0;background:none;color:var(--brand-t);font-size:14px;font-weight:500;cursor:pointer">PDF</button></div></sc-for>
+    </div>
+    <button onClick="{{ verLimite }}" style="height:40px;border:1px dashed var(--line-3);border-radius:10px;background:none;color:var(--muted);font-size:13px;cursor:pointer">Ver la ventana «llegó al límite»</button>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ ep.on }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Estado de pantalla" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+  <div style="max-width:1080px;margin:0 auto">
+    <sc-if value="{{ ep.cargando }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px"><div style="height:76px;border-radius:12px;background:var(--sunken)"></div><div style="height:76px;border-radius:12px;background:var(--sunken)"></div><div style="height:76px;border-radius:12px;background:var(--sunken)"></div><div style="height:76px;border-radius:12px;background:var(--sunken)"></div></div>
+      <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px"><div style="height:14px;width:40%;border-radius:7px;background:var(--sunken)"></div><div style="height:14px;width:86%;border-radius:7px;background:var(--sunken)"></div><div style="height:14px;width:72%;border-radius:7px;background:var(--sunken)"></div><div style="height:14px;width:80%;border-radius:7px;background:var(--sunken)"></div><div style="height:14px;width:55%;border-radius:7px;background:var(--sunken)"></div></div>
+    </sc-if>
+    <sc-if value="{{ ep.msg }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:48px 24px;text-align:center">
+        <div style="font-size:19px;font-weight:600;letter-spacing:-.02em">{{ ep.t }}</div>
+        <div style="margin:6px auto 0;max-width:380px;color:var(--muted)">{{ ep.d }}</div>
+        <button onClick="{{ ep.run }}" style="margin-top:18px;height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">{{ ep.btn }}</button>
+      </div>
+    </sc-if>
+  </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.estudio }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Estudio" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+  <div style="flex:1 1 320px;min-width:0">
+    <div style="font-size:14px;color:var(--muted)">Pedro Núñez · Perfil lipídico · 24 nov 2026 · PDF de 1.4 MB</div>
+    <div style="margin-top:10px;aspect-ratio:3/4;border-radius:12px;background:repeating-linear-gradient(135deg,#e7e5e4 0 10px,#f5f5f4 10px 20px);display:flex;align-items:flex-end;padding:14px;font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted)">archivo del estudio (PDF o foto)</div>
+    <button onClick="{{ abrirNuevoEstudio }}" style="margin-top:10px;width:100%;height:44px;border:1px dashed var(--line-3);border-radius:10px;background:none;color:var(--muted);font-size:14px;cursor:pointer">Subir otro archivo o tomar foto con el celular</button>
+  </div>
+  <div style="flex:1.3 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px">
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px"><span style="font-weight:600">Interpretación</span><span style="padding:1px 8px;border:1px solid #b45309;border-radius:6px;color:var(--warn-t);font-size:12px;font-weight:500">Generado por IA · revisar · 51 de 60 este mes</span></div>
+      <sc-for list="{{ estFilas }}" as="r" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line-2);margin-top:10px;font-size:14px"><span>{{ r.l }}</span><span style="font-weight:500;font-variant-numeric:tabular-nums">{{ r.v }}</span><span style="font-size:12px;font-weight:600;color:{{ r.fg }}">{{ r.e }}</span></div></sc-for>
+      <p style="margin:12px 0 0;font-size:14px;color:var(--muted-2)">LDL por encima del rango de referencia. El resto del perfil está dentro de lo esperado.</p>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)">Fuente: valores leídos del archivo subido. Las partes dudosas se marcan para revisión.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px">
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:var(--muted-2)">Comentario del médico<textarea value="{{ est.val }}" onChange="{{ est.set }}" rows="3" placeholder="Lo que verá el paciente junto a sus resultados" style="padding:10px 12px;border:1px solid var(--line-3);border-radius:10px;font-size:15px;line-height:1.5;color:var(--ink);resize:vertical"></textarea></label>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px"><span>Compartir con el paciente por enlace seguro</span><button onClick="{{ est.toggle }}" style="flex:none;width:48px;height:28px;padding:3px;border:0;border-radius:14px;background:{{ est.swBg }};cursor:pointer;display:flex;justify-content:{{ est.swJ }}"><span style="width:22px;height:22px;border-radius:50%;background:#FFFFFF"></span></button></div>
+      <button onClick="{{ est.firmar }}" style="margin-top:14px;height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:500;cursor:pointer">Revisar y firmar</button>
+    </div>
+  </div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ v.comparar }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Comparar fotos" style="margin-left:{{ ml }};padding:20px 20px {{ pb }}">
+ <div style="max-width:860px;margin:0 auto">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px">
+    <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <div><div style="font-size:12px;font-weight:500;color:var(--muted)">Antes</div><div style="margin-top:4px;display:flex;gap:6px"><sc-for list="{{ cmpA }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="height:40px;padding:0 12px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div></div>
+      <div><div style="font-size:12px;font-weight:500;color:var(--muted)">Después</div><div style="margin-top:4px;display:flex;gap:6px"><sc-for list="{{ cmpB }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="height:40px;padding:0 12px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div></div>
+    </div>
+    <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sunken)"><sc-for list="{{ cmpModos }}" as="t" hint-placeholder-count="2"><button onClick="{{ t.pick }}" style="height:34px;padding:0 12px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ t.t }}</button></sc-for></div>
+  </div>
+  <sc-if value="{{ cmp.lado }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="aspect-ratio:3/4;border-radius:12px;background:repeating-linear-gradient(135deg,#e7e5e4 0 10px,#f5f5f4 10px 20px);display:flex;align-items:flex-end;padding:12px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted)">{{ cmp.a }}</div>
+      <div style="aspect-ratio:3/4;border-radius:12px;background:repeating-linear-gradient(45deg,#d6d3d1 0 10px,#e7e5e4 10px 20px);display:flex;align-items:flex-end;padding:12px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted-2)">{{ cmp.b }}</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ cmp.desliza }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:14px auto 0;max-width:440px">
+      <div style="position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:repeating-linear-gradient(45deg,#d6d3d1 0 10px,#e7e5e4 10px 20px)">
+        <div style="position:absolute;right:12px;bottom:12px;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted-2)">{{ cmp.b }}</div>
+        <div style="position:absolute;top:0;left:0;bottom:0;width:{{ cmp.pct }};overflow:hidden;border-right:2px solid #0f766e;background:repeating-linear-gradient(135deg,#e7e5e4 0 10px,#f5f5f4 10px 20px)"><div style="position:absolute;left:12px;bottom:12px;white-space:nowrap;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted)">{{ cmp.a }}</div></div>
+      </div>
+      <input type="range" min="0" max="100" value="{{ cmp.val }}" onChange="{{ cmp.set }}" aria-label="Deslizador antes y después" style="margin-top:10px;width:100%;height:28px;accent-color:#0f766e">
+    </div>
+  </sc-if>
+  <div style="margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)"><span>Uso clínico firmado. Publicidad no autorizada: esta comparación no se puede publicar.</span><button onClick="{{ cmp.exportar }}" style="height:40px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);color:var(--ink);font-size:14px;font-weight:500;cursor:pointer">Exportar para el paciente</button></div>
+ </div>
+</section>
+</sc-if>
+
+<sc-if value="{{ movil }}" hint-placeholder-val="{{ false }}">
+<nav style="position:fixed;left:0;right:0;bottom:0;z-index:25;height:64px;display:flex;background:var(--surface);border-top:1px solid var(--line)">
+  <sc-for list="{{ tabsM }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.pick }}" style="flex:1;border:0;border-top:2px solid {{ t.bar }};background:none;color:{{ t.fg }};font-size:13px;font-weight:500;cursor:pointer">{{ t.t }}</button></sc-for>
+  <button onClick="{{ abrirMas }}" style="flex:1;border:0;border-top:2px solid transparent;background:none;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer">Más</button>
+</nav>
+</sc-if>
+
+<sc-if value="{{ sh.on }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ cerrar }}" style="position:fixed;inset:0;z-index:50;background:rgba(28,25,23,.45);display:flex;align-items:{{ sh.align }};justify-content:center;padding:{{ sh.pad }}">
+  <div onClick="{{ stop }}" style="width:100%;max-width:520px;max-height:86vh;overflow-y:auto;background:var(--surface);border-radius:{{ sh.radius }};padding:18px 20px 20px;animation:md-up .2s ease-out">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:18px;font-weight:600;letter-spacing:-.02em">{{ sh.t }}</div><button onClick="{{ cerrar }}" style="height:36px;padding:0 10px;border:0;background:none;color:var(--muted);font-size:14px;font-weight:500;cursor:pointer">Cerrar</button></div>
+
+    <sc-if value="{{ sh.paleta }}" hint-placeholder-val="{{ false }}">
+      <input value="{{ pq }}" onChange="{{ setPq }}" autoFocus="{{ true }}" placeholder="Escriba un paciente o una acción" style="margin-top:12px;width:100%;height:46px;padding:0 14px;border:1px solid var(--line-3);border-radius:10px;font-size:16px">
+      <div style="margin-top:8px"><sc-for list="{{ resultados }}" as="r" hint-placeholder-count="5"><button onClick="{{ r.run }}" style="width:100%;min-height:44px;padding:8px 10px;border:0;border-radius:8px;background:none;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font-size:15px;cursor:pointer" style-hover="background:var(--sunken)"><span style="font-weight:500">{{ r.t }}</span><span style="font-size:13px;color:var(--muted)">{{ r.sub }}</span></button></sc-for></div>
+    </sc-if>
+
+    <sc-if value="{{ sh.notif }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:8px"><sc-for list="{{ avisos }}" as="a" hint-placeholder-count="4"><div style="padding:12px 0;border-top:1px solid var(--line-2);font-size:14px"><div style="display:flex;justify-content:space-between;gap:12px"><span style="font-weight:500">{{ a.t }}</span><span style="flex:none;font-size:12px;color:var(--muted)">{{ a.h }}</span></div><div style="color:var(--muted)">{{ a.sub }}</div></div></sc-for></div>
+    </sc-if>
+
+    <sc-if value="{{ sh.cita }}" hint-placeholder-val="{{ false }}">
+      <label style="margin-top:12px;display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">Paciente<input value="{{ citaPac.val }}" onChange="{{ citaPac.set }}" placeholder="Nombre o teléfono" style="height:46px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:16px;color:var(--ink)"></label>
+      <div style="margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)">Tipo de cita</div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ citaTipos }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="height:40px;padding:0 14px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div>
+      <div style="margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)">Horarios libres · miércoles 25</div>
+      <div style="margin-top:6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px"><sc-for list="{{ citaHoras }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.pick }}" style="height:44px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;cursor:pointer">{{ c.t }}</button></sc-for></div>
+      <div style="margin-top:10px;font-size:13px;color:var(--muted)">Al agendar se envía la confirmación por WhatsApp. El sistema no permite dos citas a la misma hora.</div>
+      <button onClick="{{ agendar }}" style="margin-top:14px;width:100%;height:48px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:600;cursor:pointer">{{ agendarTxt }}</button>
+    </sc-if>
+
+    <sc-if value="{{ sh.cobrar }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:4px;font-size:14px;color:var(--muted)">José Rodríguez · Control · hipertensión</div>
+      <div style="margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:14px">
+        <sc-for list="{{ cobro.lineas }}" as="l" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-top:1px solid {{ l.sep }};font-weight:{{ l.w }}"><span>{{ l.l }}</span><span style="font-variant-numeric:tabular-nums">{{ l.v }}</span></div></sc-for>
+      </div>
+      <div style="margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)">Método</div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ cobro.metodos }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" style="flex:1 1 auto;height:44px;padding:0 14px;border:1px solid {{ c.bd }};border-radius:10px;background:{{ c.bg }};color:{{ c.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ c.t }}</button></sc-for></div>
+      <sc-if value="{{ cobro.ars }}" hint-placeholder-val="{{ false }}"><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">N.º de autorización<input defaultValue="AUT-778123" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:15px;min-width:0"></label><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">Cubre la ARS<input defaultValue="RD$1,000" style="height:44px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:15px;min-width:0"></label></div></sc-if>
+      <button onClick="{{ cobro.pagar }}" style="margin-top:14px;width:100%;height:48px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:600;cursor:pointer">{{ cobro.btn }}</button>
+      <div style="margin-top:8px;font-size:13px;color:var(--muted)">Se emite el recibo y, si aplica, el comprobante fiscal. Se puede enviar por WhatsApp.</div>
+    </sc-if>
+
+    <sc-if value="{{ sh.limite }}" hint-placeholder-val="{{ false }}">
+      <p style="margin:8px 0 0;font-size:15px;color:var(--muted-2)">El plan Gratis incluye 50 pacientes en total. Sus pacientes actuales siguen visibles y editables; para crear uno nuevo, mejore su plan.</p>
+      <div style="margin-top:12px;height:6px;border-radius:3px;background:var(--sunken);overflow:hidden"><div style="height:100%;width:100%;background:#b45309"></div></div>
+      <div style="margin-top:6px;font-size:13px;color:var(--warn-t);font-weight:500">50 de 50 pacientes</div>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a href="medira Precios.dc.html" style="flex:1 1 auto;height:48px;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center">Mejorar plan</a><button onClick="{{ cerrar }}" style="flex:1 1 auto;height:48px;border:1px solid var(--line-3);border-radius:10px;background:var(--surface);font-size:15px;font-weight:500;cursor:pointer">Ahora no</button></div>
+    </sc-if>
+
+    <sc-if value="{{ sh.gen }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ gen.qr }}" hint-placeholder-val="{{ false }}"><div style="margin:14px auto 0;width:148px;height:148px;border-radius:8px;background:repeating-linear-gradient(135deg,#1C1917 0 5px,#FFFFFF 5px 10px);display:flex;align-items:center;justify-content:center"><span style="background:#FFFFFF;color:#1C1917;padding:2px 6px;font-family:'Geist Mono',monospace;font-size:11px">código QR</span></div></sc-if>
+      <div style="margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden"><sc-for list="{{ gen.lineas }}" as="l" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;gap:16px;padding:11px 14px;border-top:1px solid {{ l.sep }};font-size:14px"><span style="color:var(--muted)">{{ l.l }}</span><span style="font-weight:500;text-align:right">{{ l.v }}</span></div></sc-for></div>
+      <div style="display:flex;flex-direction:column;gap:12px"><sc-for list="{{ gen.campos }}" as="c" hint-placeholder-count="0"><label style="margin-top:12px;display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">{{ c.l }}<input value="{{ c.val }}" onChange="{{ c.set }}" style="height:46px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:16px"></label></sc-for></div>
+      <button onClick="{{ gen.run }}" style="margin-top:14px;width:100%;height:48px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:600;cursor:pointer">{{ gen.btn }}</button>
+    </sc-if>
+
+    <sc-if value="{{ sh.nuevo }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ nf.campos }}" as="c" hint-placeholder-count="3"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--muted)">{{ c.l }}<input value="{{ c.val }}" onChange="{{ c.set }}" style="height:46px;padding:0 12px;border:1px solid var(--line-3);border-radius:10px;font-size:16px;color:var(--ink)"></label></sc-for>
+      </div>
+      <button onClick="{{ nf.guardar }}" style="margin-top:14px;width:100%;height:48px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font-size:15px;font-weight:600;cursor:pointer">Guardar</button>
+    </sc-if>
+
+    <sc-if value="{{ sh.mas }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="3">
+        <div style="margin-top:12px;font-size:12px;font-weight:500;color:var(--muted)">{{ g.g }}</div>
+        <div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><sc-for list="{{ g.items }}" as="n" hint-placeholder-count="4"><button onClick="{{ n.pick }}" style="min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:{{ n.bg }};color:var(--ink);font-size:14px;font-weight:500;text-align:left;cursor:pointer">{{ n.t }}</button></sc-for></div>
+      </sc-for>
+      <sc-if value="{{ puedeVer }}" hint-placeholder-val="{{ true }}"><div style="margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)">Ver como</div>
+      <div style="margin-top:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:3px;border-radius:10px;background:var(--sunken)"><sc-for list="{{ roles }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.pick }}" style="height:36px;border:0;border-radius:8px;background:{{ r.bg }};color:{{ r.fg }};font-size:12px;font-weight:500;cursor:pointer">{{ r.t }}</button></sc-for></div></sc-if>
+      <div style="margin-top:14px;font-size:12px;font-weight:500;color:var(--muted)">Tema y densidad</div>
+      <div style="margin-top:4px;display:grid;grid-template-columns:repeat(2,1fr);gap:2px;padding:3px;border-radius:10px;background:var(--sunken)"><sc-for list="{{ ajustes }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.pick }}" style="height:36px;border:0;border-radius:8px;background:{{ r.bg }};color:{{ r.fg }};font-size:12px;font-weight:500;cursor:pointer">{{ r.t }}</button></sc-for></div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;left:0;right:0;bottom:{{ toastB }};z-index:60;display:flex;justify-content:center;pointer-events:none;padding:0 16px"><div style="padding:11px 18px;border-radius:10px;background:var(--inv);color:#ffffff;font-size:14px;font-weight:500;animation:md-up .2s ease-out">{{ toast }}</div></div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;rol&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Dueño&quot;,&quot;Médico&quot;,&quot;Recepción&quot;,&quot;Contador&quot;,&quot;Súper admin&quot;],&quot;default&quot;:&quot;Dueño&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;estadoCuenta&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Activa&quot;,&quot;En prueba&quot;,&quot;Pago fallido&quot;,&quot;Cancelada&quot;,&quot;Gratis&quot;],&quot;default&quot;:&quot;En prueba&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;estadoPantalla&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Vacío&quot;,&quot;Cargando&quot;,&quot;Error&quot;,&quot;Sin permiso&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tema&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Claro&quot;,&quot;Oscuro&quot;],&quot;default&quot;:&quot;Claro&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;densidad&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Cómoda&quot;,&quot;Compacta&quot;],&quot;default&quot;:&quot;Cómoda&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { view: 'panel', rol: null, pac: 0, extra: {}, tema: null, dens: null, movil: false, esp: null, modo: 'Lista', dia: 2, tab: 'Resumen', q: '', sheet: null, toast: '', chips: {}, cerradas: {}, f: {}, sw: {}, dict: 0, rxTab: 'Medicamentos', firmada: false, papel: 'Media carta', cfg: 'Clínica', metodo: 'Efectivo', cerrando: false, dientes: { 16: 1, 36: 2, 47: 1 }, hora: '10:30',
+    meds: [['Azitromicina', '500 mg · tableta · oral', '1 cada 24 horas', '3', '3 (tres)', 'Tomar con alimentos'], ['Paracetamol', '500 mg · tableta · oral', '1 cada 8 horas si hay fiebre', '5', '10 (diez)', '']],
+    citas: [['8:30', 'José Rodríguez', 'Control · hipertensión', 'Atendido', 'Confirmó'], ['9:00', 'Ana Martínez', 'Fiebre y dolor de garganta', 'En sala', 'Confirmó'], ['9:30', 'Luis García', 'Control 4 · programa de peso', 'Confirmada', 'Confirmó'], ['10:00', 'María Peña', 'Sin cita · T-03', 'En sala', ''], ['11:00', 'Carla Díaz', 'Sesión 4 de 10', 'Programada', 'Sin respuesta'], ['11:30', 'Pedro Núñez', 'Resultados de laboratorio', 'Programada', 'Pidió cambiar']] };
+  componentDidMount() {
+    this._mq = () => { const movil = window.innerWidth < 860; if (movil !== this.state.movil) this.setState({ movil }); };
+    this.aplicar(); this._mq(); window.addEventListener('resize', this._mq);
+    if (window.ResizeObserver) { this._ro = new ResizeObserver(this._mq); this._ro.observe(document.documentElement); }
+    requestAnimationFrame(this._mq); this._mqT = setTimeout(this._mq, 400); this._mqT2 = setTimeout(this._mq, 1500);
+    this._key = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState({ sheet: 'paleta' }); } if (e.key === 'Escape') this.setState({ sheet: null }); };
+    window.addEventListener('keydown', this._key);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._mq); window.removeEventListener('keydown', this._key); if (this._ro) this._ro.disconnect(); clearTimeout(this._tt); clearTimeout(this._mqT); clearTimeout(this._mqT2); }
+  aplicar() { const t = this.state.tema ?? this.props.tema ?? 'Claro', d = this.state.dens ?? this.props.densidad ?? 'Cómoda'; document.body.dataset.tema = t === 'Oscuro' ? 'oscuro' : 'claro'; document.body.style.zoom = d === 'Compacta' ? '0.9' : ''; }
+  componentDidUpdate() { this.aplicar(); }
+  tema(o) {
+    const BG = { '#ffffff': 'var(--surface)', '#f0eeec': 'var(--sunken)', '#1c1917': 'var(--inv)', '#d6d3d1': 'var(--line-3)', '#fafaf7': 'var(--bg)' };
+    const FG = { '#1c1917': 'var(--ink)', '#57534e': 'var(--muted)', '#44403c': 'var(--muted-2)', '#78716c': 'var(--muted)', '#a8a29e': 'var(--muted)', '#15803d': 'var(--ok-t)', '#b45309': 'var(--warn-t)', '#0f766e': 'var(--brand-t)' };
+    const BD = { '#d6d3d1': 'var(--line-3)', '#e7e5e4': 'var(--line)', '#f0eeec': 'var(--line-2)', '#1c1917': 'var(--inv)', '#a8a29e': 'var(--line-3)' };
+    const walk = (v, k) => {
+      if (typeof v === 'string') { const m = /bg$/i.test(k) ? BG : /fg$/i.test(k) ? FG : /(bd|^sep)$/i.test(k) ? BD : null; return (m && m[v]) || v; }
+      if (Array.isArray(v)) return v.map((x) => walk(x, k));
+      if (v && typeof v === 'object' && !v.$$typeof) { const r = {}; for (const kk in v) r[kk] = walk(v[kk], kk); return r; }
+      return v;
+    };
+    return walk(o, '');
+  }
+  go = (view, extra) => { this.setState({ view, sheet: null, ...(extra || {}) }); window.scrollTo(0, 0); };
+  say = (toast) => { this.setState({ toast, sheet: null }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: '' }), 2600); };
+  setCita = (i, e) => this.setState((s) => ({ citas: s.citas.map((c, j) => (j === i ? [c[0], c[1], c[2], e, c[4]] : c)) }));
+  renderVals() {
+    const S = this.state, go = this.go, say = this.say, movil = S.movil;
+    let cu = null; try { cu = JSON.parse(localStorage.getItem('medira-cuenta') || 'null'); } catch (e) {}
+    const cuentaRol = this.props.rol ?? 'Dueño', puedeVer = cuentaRol === 'Dueño' || cuentaRol === 'Súper admin';
+    const rol = (puedeVer ? S.rol : null) ?? cuentaRol;
+    const clinico = rol === 'Dueño' || rol === 'Médico';
+    const estado = this.props.estadoCuenta ?? (cu && cu.estado) ?? 'En prueba';
+    const seg = (on) => ({ bg: on ? '#ffffff' : 'transparent', fg: on ? '#1c1917' : '#57534e' });
+    const C = { ok: ['#ffffff', '#15803d', '#15803d'], warn: ['#ffffff', '#b45309', '#b45309'], info: ['#1d4ed8', '#ffffff', '#1d4ed8'], brand: ['#0f766e', '#ffffff', '#0f766e'], mute: ['#f0eeec', '#57534e', '#f0eeec'], line: ['#ffffff', '#57534e', '#d6d3d1'], dark: ['#1c1917', '#ffffff', '#1c1917'] };
+    const K = { Disponible: 'ok', 'Quedan pocos': 'warn', Agotado: 'dark', Activa: 'ok', 'En prueba': 'line', 'Pago fallido': 'warn', Gratis: 'mute', Cancelada: 'dark', Aprobada: 'ok', 'En revisión': 'warn', Rechazada: 'dark', Vigente: 'info', Vencido: 'mute', Atendido: 'mute', 'En sala': 'info', 'En consulta': 'brand', Confirmada: 'ok', Programada: 'line', 'No asistió': 'dark', Pagada: 'ok', Pagado: 'ok', Aceptado: 'ok', Activo: 'ok', Firmado: 'ok', Firmada: 'ok', 'Sí': 'ok', Compartido: 'ok', Conciliada: 'ok', Glosada: 'warn', Pendiente: 'warn', Invitado: 'warn', 'Borrador con IA': 'warn', 'Interpretado · revisar': 'warn', 'Por enviar': 'warn', 'Parcial': 'warn', 'Falta 2FA': 'warn', Enviada: 'info', 'Rechazado por DGII': 'dark', Suspendido: 'dark', Anulada: 'dark', Reemplazada: 'mute', 'No': 'line', 'Más de 90 días': 'dark', '61–90 días': 'warn', '31–60 días': 'line', '0–30 días': 'line' };
+    const chip = (t, w) => { const c = C[K[t]]; return c ? { t, chip: true, txt: false, bg: c[0], fg: c[1], bd: c[2], w: 400 } : { t, chip: false, txt: true, w: w || 400 }; };
+
+    // navegación
+    const NAV = [['Clínica', [['panel', 'Panel', 'DMRCS'], ['agenda', 'Agenda', 'DMR'], ['pacientes', 'Pacientes', 'DMR'], ['t:estudios', 'Estudios', 'DM'], ['t:documentos', 'Documentos', 'DM'], ['programa', 'Programa de peso', 'DM'], ['t:tele', 'Videoconsultas', 'DM']]],
+      ['Dinero', [['caja', 'Caja', 'DRC'], ['t:cxc', 'Cuentas por cobrar', 'DC'], ['t:ars', 'ARS', 'DC'], ['t:ncf', 'Comprobantes', 'DC'], ['t:gastos', 'Gastos', 'DC'], ['t:honorarios', 'Honorarios', 'DC'], ['t:informes', 'Informes', 'DC'], ['t:inventario', 'Inventario', 'DC']]],
+      ['Administrar', [['t:equipo', 'Equipo', 'D'], ['t:sucursales', 'Sucursales', 'D'], ['t:actividad', 'Actividad', 'D'], ['config', 'Configuración', 'DMRC'], ['plan', 'Plan y facturación', 'D']]],
+      ['medira', [['t:sa-metricas', 'Métricas del negocio', 'S'], ['t:sa-clinicas', 'Clínicas', 'S'], ['t:sa-subs', 'Suscripciones', 'S'], ['t:sa-uso', 'Uso y cuotas', 'S'], ['t:sa-soporte', 'Accesos de soporte', 'S'], ['t:sa-wsp', 'Plantillas de WhatsApp', 'S']]]];
+    const L = rol[0];
+    const TIT = { estudio: 'Estudio', comparar: 'Comparar fotos', ficha: 'Ana Martínez', consulta: 'Consulta', receta: 'Receta y órdenes', paciente: 'Nuevo paciente', documento: 'Generar documento', seguridad: 'Verificación en dos pasos' };
+    NAV.forEach(([, its]) => its.forEach(([id, t]) => { TIT[id] = t; }));
+    const grupos = NAV.map(([g, its]) => ({ g, items: its.filter((i) => i[2].includes(L)).map(([id, t]) => ({ t, pick: () => go(id), bg: S.view === id ? '#f0eeec' : 'transparent', fg: S.view === id ? '#1c1917' : '#44403c', w: S.view === id ? 600 : 400 })) })).filter((g) => g.items.length);
+    const roles = (cuentaRol === 'Súper admin' ? ['Súper admin', 'Dueño', 'Médico', 'Recepción', 'Contador'] : ['Dueño', 'Médico', 'Recepción', 'Contador']).map((t) => ({ t, pick: () => { this.setState({ rol: t }); go('panel'); }, ...seg(rol === t) }));
+    const PADRE = { estudio: 't:estudios', comparar: 'ficha', ficha: 'pacientes', consulta: 'ficha', receta: 'consulta', paciente: 'pacientes', documento: 'ficha', seguridad: 'config' };
+    const atras = { on: !!PADRE[S.view], run: () => go(PADRE[S.view] || 'panel') };
+    const B = L === 'S' ? null : { 'En prueba': ['Prueba: quedan 2 días. El primer cobro es el 28 de noviembre.', 'Ver mi plan', '#f0eeec', '#1c1917'], 'Pago fallido': [L === 'D' ? 'No pudimos cobrar su plan. Quedan 7 días para conservarlo.' : 'Hay un problema con la cuenta, avise al administrador.', L === 'D' ? 'Actualizar pago' : '', '#b45309', '#ffffff'], Gratis: ['La cuenta está en el plan Gratis. Los recordatorios automáticos están detenidos.', L === 'D' ? 'Recuperar mi plan' : '', '#1c1917', '#ffffff'], Cancelada: ['Su plan termina el 12 de enero.', L === 'D' ? 'Reactivar' : '', '#f0eeec', '#1c1917'] }[estado];
+    const banner = B ? { on: true, t: B[0], btn: B[1], hasBtn: !!B[1], bg: B[2], fg: B[3], run: () => go('plan') } : { on: false };
+
+    // agenda
+    const est = (e) => { const c = C[K[e]] || C.line; return { bg: c[0], fg: c[1], bd: c[2] }; };
+    const P = (t, run) => ({ t, run, bg: '#0f766e', fg: '#ffffff', bd: '#0f766e' }), Sx = (t, run) => ({ t, run, bg: '#ffffff', fg: '#1c1917', bd: '#d6d3d1' });
+    const atender = (i) => { this.setCita(i, 'En consulta'); go('consulta'); };
+    const lista = S.citas.map(([h, n, nota0, e, w], i) => {
+      const nota = clinico ? nota0 : nota0.startsWith('Sin cita') ? nota0 : 'Cita programada';
+      let acciones = [];
+      if (e === 'Programada' || e === 'Confirmada') acciones = [P('Registrar llegada', () => this.setCita(i, 'En sala')), Sx('WhatsApp', () => say('Recordatorio enviado a ' + n)), Sx('No asistió', () => this.setCita(i, 'No asistió'))];
+      else if (e === 'En sala') acciones = clinico ? [P('Atender ahora', () => atender(i))] : [Sx('Avisar al médico', () => say('Se avisó al médico'))];
+      else if (e === 'En consulta') acciones = clinico ? [Sx('Abrir consulta', () => go('consulta'))] : [];
+      else if (e === 'Atendido') acciones = [P('Cobrar', () => this.setState({ sheet: 'cobrar' })), ...(clinico ? [Sx('Receta', () => go('receta'))] : [])];
+      else acciones = [Sx('Reagendar', () => this.setState({ sheet: 'cita' }))];
+      return { h, n, nota, e, ...est(e), w: w ? ' · WhatsApp: ' + w : '', wfg: w === 'Confirmó' ? '#15803d' : w ? '#b45309' : '#57534e', acciones };
+    });
+    const cnt = (e) => S.citas.filter((c) => c[3] === e).length;
+    const iSala = S.citas.findIndex((c) => c[3] === 'En sala');
+    const sc = S.citas[iSala] || S.citas[1];
+    const sig = { h: sc[0], n: sc[1], nota: clinico ? sc[2] : 'En sala de espera', btn: clinico ? 'Atender ahora' : 'Avisar al médico', run: () => (clinico ? atender(iSala < 0 ? 1 : iSala) : say('Se avisó al médico')) };
+    const dias = [['Lun', 23], ['Mar', 24], ['Mié', 25], ['Jue', 26], ['Vie', 27], ['Sáb', 28], ['Dom', 29]].map(([d, n], i) => ({ d, n, pick: () => this.setState({ dia: i }), bg: S.dia === i ? '#1c1917' : '#ffffff', fg: S.dia === i ? '#ffffff' : i === 6 ? '#a8a29e' : '#1c1917', bd: S.dia === i ? '#1c1917' : '#e7e5e4' }));
+    const modos = ['Lista', 'Línea de tiempo', 'Semana'].map((t) => ({ t, pick: () => this.setState({ modo: t }), ...seg(S.modo === t) }));
+    const horas = ['8:00', '8:30', '9:00', '9:30', '10:00', '10:30', '11:00', '11:30', '12:00'].map((h, i) => { const c = lista.find((x) => x.h === h); return c ? { h, sep: i ? '#f0eeec' : 'transparent', ocupada: true, libre: false, n: c.n + ' · ' + c.nota, e: c.e, bg: c.bg, fg: c.fg, bd: c.bd } : { h, sep: i ? '#f0eeec' : 'transparent', ocupada: false, libre: true }; });
+    const semana = [['Lun 23', 5], ['Mar 24', 7], ['Mié 25', S.citas.length], ['Jue 26', 4], ['Vie 27', 6], ['Sáb 28', 2]].map(([d, n], i) => ({ d, n, items: (i === 2 ? S.citas : S.citas.slice(0, Math.min(n, 4))).map((c) => ({ h: c[0], n: c[1] })) }));
+
+    // panel
+    const KP = { D: [['Ingresos de hoy', 'RD$22,000'], ['Citas hoy', S.citas.length], ['Por cobrar', 'RD$30,900'], ['WhatsApp del mes', '312 de 500']], M: [['Citas hoy', S.citas.length], ['Atendidos', cnt('Atendido')], ['En sala', cnt('En sala')], ['Por firmar', 2]], R: [['Llegadas', cnt('En sala') + cnt('Atendido') + cnt('En consulta')], ['En sala', cnt('En sala')], ['Cobros de hoy', 'RD$22,000'], ['Sin confirmar', 2]], C: [['Caja de hoy', 'RD$22,000'], ['Por cobrar', 'RD$30,900'], ['ARS pendiente', 'RD$41,300'], ['Comprobantes rechazados', 1]], S: [['Ingreso mensual recurrente', 'US$18,420'], ['Clínicas activas', 412], ['Pruebas que pagan', '38%'], ['Impagos recuperados', '71%']] }[L];
+    const RAP = { D: [['Nueva cita', 'cita'], ['Nuevo paciente', 'paciente'], ['Cobrar', 'cobrar'], ['Invitar al equipo', 't:equipo']], M: [['Nueva cita', 'cita'], ['Nuevo paciente', 'paciente'], ['Generar documento', 'documento'], ['Subir estudio', 't:estudios']], R: [['Nueva cita', 'cita'], ['Paciente sin cita', 'sincita'], ['Nuevo paciente', 'paciente'], ['Cobrar', 'cobrar']], C: [['Cerrar caja', 'caja'], ['Registrar gasto', 't:gastos'], ['Reclamar a ARS', 't:ars'], ['Informe del mes', 't:informes']], S: [['Suscripciones', 't:sa-subs'], ['Clínicas', 't:sa-clinicas'], ['Accesos de soporte', 't:sa-soporte'], ['Plantillas de WhatsApp', 't:sa-wsp']] }[L];
+    const act = (id) => () => (id === 'cita' || id === 'cobrar' ? this.setState({ sheet: id }) : id === 'sincita' ? say('Turno T-04 asignado') : go(id));
+    const bar = (l, n, max, aviso) => ({ l, v: n + ' de ' + max + (aviso ? ' · ' + aviso : ''), pct: Math.min(100, Math.round((n / max) * 100)) + '%', bar: aviso ? '#b45309' : '#0f766e', fg: aviso ? '#b45309' : '#1c1917' });
+    const cuotas = [bar('WhatsApp automático', 312, 500), bar('Consultas dictadas con IA', 41, 100), bar('Estudios con IA', 51, 60, 'Aviso al 80%'), bar('Resúmenes médicos con IA', 38, 150), bar('Almacenamiento (GB)', 9.2, 25)];
+    const bienvenida = [['Subir logo, firma y sello', 1], ['Configurar horario y duración de citas', 1], ['Invitar al equipo', 1], ['Crear el primer paciente o importar desde Excel', 0], ['Agendar la primera cita', 0], ['Atender la primera consulta y enviar la receta', 0], ['Conectar WhatsApp automático', 0]].map(([t, ok]) => ({ t, e: ok ? 'Listo' : 'Pendiente', fg: ok ? '#78716c' : '#1c1917', td: ok ? 'line-through' : 'none' }));
+
+    // pacientes
+    const PAC = [['Ana Martínez', '809-555-0142 · 34 años · ARS Humano', '0318', 1, 0], ['Luis García', '829-555-0177 · 41 años · SeNaSa', '0291', 0, 0], ['Carla Díaz', '849-555-0120 · 29 años · Sin seguro', '0340', 1, 0], ['José Rodríguez', '809-555-0103 · 62 años · ARS Universal', '0102', 0, 0], ['María Peña', '829-555-0198 · 8 años · SeNaSa', '0355', 0, 0], ['Pedro Núñez', '809-555-0166 · 55 años · Mapfre Salud', '0214', 1, 0], ['Paciente de ejemplo', 'No cuenta para el límite · se borra con un clic', '0000', 0, 1]];
+    const ql = S.q.trim().toLowerCase();
+    const ALG = { 0: 'penicilina', 2: 'látex', 5: 'sulfas' }, ps = PAC[S.pac] || PAC[0];
+    const pac = { n: ps[0], linea: ps[1] + ' · Exp. ' + ps[2], asma: clinico && S.pac === 0, fuente: { 0: 'Fuente: consultas del 12 oct y 3 nov, hemograma del 20 nov.', 1: 'Fuente: controles del 28 oct y 11 nov.', 2: 'Fuente: sesiones del 11 y 18 nov.' }[S.pac] || 'Fuente: ficha de ingreso. Todavía no hay consultas.', medT: { 0: 'Última medición · 3 nov 2026', 1: 'Última medición · 11 nov 2026', 2: 'Última sesión · 18 nov 2026' }[S.pac] || 'Última medición', tieneAlergia: !!ALG[S.pac], alergia: ALG[S.pac] ? 'Alergia: ' + ALG[S.pac] : '' }; TIT.ficha = ps[0];
+    const pacientes = PAC.map((p, idx) => [...p, idx]).filter((p) => !ql || (p[0] + p[1] + p[2]).toLowerCase().includes(ql)).map(([n, sub, exp, a, ej, idx], i) => ({ abrir: () => go('ficha', { pac: idx, tab: 'Resumen' }), n, sub, exp: 'Exp. ' + exp, alergia: !!a, ejemplo: !!ej, ini: n.split(' ').map((w) => w[0]).slice(0, 2).join(''), sep: i ? '#f0eeec' : 'transparent' }));
+
+    // tablas genéricas
+    const T = {
+      cxc: ['Pacientes con saldo, por antigüedad. Envíe un recordatorio por WhatsApp o correo.', 'Enviar recordatorios', [['0–30 días', 'RD$18,400'], ['31–60 días', 'RD$7,200'], ['61–90 días', 'RD$3,500'], ['Más de 90 días', 'RD$1,800']], ['Paciente', 'Saldo', 'Antigüedad', 'Último recordatorio', 'Estado de cuenta'],
+        [['Pedro Núñez', 'RD$6,500', '0–30 días', 'Ayer, WhatsApp', 'PDF'], ['José Rodríguez', 'RD$4,200', '31–60 días', 'Hace 6 días, correo', 'PDF'], ['Carla Díaz', 'RD$3,500', '61–90 días', 'Hace 12 días, WhatsApp', 'PDF'], ['Rosa Almonte', 'RD$1,800', 'Más de 90 días', 'Hace 30 días', 'PDF']]],
+      ars: ['Reclamaciones agrupadas por ARS y periodo. Registre el pago y concílielo contra lo reclamado.', 'Nueva reclamación', [['Por enviar', 'RD$12,600'], ['Enviadas', 'RD$28,700'], ['Pagadas este mes', 'RD$54,100'], ['Glosadas', 'RD$3,900']], ['ARS', 'Periodo', 'Reclamado', 'Pagado', 'Estado'],
+        [['ARS Humano', 'Noviembre 2026', 'RD$12,600', 'RD$0', 'Por enviar'], ['SeNaSa', 'Octubre 2026', 'RD$18,200', 'RD$0', 'Enviada'], ['ARS Universal', 'Octubre 2026', 'RD$10,500', 'RD$0', 'Enviada'], ['Mapfre Salud', 'Septiembre 2026', 'RD$9,800', 'RD$5,900', 'Glosada'], ['SeNaSa', 'Septiembre 2026', 'RD$21,400', 'RD$21,400', 'Pagada']]],
+      ncf: ['Comprobantes fiscales emitidos. La secuencia avisa cuando se está agotando o va a vencer.', 'Emitir comprobante', [['B02 disponibles', '412'], ['B01 disponibles', '86'], ['e-CF del mes', '138'], ['Rechazados', '1']], ['NCF', 'Tipo', 'Cliente', 'Monto', 'Estado'],
+        [['E310000000138', 'Crédito fiscal', 'Seguros Atlántico SRL', 'RD$12,000', 'Aceptado'], ['E320000000912', 'Consumidor final', 'Ana Martínez', 'RD$2,500', 'Aceptado'], ['E320000000911', 'Consumidor final', 'José Rodríguez', 'RD$2,500', 'Rechazado por DGII'], ['E340000000007', 'Nota de crédito', 'Carla Díaz', 'RD$1,500', 'Aceptado']]],
+      gastos: ['Gastos por categoría, con foto del comprobante y NCF del proveedor para el formato 606.', 'Registrar gasto', [['Gastos del mes', 'RD$86,300'], ['Alquiler', 'RD$35,000'], ['Insumos', 'RD$21,800'], ['Nómina', 'RD$24,000']], ['Fecha', 'Categoría', 'Proveedor', 'NCF', 'Monto'],
+        [['24 nov', 'Insumos', 'Distribuidora Médica del Caribe', 'B0100004412', 'RD$8,400'], ['20 nov', 'Servicios', 'Edesur', 'B0100981200', 'RD$5,500'], ['15 nov', 'Nómina', 'M. Peña (recepción)', '—', 'RD$24,000'], ['1 nov', 'Alquiler', 'Inmobiliaria Naco', 'B0100000231', 'RD$35,000']]],
+      honorarios: ['Reparto por médico, por porcentaje o monto fijo. Liquidación por periodo con retención de ISR cuando aplique.', 'Liquidar periodo', [['Facturado', 'RD$412,000'], ['A pagar a médicos', 'RD$268,400'], ['Retención ISR', 'RD$26,840'], ['Periodo', 'Noviembre']], ['Médico', 'Servicios', 'Facturado', 'Reparto', 'A pagar', 'Retención ISR'],
+        [['Dra. Carmen Rosario', '96', 'RD$240,000', '70%', 'RD$168,000', 'RD$16,800'], ['Dr. Miguel Tavárez', '54', 'RD$118,000', '60%', 'RD$70,800', 'RD$7,080'], ['Dra. Laura Jiménez', '31', 'RD$54,000', '55%', 'RD$29,600', 'RD$2,960']]],
+      informes: ['Ingresos, gastos y resultado del periodo. Formatos 606 y 607 listos para subir a la DGII.', 'Generar 606 y 607', [['Ingresos', 'RD$412,000'], ['Gastos', 'RD$86,300'], ['Resultado', 'RD$325,700'], ['Citas atendidas', '181']], ['Concepto', 'Este mes', 'Mes anterior', 'Cambio'],
+        [['Consultas', 'RD$286,000', 'RD$262,500', '+9%'], ['Procedimientos y sesiones', 'RD$98,000', 'RD$104,000', '−6%'], ['Productos', 'RD$28,000', 'RD$19,500', '+44%'], ['Efectivo', 'RD$171,000', 'RD$160,200', '+7%'], ['Tarjeta y transferencia', 'RD$146,900', 'RD$139,800', '+5%'], ['Cobertura de ARS', 'RD$94,100', 'RD$86,000', '+9%'], ['Ausencias', '14', '19', '−26%']], ['Ingresos por mes (RD$)', [['Jun', 318000], ['Jul', 342000], ['Ago', 355000], ['Sep', 371000], ['Oct', 389800], ['Nov', 412000]]]],
+      estudios: ['Suba un archivo o una foto. La interpretación con IA es un borrador: el médico la revisa y la comenta antes de compartirla.', 'Subir estudio', [['Estudios con IA', '51 de 60'], ['Por revisar', '1'], ['Compartidos', '34'], ['Almacenamiento', '3.1 GB']], ['Paciente', 'Estudio', 'Fecha', 'Interpretación', 'Paciente lo ve'],
+        [['Pedro Núñez', 'Perfil lipídico', '24 nov', 'Interpretado · revisar', 'No'], ['Ana Martínez', 'Hemograma', '20 nov', 'Firmado', 'Compartido'], ['José Rodríguez', 'Radiografía de tórax', '12 nov', 'Firmado', 'Compartido'], ['Luis García', 'Glucemia en ayunas', '3 nov', 'Firmado', 'No']]],
+      documentos: ['Todo lo emitido, quién lo firmó y a quién se envió. Nada sale sin la firma del médico.', 'Generar documento', [['Resúmenes con IA', '38 de 150'], ['Borradores', '2'], ['Firmados del mes', '74'], ['Anulados', '1']], ['Documento', 'Paciente', 'Firmado por', 'Enviado', 'Estado'],
+        [['Resumen para el paciente', 'Ana Martínez', '—', '—', 'Borrador con IA'], ['Receta N.º 0142', 'Ana Martínez', 'Dra. Rosario', 'WhatsApp', 'Firmado'], ['Referencia a cardiología', 'José Rodríguez', 'Dra. Rosario', 'Correo', 'Firmado'], ['Certificado médico', 'Pedro Núñez', 'Dra. Rosario', 'Impreso', 'Reemplazada'], ['Receta N.º 0139', 'Carla Díaz', 'Dra. Rosario', '—', 'Anulada']]],
+      equipo: ['Lo que vale en su plan es el médico. Desde Consultorio el personal es ilimitado.', 'Invitar', [['Médicos', '3 de 3'], ['Personal', '4'], ['Invitaciones', '1'], ['Con 2FA', '6 de 7']], ['Nombre', 'Rol', 'Especialidad', '2FA', 'Estado'],
+        [['Dra. Carmen Rosario', 'Dueña · médico', 'General', 'Sí', 'Activo'], ['Dr. Miguel Tavárez', 'Médico', 'Nutrición', 'Sí', 'Activo'], ['Dra. Laura Jiménez', 'Médico', 'Estética', 'Sí', 'Activo'], ['Mariela Peña', 'Recepción', '—', 'Sí', 'Activo'], ['Yanet Cruz', 'Terapeuta', '—', 'Falta 2FA', 'Activo'], ['Julio Almonte', 'Contador', '—', 'Sí', 'Activo'], ['rosa@correo.do', 'Recepción', '—', 'No', 'Invitado']]],
+      actividad: ['Quién vio, creó, editó, imprimió, envió o exportó cada expediente. No se puede editar ni borrar.', 'Filtrar', [['Eventos de hoy', '214'], ['Exportaciones', '1'], ['Accesos de emergencia', '0'], ['Se guarda', '1 año']], ['Hora', 'Usuario', 'Acción', 'Expediente', 'Desde'],
+        [['09:13', 'Dra. Rosario', 'Envió la receta por enlace seguro', '0318', 'Chrome · Santo Domingo'], ['09:12', 'Dra. Rosario', 'Firmó la receta 0142', '0318', 'Chrome · Santo Domingo'], ['09:00', 'Dra. Rosario', 'Abrió el expediente', '0318', 'Chrome · Santo Domingo'], ['08:52', 'M. Peña', 'Registró llegada', '0318', 'Edge · Santo Domingo'], ['08:15', 'J. Almonte', 'Exportó el informe de caja', '—', 'Safari · Santiago']]],
+    };
+    Object.assign(T, {
+      inventario: ['Insumos y productos que se venden o se usan en tratamientos. Se descuentan al usarlos y avisan cuando quedan pocos.', 'Agregar producto', [['Productos', '42'], ['Quedan pocos', '3'], ['Agotados', '1'], ['Valor en inventario', 'RD$186,400']], ['Producto', 'Categoría', 'Existencia', 'Aviso en', 'Estado'],
+        [['Guantes sin látex (caja)', 'Insumos', '14', '5', 'Disponible'], ['Gel conductor 1 L', 'Estética', '3', '4', 'Quedan pocos'], ['Jeringas 5 ml (caja)', 'Insumos', '2', '3', 'Quedan pocos'], ['Crema reductora 250 g', 'Venta', '0', '2', 'Agotado'], ['Protector solar FPS 50', 'Venta', '18', '4', 'Disponible']]],
+      sucursales: ['Una clínica con varias sedes, cada una con su caja y su agenda. Disponible desde Clínica privada.', 'Agregar sucursal', [['Sucursales', '2'], ['Cajas abiertas', '2'], ['Médicos', '3'], ['Citas de hoy', '14']], ['Sucursal', 'Dirección', 'Médicos', 'Caja', 'Estado'],
+        [['Naco', 'Av. Abraham Lincoln 1001', '2', 'Abierta por M. Peña', 'Activo'], ['Santiago', 'Av. Juan Pablo Duarte 55', '1', 'Abierta por R. Cruz', 'Activo']]],
+      tele: ['Videoconsultas con cobro previo. El paciente entra desde un enlace seguro.', 'Programar videoconsulta', [['Hoy', '2'], ['Esta semana', '7'], ['Cobro previo', 'RD$2,500'], ['Duración', '20 minutos']], ['Paciente', 'Fecha y hora', 'Motivo', 'Pago', 'Estado'],
+        [['Pedro Núñez', 'Hoy, 4:00 p. m.', 'Resultados de laboratorio', 'Pagado', 'Confirmada'], ['Rosa Almonte', 'Hoy, 4:30 p. m.', 'Control', 'Pendiente', 'Programada'], ['José Rodríguez', 'Vie 27, 9:00 a. m.', 'Control · hipertensión', 'Pagado', 'Programada']]],
+      'sa-metricas': ['Métricas del negocio, sin datos clínicos.', 'Exportar métricas', [['Ingreso mensual recurrente', 'US$18,420'], ['Bajas del mes', '2.1%'], ['Pruebas que pagan', '38%'], ['Llegan a la primera consulta', '81%']], ['Mes', 'Clínicas activas', 'Pruebas iniciadas', 'Pruebas convertidas', 'Impagos recuperados'],
+        [['Noviembre', '412', '108', '41', '12 de 17'], ['Octubre', '381', '96', '35', '9 de 14'], ['Septiembre', '352', '88', '31', '10 de 13'], ['Agosto', '327', '79', '27', '7 de 11']], ['Ingreso mensual recurrente (US$)', [['Jun', 11900], ['Jul', 13150], ['Ago', 14600], ['Sep', 15980], ['Oct', 17240], ['Nov', 18420]]]],
+      'sa-clinicas': ['Clínicas registradas. Soporte de medira no ve datos clínicos.', 'Exportar lista', [['Clínicas activas', '412'], ['Nuevas este mes', '37'], ['Llegaron a la primera consulta', '81%'], ['Bajas del mes', '2.1%']], ['Clínica', 'Tipo', 'Plan', 'Médicos', 'Estado'],
+        [['Consultorio Dra. Carmen Rosario', 'Consultorio', 'Consultorio', '3', 'En prueba'], ['Centro Médico Los Prados', 'Clínica de especialidades', 'Clínica privada', '9', 'Activa'], ['Estética Naco', 'Clínica estética', 'Consultorio', '2', 'Pago fallido'], ['Dr. Rafael Méndez', 'Consultorio', 'Médico independiente', '1', 'Activa'], ['Policlínica del Este', 'Policlínica', 'Clínica privada', '14', 'Cancelada'], ['Dra. Paola Gil', 'Consultorio', 'Gratis', '1', 'Gratis']]],
+      'sa-subs': ['Estado de cada suscripción y último evento de la pasarela. Cada evento se aplica una sola vez.', 'Ver eventos', [['Ingresos del mes', 'US$18,420'], ['En prueba', '41'], ['Pruebas convertidas', '38%'], ['Impagos recuperados', '71%']], ['Clínica', 'Plan', 'Próximo cobro', 'Último evento', 'Estado'],
+        [['Centro Médico Los Prados', 'Clínica privada · US$134.55', '25 dic', 'Pago completado', 'Activa'], ['Consultorio Dra. Carmen Rosario', 'Consultorio · US$49.95', '28 nov', 'Suscripción activada', 'En prueba'], ['Estética Naco', 'Consultorio · US$49.95', '—', 'Pago fallido · día 3', 'Pago fallido'], ['Policlínica del Este', 'Clínica privada · US$209.30', '—', 'Cancelada por el dueño', 'Cancelada']]],
+      'sa-uso': ['Uso de cuotas por clínica, sin datos clínicos.', 'Exportar uso', [['WhatsApp enviados', '84,210'], ['Dictados con IA', '9,870'], ['Estudios con IA', '3,415'], ['Almacenamiento', '1.9 TB']], ['Clínica', 'WhatsApp', 'Dictados con IA', 'Estudios con IA', 'Almacenamiento'],
+        [['Centro Médico Los Prados', '1,640 de 2,000', '612 de 900', '201 de 250', '310 de 450 GB'], ['Consultorio Dra. Carmen Rosario', '312 de 1,000', '41 de 300', '51 de 150', '9.2 de 100 GB'], ['Dr. Rafael Méndez', '498 de 500', '77 de 100', '12 de 60', '21 de 25 GB']]],
+      'sa-soporte': ['Soporte solo entra a una clínica si el dueño lo autoriza, por 24 horas. Todo queda registrado.', 'Pedir acceso', [['Accesos vigentes', '1'], ['Pedidos este mes', '6'], ['Restablecer 2FA en espera', '1'], ['Espera obligatoria', '72 horas']], ['Clínica', 'Motivo', 'Autorizó', 'Vence', 'Estado'],
+        [['Estética Naco', 'Revisar cobro fallido', 'Dra. Laura Jiménez', 'Hoy, 6:40 p. m.', 'Vigente'], ['Dr. Rafael Méndez', 'Restablecer 2FA del único dueño', 'Verificación de identidad', 'En 61 horas', 'En revisión'], ['Centro Médico Los Prados', 'Importar pacientes desde Excel', 'Dr. José Cabral', '18 nov', 'Vencido']]],
+      'sa-wsp': ['Plantillas de mensaje y su estado en Meta. Nada clínico en el texto.', 'Nueva plantilla', [['Aprobadas', '11'], ['En revisión', '1'], ['Rechazadas', '1'], ['Categoría', 'Utilidad']], ['Plantilla', 'Cuándo se envía', 'Botones', 'Idioma', 'Estado'],
+        [['Cita agendada', 'Al crear la cita', 'Agregar al calendario', 'Español', 'Aprobada'], ['Recordatorio', '5 días y 1 día antes', 'Confirmo · Necesito cambiar', 'Español', 'Aprobada'], ['Receta lista', 'Al firmar la receta', 'Ver receta', 'Español', 'Aprobada'], ['Encuesta corta', '1 día después', '1 a 5 estrellas', 'Español', 'En revisión'], ['Feliz cumpleaños', 'Si la clínica lo activa', '—', 'Español', 'Rechazada']]],
+    });
+    const tid = S.view.startsWith('t:') ? S.view.slice(2) : null, tt = T[tid];
+    const AUTO = { inventario: { 4: 'Disponible' }, sucursales: { 4: 'Activo' }, tele: { 4: 'Programada' }, ars: { 3: 'RD$0', 4: 'Por enviar' }, ncf: { 4: 'Aceptado' }, gastos: {}, estudios: { 3: 'Interpretado · revisar', 4: 'No' }, equipo: { 3: 'No', 4: 'Invitado' }, 'sa-wsp': { 4: 'En revisión' }, 'sa-soporte': { 4: 'En revisión' } };
+    const auto = AUTO[tid];
+    const tq = (S.f['tq|' + tid] ?? '').trim().toLowerCase();
+    const nf = { campos: tt && auto ? tt[3].filter((l, i) => !(i in auto)).map((l) => ({ l, val: S.f['nf|' + tid + '|' + l] ?? '', set: (e) => this.setState({ f: { ...this.state.f, ['nf|' + tid + '|' + l]: e.target.value } }) })) : [],
+      guardar: () => { const row = tt[3].map((l, i) => (i in auto ? auto[i] : S.f['nf|' + tid + '|' + l] || '—')); this.setState({ extra: { ...this.state.extra, [tid]: [row, ...(this.state.extra[tid] || [])] } }); say(tt[1] + ': guardado'); } };
+    const tabla = tt ? { sub: tt[0], accion: tt[1], run: () => (tid === 'documentos' ? go('documento') : auto ? this.setState({ sheet: 'nuevo' }) : ['cxc', 'honorarios', 'informes'].includes(tid) ? this.setState({ sheet: 'gen:' + tid }) : say('Use el filtro sobre la tabla')),
+      q: S.f['tq|' + tid] ?? '', setQ: (e) => this.setState({ f: { ...this.state.f, ['tq|' + tid]: e.target.value } }),
+      conBarras: !!tt[5], barT: tt[5] ? tt[5][0] : '', barras: tt[5] ? tt[5][1].map(([l, v], i, a) => ({ l, v: v.toLocaleString('en-US'), h: Math.round((v / Math.max(...a.map((x) => x[1]))) * 100) + '%', bg: i === a.length - 1 ? '#0f766e' : '#d6d3d1' })) : [], exportar: () => say('Su exportación está lista'), kpis: tt[2].map(([l, v]) => ({ l, v })), cols: tt[3], grid: '1.5fr repeat(' + (tt[3].length - 1) + ',minmax(0,1fr))', rows: [...(S.extra[tid] || []), ...tt[4]].filter((r) => !tq || r.join(' ').toLowerCase().includes(tq)).map((r) => ({ cells: r.map((t, i) => chip(t, i ? 400 : 600)) })) } : { kpis: [], cols: [], rows: [] };
+
+    // formularios genéricos
+    const CFG = {
+      'Clínica': [['Datos de la clínica', 'Aparecen en el membrete de recetas y documentos.', ['Nombre|Consultorio Dra. Carmen Rosario', 'Tipo de organización|Consultorio', 'Teléfono|809-555-0100', 'Dirección|Av. Abraham Lincoln 1001, Santo Domingo', 'RNC|1-31-00000-1', 'Zona horaria|Santo Domingo (GMT−4)']], ['Marca en documentos', 'El logo y el color de la clínica aparecen en sus documentos y en lo que ve el paciente.', ['Logo|logo-consultorio.png', 'Color|#0F766E', '~Logo propio en documentos|1']]],
+      'Mi perfil': [['Perfil médico', 'Se imprime en la receta.', ['Nombre|Dra. Carmen Rosario', 'Especialidad|General', 'Exequátur|000-00', 'Teléfono|809-555-0101', 'Firma|firma.png', 'Sello|sello.png']]],
+      'Horarios': [['Horario de atención', 'La agenda y la reserva en línea usan este horario.', ['Lunes a viernes|8:00 a 12:00 y 14:00 a 18:00', 'Sábado|8:00 a 12:00', 'Domingo|Cerrado', 'Duración de la cita|30 minutos', '~Reserva en línea|1', '~Permitir pacientes sin cita|1']]],
+      'Servicios y precios': [['Servicios', 'Precio general y precio por médico.', ['Consulta general|RD$2,500', 'Consulta de control|RD$1,500', 'Sesión de estética|RD$3,000', 'Paquete de 10 sesiones|RD$25,000', 'Descuento máximo sin permiso|10%', 'Moneda|Pesos y dólares']]],
+      'Documentos': [['Membrete y papel', 'Vista previa en vivo al firmar.', ['Tamaño de papel|Media carta', 'Margen superior|18 mm', 'Margen lateral|14 mm', '~Papel membretado (sin encabezado)|0', '~Código QR de verificación|1', '~Mostrar CIE-10|0']]],
+      'Mensajes y WhatsApp': [['Recordatorios', 'No se envían entre las 9:00 p. m. y las 7:00 a. m.', ['Primer recordatorio|5 días antes', 'Segundo recordatorio|1 día antes', '~Recordatorio del día (2 horas antes)|1', '~Receta lista|1', '~Encuesta después de la consulta|0', '~Feliz cumpleaños|0']]],
+      'Notificaciones': [['Correos que recibe', 'Los de seguridad y cobro no se pueden desactivar.', ['~Su agenda de hoy|1', '~Resumen semanal|1', '~Consultas sin cerrar|1', '~El paciente canceló o pidió cambiar|1', '~Novedades de medira|0', 'Hora de la agenda diaria|7:00 a. m.']]],
+      'Fiscal': [['Datos fiscales', 'Lo confirma su contador antes de emitir.', ['RNC|1-31-00000-1', 'Secuencia B02|412 disponibles · vence 31/12/2027', 'Secuencia B01|86 disponibles · vence 31/12/2027', 'Proveedor de e-CF|Por elegir', '~ITBIS exento en servicios de salud|1', '~ITBIS en productos|1']]],
+      'Seguridad de la clínica': [['Acceso', 'Los dueños siempre usan verificación en dos pasos.', ['~Exigir 2FA a médicos|1', '~Exigir 2FA al personal|0', 'Cierre por inactividad|30 minutos', '~Compartir expediente entre médicos|1', '~Permitir acceso a soporte de medira (24 h)|0', 'Borrar audio de dictados|Al firmar']]],
+      'Mi seguridad': [['Su cuenta', 'Cambiar la contraseña cierra las demás sesiones.', ['Contraseña|Cambiada hace 40 días', 'Verificación en dos pasos|Activa · app autenticadora', 'Códigos de respaldo|8 de 10 sin usar', 'Sesiones activas|2 dispositivos']]],
+    };
+    const PACF = [['Datos personales', '', ['Nombre completo|', 'Documento|', 'Sexo|', 'Fecha de nacimiento|', 'Grupo sanguíneo|', 'Ocupación|', 'Estado civil|', 'Referido por|']], ['Contacto', 'El paciente acepta recibir WhatsApp al registrarse.', ['Teléfono (WhatsApp)|', 'Correo electrónico (opcional)|', 'Dirección|', 'Contacto de emergencia|', 'Parentesco|', 'Teléfono de emergencia|', '~Acepta recibir WhatsApp|1']], ['Seguro médico', 'Opcional. Útil para facturar a la ARS.', ['Aseguradora (ARS)|', 'N.º de afiliado|', 'Plan|']], ['Alergias', 'Se muestran en rojo en el expediente y al recetar.', ['Alergias|']], ['Antecedentes', 'Solo visibles para el personal clínico.', ['Enfermedades crónicas|', 'Quirúrgicos|', 'Familiares|', 'Medicamentos actuales|', 'Hábitos|', 'Vacunas|']]];
+    const esCfg = S.view === 'config', esPacF = S.view === 'paciente';
+    const cfgNav = Object.keys(CFG).filter((k) => L === 'D' || k === 'Mi perfil' || k === 'Mi seguridad' || k === 'Notificaciones' || (L === 'C' && k === 'Fiscal'));
+    const cfgId = cfgNav.includes(S.cfg) ? S.cfg : cfgNav[0];
+    const fsrc = esCfg ? CFG[cfgId] : PACF, fpre = esCfg ? 'cfg|' + cfgId : 'pac';
+    const campo = (pre) => (raw) => { const sw = raw[0] === '~'; const [l, d] = (sw ? raw.slice(1) : raw).split('|'); const key = pre + '|' + l; const on = S.sw[key] ?? d === '1'; const alerg = l === 'Alergias';
+      return { l, esSw: sw, esTxt: !sw, val: S.f[key] ?? d, ph: alerg ? 'p. ej. penicilina' : '', bd: alerg ? '#b91c1c' : '#d6d3d1', set: (e) => this.setState({ f: { ...S.f, [key]: e.target.value } }), toggle: () => this.setState({ sw: { ...S.sw, [key]: !on } }), swBg: on ? '#0f766e' : '#d6d3d1', swJ: on ? 'flex-end' : 'flex-start' }; };
+    const form = { hasNav: esCfg, nav: esCfg ? cfgNav.map((t) => ({ t, pick: () => this.setState({ cfg: t }), bg: cfgId === t ? '#f0eeec' : 'transparent', fg: cfgId === t ? '#1c1917' : '#57534e' })) : [], secciones: fsrc.map(([t, hint, cs]) => ({ t, hint, campos: cs.map(campo(fpre + '|' + t)) })), btn: esCfg ? 'Guardar cambios' : 'Guardar paciente', guardar: () => (esCfg ? say('Cambios guardados') : (say('Paciente creado'), go('ficha'))) };
+
+    const tabsM = [['panel', 'Panel'], ['agenda', 'Agenda'], ['pacientes', 'Pacientes'], ['caja', 'Caja']].filter(([id]) => NAV.some(([, its]) => its.some((i) => i[0] === id && i[2].includes(L)))).map(([id, t]) => ({ t, pick: () => go(id), fg: S.view === id ? '#0f766e' : '#57534e', bar: S.view === id ? '#0f766e' : 'transparent' }));
+    const esT = !!tid;
+    const base = {
+      movil, escritorio: !movil, ml: movil ? '0' : '232px', pb: movil ? '96px' : '40px', grupos, roles, usuario: { D: (cu && cu.nombre) || 'Dra. Carmen Rosario', M: 'Dr. Miguel Tavárez', R: 'Mariela Peña', C: 'Julio Almonte', S: 'Equipo medira' }[L], titulo: TIT[S.view] || 'Panel', atras, banner,
+      abrirPaleta: () => this.setState({ sheet: 'paleta' }), abrirNotif: () => this.setState({ sheet: 'notif' }), abrirCita: () => this.setState({ sheet: 'cita' }), abrirMas: () => this.setState({ sheet: 'mas' }), cerrar: () => this.setState({ sheet: null }),
+      v: { panel: S.view === 'panel', agenda: S.view === 'agenda', pacientes: S.view === 'pacientes', tabla: esT, form: esCfg || esPacF, ficha: S.view === 'ficha', consulta: S.view === 'consulta', receta: S.view === 'receta', caja: S.view === 'caja', plan: S.view === 'plan', programa: S.view === 'programa', documento: S.view === 'documento', estudio: S.view === 'estudio', comparar: S.view === 'comparar' },
+      saludo: 'Buenos días, ' + { D: (cu && cu.nombre) || 'Dra. Rosario', M: 'Dr. Tavárez', R: 'Mariela', C: 'Julio', S: 'equipo medira' }[L], kpis: KP.map(([l, v]) => ({ l, v })), p: { sig: L !== 'C' && L !== 'S', agenda: L !== 'C' && L !== 'S', caja: L === 'C', pend: clinico, uso: L === 'D', bienvenida: L === 'D' },
+      movsC: [['10:12', 'Consulta sin cita · efectivo', 'RD$2,500'], ['09:20', 'Consulta general · ARS y tarjeta', 'RD$2,500'], ['08:58', 'Control · transferencia', 'RD$1,000'], ['08:40', 'Paquete de 10 sesiones · tarjeta', 'RD$12,500'], ['07:55', 'Apertura de caja', 'RD$3,000']].map(([h, t, m]) => ({ h, t, m })), sig, lista,
+      rapidas: RAP.map(([t, id]) => ({ t, run: act(id) })), pend: [['2 recetas sin firmar', 'receta'], ['1 consulta sin cerrar', 'consulta'], ['1 estudio interpretado con IA por revisar', 'estudio']].map(([t, id]) => ({ t, run: () => go(id) })),
+      cuotas3: cuotas.slice(0, 3), cuotas, bienvenida, irFicha: () => go('ficha', { pac: Math.max(0, PAC.findIndex((x) => x[0] === sc[1])), tab: 'Resumen' }), irAgenda: () => go('agenda'), irPlan: () => go('plan'),
+      dias, modos, ag: { lista: S.modo === 'Lista', tiempo: S.modo === 'Línea de tiempo', semana: S.modo === 'Semana' }, horas, semana, sinCita: () => say('Turno T-04 asignado'),
+      q: S.q, setQ: (e) => this.setState({ q: e.target.value }), pacientes, sinPacientes: !pacientes.length, nuevoPaciente: () => (estado === 'Gratis' ? this.setState({ sheet: 'limite' }) : go('paciente')), importar: () => this.setState({ sheet: 'gen:excel' }),
+      tabla, nf, form, tabsM, puedeVer, vista: { on: rol !== cuentaRol, t: 'Está viendo la aplicación como ' + rol + '. Sus permisos reales no cambian.', volver: () => { this.setState({ rol: null }); go('panel'); } }, pac, cu, clinicaN: (cu && cu.clinica) || 'Consultorio Dra. Carmen Rosario', toastOn: !!S.toast, toast: S.toast, clinico, rolTxt: rol, estado,
+    };
+    const out = { ...base, ...this.vistasClinicas(base, chip, seg), ...this.vistasDinero(base, chip, seg) };
+    const ep = this.props.estadoPantalla ?? 'Normal';
+    const EP = { 'Vacío': ['Todavía no hay nada aquí', 'Cuando registre el primero, aparecerá en esta pantalla.', 'Crear el primero'], Error: ['No pudimos cargar esta pantalla', 'Revise su conexión e intente de nuevo. Sus datos están guardados.', 'Reintentar'], 'Sin permiso': ['Su rol no ve esta pantalla', 'Pida acceso al dueño de la clínica.', 'Volver al panel'], Cargando: ['', '', ''] }[ep];
+    if (EP) Object.keys(out.v).forEach((k) => { out.v[k] = false; });
+    out.ep = { on: !!EP, cargando: ep === 'Cargando', msg: !!EP && ep !== 'Cargando', t: EP ? EP[0] : '', d: EP ? EP[1] : '', btn: EP ? EP[2] : '', run: () => say(ep === 'Error' ? 'Reintentando…' : 'Cambie «estado de pantalla» en Tweaks para volver') };
+    const temaSel = S.tema ?? this.props.tema ?? 'Claro', densSel = S.dens ?? this.props.densidad ?? 'Cómoda';
+    out.ajustes = [['Claro', 'tema'], ['Oscuro', 'tema'], ['Cómoda', 'dens'], ['Compacta', 'dens']].map(([t, k]) => ({ t, pick: () => this.setState({ [k]: t }), ...seg((k === 'tema' ? temaSel : densSel) === t) }));
+    return this.tema(out);
+  }
+  vistasClinicas(base, chip, seg) {
+    const S = this.state, go = this.go, say = this.say;
+    const setF = (key) => (e) => this.setState({ f: { ...this.state.f, [key]: e.target.value } });
+    const putF = (key, val) => this.setState({ f: { ...this.state.f, [key]: val } });
+    const chipSt = (on) => (on ? { bg: '#1c1917', fg: '#ffffff', bd: '#1c1917' } : { bg: '#ffffff', fg: '#1c1917', bd: '#d6d3d1' });
+    const mkChip = (pre) => (raw) => { const def = raw[0] === '*', t = def ? raw.slice(1) : raw, key = pre + '|' + t, on = S.chips[key] ?? def; return { t, pick: () => this.setState({ chips: { ...this.state.chips, [key]: !on } }), ...chipSt(on) }; };
+
+    // ficha
+    const TABS = ['Resumen', 'Consultas', 'Recetas', 'Documentos', 'Estudios', 'Fotos', 'Cobros', 'Actividad'].filter((t) => base.clinico || ['Resumen', 'Cobros'].includes(t));
+    const tab = TABS.includes(S.tab) ? S.tab : TABS[0];
+    const ftabs = TABS.map((t) => ({ t, pick: () => this.setState({ tab: t }), fg: tab === t ? '#1c1917' : '#57534e', line: tab === t ? '#0f766e' : 'transparent' }));
+    const FL = {
+      Consultas: [['25 nov 2026', 'Fiebre y dolor de garganta', 'Dra. Rosario · General · en curso', 'En consulta'], ['3 nov 2026', 'Control de asma', 'Dra. Rosario · General', 'Atendido'], ['12 oct 2026', 'Rinitis alérgica', 'Dra. Rosario · General', 'Atendido']],
+      Recetas: [['3 nov 2026', 'Receta N.º 0131', 'Salbutamol inhalador · enviada por WhatsApp', 'Firmada'], ['12 oct 2026', 'Receta N.º 0118 · versión 2', 'Loratadina 10 mg', 'Firmada'], ['12 oct 2026', 'Receta N.º 0118 · versión 1', 'Corregida por el médico', 'Reemplazada']],
+      Documentos: [['25 nov 2026', 'Resumen para el paciente', 'Sin firmar', 'Borrador con IA'], ['3 nov 2026', 'Certificado médico', 'Dra. Rosario · impreso', 'Firmado'], ['20 ago 2026', 'Consentimiento de fotos clínicas', 'Firmado por la paciente en el teléfono', 'Firmado']],
+      Estudios: [['20 nov 2026', 'Hemograma', 'Comentario del médico: sin hallazgos de alarma', 'Compartido'], ['2 jun 2026', 'Radiografía de tórax', 'Subido como PDF · 2.1 MB', 'Firmado']],
+      Cobros: [['3 nov 2026', 'Consulta de control', 'RD$1,500 · ARS cubrió RD$1,000 · efectivo RD$500', 'Pagado'], ['12 oct 2026', 'Consulta general', 'RD$2,500 · saldo RD$1,000', 'Parcial']],
+      Actividad: [['09:13', 'Dra. Rosario envió la receta por enlace seguro', 'Chrome · Santo Domingo', 'Enviada'], ['09:00', 'Dra. Rosario abrió el expediente', 'Chrome · Santo Domingo', 'Activo'], ['08:52', 'M. Peña registró la llegada', 'Edge · Santo Domingo', 'Activo']],
+    };
+    const FLP = {
+      1: { Consultas: [['25 nov 2026', 'Control 4 · programa de peso', 'Dr. Tavárez · Nutrición', 'Confirmada'], ['11 nov 2026', 'Control 3 · programa de peso', 'Dr. Tavárez · Nutrición', 'Atendido'], ['28 oct 2026', 'Control 2 · programa de peso', 'Dr. Tavárez · Nutrición', 'Atendido']], Recetas: [['11 nov 2026', 'Plan de alimentación N.º 0087', 'Enviado por WhatsApp', 'Firmada']], Documentos: [['11 nov 2026', 'Informe de evolución', 'Dr. Tavárez · correo', 'Firmado']], Cobros: [['11 nov 2026', 'Control de nutrición', 'RD$1,500 · SeNaSa cubrió RD$900 · tarjeta RD$600', 'Pagado']] },
+      2: { Consultas: [['25 nov 2026', 'Sesión 4 de 10 · paquete reductivo', 'Dra. Jiménez · Estética', 'Programada'], ['18 nov 2026', 'Sesión 3 de 10 · paquete reductivo', 'Y. Cruz (terapeuta)', 'Atendido']], Documentos: [['20 ago 2026', 'Consentimiento de fotos clínicas', 'Firmado por la paciente en el teléfono', 'Firmado']], Cobros: [['20 ago 2026', 'Paquete de 10 sesiones', 'RD$25,000 · anticipo RD$12,500 · saldo RD$12,500', 'Parcial']] },
+    };
+    const PREV = { 1: [['Último motivo:', 'control 3 del programa de peso el 11 nov.'], ['Qué cambió:', 'bajó 0.7 kg; cintura de 99 a 98 cm.'], ['Pendientes:', 'foto del control 2.'], ['Alergias:', 'ninguna registrada.'], ['Alertas:', 'hipertensión en tratamiento.']], 2: [['Último motivo:', 'sesión 3 de 10 el 18 nov.'], ['Qué cambió:', 'sin molestias tras la sesión.'], ['Pendientes:', 'saldo de RD$12,500 del paquete.'], ['Alergias:', 'látex.'], ['Alertas:', 'usar guantes sin látex.']], x: [['Último motivo:', 'sin consultas anteriores en medira.'], ['Pendientes:', 'completar la ficha de ingreso.']] };
+    const MED = { 1: [['Peso', '86.4', 'kg'], ['IMC', '28.5', ''], ['Cintura', '96', 'cm'], ['Presión arterial', '128/82', 'mmHg']], 2: [['Zona', 'Abdomen', ''], ['Sesiones', '3 de 10', ''], ['Peso', '58.0', 'kg']] };
+    const ANT = { 1: [['Crónicas', 'Hipertensión arterial'], ['Medicamentos', 'Losartán 50 mg'], ['Hábitos', 'Sedentario; no fuma'], ['Familiares', 'Padre: diabetes tipo 2']], 2: [['Crónicas', 'Ninguna'], ['Quirúrgicos', 'Ninguno'], ['Hábitos', 'No fuma'], ['Consentimiento de fotos', 'Uso clínico firmado']] };
+    const flista = ((S.pac === 0 ? FL[tab] : (FLP[S.pac] || {})[tab]) || []).map(([a, b, c, e], i) => { const k = chip(e); return { a, b, c, e, bg: k.bg || '#ffffff', fg: k.fg || '#57534e', bd: k.bd || '#d6d3d1', sep: i ? '#f0eeec' : 'transparent' }; });
+
+    // consulta por especialidad
+    const V = [['PA sistólica', '118'], ['PA diastólica', '76'], ['Temp (°C)', '38.4'], ['Peso (kg)', '62'], ['Talla (cm)', '164'], ['Pulso', '88'], ['SpO₂ %', '98'], ['FR (rpm)', '18'], ['Glucemia', ''], ['IMC', '23.1']];
+    const SEG = ['1 semana', '15 días', '1 mes', '3 meses'];
+    const ESP = {
+      General: [['Motivo', 'obligatorio', 'x', ['Motivo de consulta', ''], 'Fiebre y dolor de garganta desde hace tres días.'], ['Historia de la enfermedad actual', '', 'x', ['Inicio, evolución, síntomas asociados', ''], 'Odinofagia progresiva, fiebre de hasta 38.5 °C, sin tos. Niega contacto con enfermos.'], ['Signos vitales', '9 signos e IMC', 'c', V], ['Examen físico', '', 'x', ['Hallazgos', ''], 'Amígdalas hiperémicas, sin exudado. Adenopatías cervicales pequeñas. Pulmones limpios.'], ['Diagnóstico', 'obligatorio · CIE-10 opcional', 'x', ['Diagnóstico', ''], 'Faringoamigdalitis aguda (J03.9).'], ['Diagnósticos frecuentes', '', 'h', ['Faringoamigdalitis aguda', 'Hipertensión arterial', 'Infección urinaria', 'Gastroenteritis', 'Rinitis alérgica']], ['Plan y tratamiento', '', 'x', ['Indicaciones', '']], ['Seguimiento', 'próxima cita', 'h', SEG], ['Notas privadas', 'solo usted las ve · no se imprimen', 'x', ['Notas', '']]],
+      'Nutrición': [['Motivo', 'obligatorio', 'x', ['Motivo de consulta', 'Control 4 del programa de peso']], ['Antropometría', 'IMC automático', 'c', [['Peso actual (kg)', '86.4'], ['Peso habitual', '92'], ['Talla (cm)', '174'], ['IMC', '28.5'], ['Cintura (cm)', '96'], ['Cadera (cm)', '104'], ['Abdomen (cm)', '99'], ['Brazo (cm)', '33'], ['Glúteos (cm)', '106'], ['Meta (kg)', '78']]], ['Hábitos', 'toque para marcar', 'h', ['*Desayuna', 'Come fuera de casa', 'Alcohol', '*Hace ejercicio', 'Fuma', 'Ansiedad al comer']], ['Sueño y agua', '', 'c', [['Sueño (h/día)', '6'], ['Agua (L/día)', '1.5'], ['Comidas al día', '4']]], ['Evaluación', 'obligatorio', 'x', ['Evaluación', 'Sobrepeso en descenso']], ['Plan de alimentación', 'sale en el documento', 'x', ['Desayuno, almuerzo, cena y meriendas', '']], ['Seguimiento', 'próximo control', 'h', SEG]],
+      'Estética': [['Tratamiento', 'obligatorio', 'x', ['Tratamiento y objetivo', 'Paquete reductivo · sesión 4 de 10']], ['Ficha de sesión', 'la llena el terapeuta', 'c', [['Zona', 'Abdomen'], ['Técnica', 'Masaje reductivo'], ['Equipo', 'Cavitación'], ['Intensidad', 'Media'], ['Duración (min)', '50'], ['Sesiones restantes', '6']]], ['Estado de la piel', '', 'h', ['*Normal', 'Sensible', 'Enrojecimiento', 'Hematomas', 'Retención de líquidos']], ['Fotos de la sesión', 'guía de pose con la foto anterior', 'h', ['*Frente', '*Perfil', 'Espalda']], ['Nota de sesión', '', 'x', ['Observaciones', 'Sin molestias tras la sesión anterior']], ['Próxima sesión', '', 'h', ['3 días', '*7 días', '15 días']]],
+      'Oftalmología': [['Motivo', 'obligatorio', 'x', ['Motivo de consulta', 'Visión borrosa de lejos']], ['Antecedentes oculares', '', 'h', ['*Usa lentes', 'Lentes de contacto', 'Cirugía ocular', 'Usa gotas', 'Ambliopía', 'Glaucoma familiar']], ['Agudeza visual', 'por ojo', 'o', [['Lejos sin corrección', '20/60', '20/50'], ['Lejos con corrección', '20/20', '20/25'], ['Estenopeico', '20/25', '20/25'], ['Cerca', 'J1', 'J2']]], ['Refracción', 'pasa a la receta de lentes', 'o', [['Esfera', '−1.75', '−1.50'], ['Cilindro', '−0.50', '−0.75'], ['Eje', '180', '170'], ['Adición', '', '']]], ['Presión intraocular', 'mmHg', 'o', [['PIO', '14', '15']]], ['Segmento anterior', 'biomicroscopía', 'x', ['Párpados, conjuntiva, córnea, cámara anterior, iris, cristalino', '']], ['Fondo de ojo', 'con o sin dilatación', 'x', ['Papila, mácula, retina, vasos', '']], ['Diagnóstico', 'obligatorio', 'x', ['Diagnóstico', 'Miopía con astigmatismo']], ['Ojo', '', 'h', ['OD', 'OS', '*AO']], ['Estudios indicados', '', 'h', ['OCT', 'Campo visual', 'Topografía']]],
+      'Odontología': [['Motivo', 'obligatorio', 'x', ['Motivo de consulta', 'Dolor en molar inferior derecho']], ['Odontograma', 'piezas 18 a 48', 'd', []], ['Periodonto', '', 'c', [['Higiene', 'Regular'], ['Sangrado', 'Sí'], ['Placa (%)', '35'], ['Bolsas (mm)', '3']]], ['Procedimiento de hoy', '', 'c', [['Pieza', '47'], ['Procedimiento', 'Resina'], ['Anestesia', 'Lidocaína 2%'], ['Material', 'Resina A2']]], ['Diagnóstico', 'obligatorio', 'x', ['Diagnóstico', 'Caries en 47 y 16']], ['Plan de tratamiento', 'por etapas', 'x', ['Etapas y presupuesto', '']], ['Próxima cita', '', 'h', SEG]],
+      'Gineco-obstetricia': [['Motivo', 'obligatorio', 'x', ['Motivo de consulta', 'Control prenatal']], ['Antecedentes gineco-obstétricos', 'E · A · P · C', 'c', [['Embarazos', '2'], ['Abortos', '0'], ['Partos', '1'], ['Cesáreas', '0'], ['FUM', '12/05/2026'], ['Ciclos', 'Regulares'], ['Anticonceptivo', 'Ninguno'], ['Último Papanicolaou', '03/2026']]], ['Embarazo actual', '', 'c', [['Semanas', '28'], ['FPP', '16/02/2027'], ['Altura uterina (cm)', '27'], ['FCF (lpm)', '142'], ['Presentación', 'Cefálica'], ['Movimientos fetales', 'Presentes']]], ['Signos vitales', '', 'c', [['PA sistólica', '112'], ['PA diastólica', '70'], ['Peso (kg)', '68'], ['Temp (°C)', '36.7']]], ['Signos de alarma', '', 'h', ['Sangrado', 'Cefalea intensa', 'Edema', 'Contracciones', '*Ninguno']], ['Examen', '', 'x', ['Hallazgos', '']], ['Diagnóstico', 'obligatorio', 'x', ['Diagnóstico', 'Embarazo de 28 semanas, evolución normal']], ['Próximo control', '', 'h', ['1 semana', '*15 días', '1 mes']]],
+      'Pediatría': [['Motivo', 'obligatorio', 'x', ['Motivo de consulta', 'Fiebre · acompaña la madre']], ['Crecimiento', 'la dosis se calcula por peso', 'c', [['Peso (kg)', '26.5'], ['Talla (cm)', '128'], ['Perímetro cefálico', ''], ['IMC', '16.2'], ['Percentil peso', '55'], ['Percentil talla', '60'], ['Temp (°C)', '38.1'], ['FC (lpm)', '104'], ['FR (rpm)', '22'], ['SpO₂ %', '98']]], ['Desarrollo', 'hitos según la edad', 'h', ['*Lenguaje acorde', '*Motricidad acorde', '*Escolaridad acorde', 'Requiere evaluación']], ['Vacunas', '', 'h', ['*Esquema al día', 'Refuerzo pendiente', 'Influenza de este año']], ['Alimentación y sueño', '', 'x', ['Alimentación, sueño, evacuaciones', '']], ['Examen físico', '', 'x', ['Hallazgos', '']], ['Diagnóstico', 'obligatorio', 'x', ['Diagnóstico', '']], ['Seguimiento', '', 'h', SEG]],
+    };
+    const LISTAS = ['General', 'Nutrición', 'Estética'];
+    const e0 = S.esp ?? (base.cu && base.cu.esp); const esp = ESP[e0] ? e0 : 'General';
+    const esps = Object.keys(ESP).map((t) => ({ t, pronto: !LISTAS.includes(t), pick: () => this.setState({ esp: t }), ...chipSt(esp === t) }));
+    const ORD = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28, 48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+    const DS = [['#ffffff', '#1c1917', '#d6d3d1'], ['#b45309', '#ffffff', '#b45309'], ['#1c1917', '#ffffff', '#1c1917'], ['#0f766e', '#ffffff', '#0f766e']];
+    const iaOn = S.dict === 2 && esp === 'General';
+    const secs = ESP[esp].map(([t, hint, tipo, data, iaTxt]) => {
+      const pre = esp + '|' + t, abierta = !S.cerradas[pre], s = { t, hint, abierta, signo: abierta ? 'Ocultar' : 'Mostrar', toggle: () => this.setState({ cerradas: { ...this.state.cerradas, [pre]: abierta } }), x: tipo === 'x', c: tipo === 'c', o: tipo === 'o', h: tipo === 'h', d: tipo === 'd', ia: false };
+      if (tipo === 'x') { s.ph = data[0]; s.val = S.f[pre] ?? data[1]; s.set = setF(pre); s.ia = iaOn && !!iaTxt && !S.chips['ia|' + pre]; s.iaTxt = iaTxt; s.aceptar = () => this.setState({ f: { ...this.state.f, [pre]: iaTxt }, chips: { ...this.state.chips, ['ia|' + pre]: true } }); s.descartar = () => this.setState({ chips: { ...this.state.chips, ['ia|' + pre]: true } }); }
+      if (tipo === 'c') s.campos = data.map(([l, v]) => ({ l, val: S.f[pre + '|' + l] ?? v, set: setF(pre + '|' + l), im: /^[\d.,/−-]*$/.test(v) ? 'decimal' : 'text' }));
+      if (tipo === 'o') s.filas = data.map(([l, od, os]) => ({ l, od: S.f[pre + '|' + l + '|od'] ?? od, os: S.f[pre + '|' + l + '|os'] ?? os, setOd: setF(pre + '|' + l + '|od'), setOs: setF(pre + '|' + l + '|os') }));
+      if (tipo === 'h') s.chips = data.map(mkChip(pre));
+      if (tipo === 'd') s.dientes = ORD.map((n) => { const e = S.dientes[n] || 0; return { n, bg: DS[e][0], fg: DS[e][1], bd: DS[e][2], pick: () => this.setState({ dientes: { ...this.state.dientes, [n]: (e + 1) % 4 } }) }; });
+      return s;
+    });
+    const iaKeys = ESP.General.filter((x) => x[4]).map((x) => ['General|' + x[0], x[4]]);
+    const dic = { idle: S.dict === 0, grabando: S.dict === 1, listo: S.dict === 2, empezar: () => this.setState({ dict: 1 }), celular: () => this.setState({ sheet: 'gen:qr' }), terminar: () => this.setState({ dict: 2, esp: 'General' }),
+      aceptarTodo: () => { const f = { ...this.state.f }, c = { ...this.state.chips }; iaKeys.forEach(([k, t]) => { f[k] = t; c['ia|' + k] = true; }); this.setState({ f, chips: c, dict: 0 }); } };
+
+    // receta y órdenes
+    const rxTabs = ['Medicamentos', 'Laboratorio', 'Imágenes', 'Lentes'].map((t) => ({ t, pick: () => this.setState({ rxTab: t }), ...seg(S.rxTab === t) }));
+    const meds = S.meds.map(([g, c, dosis, dias, cant, ind], i) => ({ g, c, dosis, dias, cant, ind: ind || '—', alerta: base.pac.alergia.includes('penicilina') && /amoxicilina|penicilina/i.test(g), quitar: () => this.setState({ meds: this.state.meds.filter((_, j) => j !== i), firmada: false }) }));
+    const FAV = [['Ibuprofeno', '400 mg · tableta · oral', '1 cada 8 horas con comida', '3', '9 (nueve)', ''], ['Amoxicilina', '500 mg · cápsula · oral', '1 cada 8 horas', '7', '21 (veintiuna)', ''], ['Loratadina', '10 mg · tableta · oral', '1 cada 24 horas', '5', '5 (cinco)', ''], ['Suero oral', 'sobre · oral', 'A libre demanda', '3', '6 (seis)', 'Disolver en 1 litro de agua']];
+    const favoritos = [...FAV.map((m) => ({ t: m[0], pick: () => this.setState({ meds: [...this.state.meds, m], firmada: false }) })), { t: 'Plantilla: gripe adulto', pick: () => this.setState({ meds: [...this.state.meds, FAV[0], FAV[2]], firmada: false }) }, { t: 'Repetir receta anterior', pick: () => say('Se copió la receta del 3 nov') }];
+    const LAB = [['Hematología', ['*Hemograma', 'VSG', 'Tiempos de coagulación']], ['Química', ['Glucosa', 'Creatinina', 'Perfil lipídico', 'TGO y TGP']], ['Orina', ['Examen de orina', 'Urocultivo']], ['Microbiología', ['*Cultivo faríngeo', 'PCR']]];
+    const labGrupos = LAB.map(([t, cs]) => ({ t, chips: cs.map(mkChip('lab|' + t)) }));
+    const labSel = labGrupos.flatMap((g) => g.chips.filter((c) => c.bg === '#1c1917').map((c) => ({ a: c.t, b: g.t })));
+    const RC = { 'Imágenes': [['Estudio', 'Radiografía'], ['Región', 'Tórax'], ['Lado', 'No aplica'], ['Pregunta clínica', 'Descartar neumonía'], ['Prioridad', 'Normal'], ['Autorización de ARS', '']], Lentes: [['OD esfera', '−1.75'], ['OD cilindro', '−0.50'], ['OD eje', '180'], ['OS esfera', '−1.50'], ['OS cilindro', '−0.75'], ['OS eje', '170'], ['Adición', ''], ['Distancia pupilar', '62'], ['Tipo de lente', 'Monofocal']] };
+    const rxCampos = (RC[S.rxTab] || []).map(([l, v]) => ({ l, val: S.f['rx|' + S.rxTab + '|' + l] ?? v, set: setF('rx|' + S.rxTab + '|' + l) }));
+    const prev = { t: { Medicamentos: 'Receta', Laboratorio: 'Orden de laboratorio', 'Imágenes': 'Orden de imágenes', Lentes: 'Receta de lentes' }[S.rxTab], firma: S.firmada ? 'Dra. C. Rosario' : '',
+      rows: S.rxTab === 'Medicamentos' ? meds.map((m) => ({ a: m.g + ' · ' + m.c, b: m.dosis + ' por ' + m.dias + ' días · Cantidad: ' + m.cant })) : S.rxTab === 'Laboratorio' ? labSel : rxCampos.filter((c) => c.val).map((c) => ({ a: c.val, b: c.l })) };
+
+    // programa y documentos
+    const PW = [['Inicio', 92], ['Control 1', 90.3], ['Control 2', 88.9], ['Control 3', 88.2], ['Control 4', 86.4]];
+    const DOCS = { 'Resumen para el paciente': 'Usted tiene una infección de garganta (faringoamigdalitis).\n\nQué hacer: tome azitromicina 1 tableta al día por 3 días y paracetamol cada 8 horas si hay fiebre. Beba líquidos y descanse.\n\nPróximo control: en 7 días.\n\nVuelva antes si tiene dificultad para respirar o tragar, o fiebre por más de 3 días.', 'Nota de la consulta': 'S: fiebre y dolor de garganta de 3 días.\nO: T 38.4 °C, amígdalas hiperémicas sin exudado.\nA: faringoamigdalitis aguda.\nP: azitromicina 500 mg por 3 días, paracetamol, control en 7 días.', 'Referencia': 'Motivo de la referencia:\n\nResumen:\n\nEstudios:\n\nPregunta concreta:\n\nContrarreferencia:', 'Epicrisis': 'Antecedentes: asma leve. Alergia a penicilina.\nMedicamentos activos: salbutamol a demanda.\nDiagnósticos: rinitis alérgica, faringoamigdalitis aguda.\nÚltimos estudios: hemograma del 20 nov sin hallazgos de alarma.', 'Certificado médico': 'Certifico que Ana Martínez fue atendida hoy y requiere 2 días de reposo.', 'Informe de evolución': 'Evolución de signos y mediciones desde el 12 de octubre de 2026.' };
+    const dTipo = S.f['doc|tipo'] ?? 'Resumen para el paciente', dModo = S.f['doc|modo'] ?? 'Con IA';
+    return {
+      irConsulta: () => go('consulta'), irDocumento: () => go('documento'), irReceta: () => go('receta'), ftabs, fx: { resumen: tab === 'Resumen' && base.clinico, contacto: tab === 'Resumen' && !base.clinico, fotos: tab === 'Fotos' && base.clinico, lista: !!FL[tab] && flista.length > 0, vacia: !!FL[tab] && !flista.length }, flista,
+      contacto: [['Teléfono (WhatsApp)', '809-555-0142'], ['Correo', 'ana.martinez@correo.do'], ['Dirección', 'Calle 5 #12, Naco, Santo Domingo'], ['Contacto de emergencia', 'Rafael Martínez (esposo) · 809-555-0190'], ['Seguro', 'ARS Humano · afiliado 55-102938'], ['Próxima cita', 'Hoy, 9:00 a. m.'], ['Saldo pendiente', 'RD$1,000']].map(([l, v]) => ({ l, v })),
+      previo: (S.pac === 0 ? [['Último motivo:', 'control de asma el 3 nov, estable.'], ['Qué cambió:', 'hemograma del 20 nov sin hallazgos de alarma.'], ['Pendientes:', 'saldo de RD$1,000 y un resumen sin firmar.'], ['Alergias:', 'penicilina.'], ['Alertas:', 'asma leve; usa salbutamol a demanda.']] : PREV[S.pac] || PREV.x).map(([l, v]) => ({ l, v })),
+      medicion: (S.pac === 0 ? [['Presión arterial', '116/74', 'mmHg'], ['Pulso', '76', 'lpm'], ['Temperatura', '36.6', '°C'], ['SpO₂', '99', '%'], ['Peso', '62.0', 'kg'], ['IMC', '23.1', '']] : MED[S.pac] || [['Sin mediciones', '—', '']]).map(([l, v, u]) => ({ l, v, u })),
+      antecedentes: (S.pac === 0 ? [['Crónicas', 'Asma leve'], ['Quirúrgicos', 'Apendicectomía (2012)'], ['Familiares', 'Madre: hipertensión'], ['Medicamentos', 'Salbutamol a demanda'], ['Hábitos', 'No fuma'], ['E · A · P · C', '1 · 0 · 1 · 0'], ['Grupo sanguíneo', 'O+']] : ANT[S.pac] || [['Antecedentes', 'Sin registrar']]).map(([l, v]) => ({ l, v })),
+      fotos: ['20 ago · rostro · frente', '20 ago · rostro · perfil', '18 sep · rostro · frente', '18 sep · rostro · perfil', '25 nov · rostro · frente', '25 nov · rostro · perfil'], comparar: () => go('comparar'),
+      est: { val: S.f.estCom ?? '', set: setF('estCom'), swBg: S.sw.estComp ? '#0f766e' : '#d6d3d1', swJ: S.sw.estComp ? 'flex-end' : 'flex-start', toggle: () => this.setState({ sw: { ...this.state.sw, estComp: !S.sw.estComp } }), firmar: () => { say('Interpretación firmada'); go('t:estudios'); } },
+      cmpA: ['20 ago', '18 sep', '25 nov'].map((t) => ({ t, pick: () => putF('cmpA', t), ...chipSt((S.f.cmpA ?? '20 ago') === t) })), cmpB: ['20 ago', '18 sep', '25 nov'].map((t) => ({ t, pick: () => putF('cmpB', t), ...chipSt((S.f.cmpB ?? '25 nov') === t) })),
+      cmpModos: ['Lado a lado', 'Deslizador'].map((t) => ({ t, pick: () => putF('cmpModo', t), ...seg((S.f.cmpModo ?? 'Lado a lado') === t) })), cmp: { lado: (S.f.cmpModo ?? 'Lado a lado') === 'Lado a lado', desliza: S.f.cmpModo === 'Deslizador', a: 'foto: ' + (S.f.cmpA ?? '20 ago') + ' · rostro · frente', b: 'foto: ' + (S.f.cmpB ?? '25 nov') + ' · rostro · frente', pct: (S.f.cmpPct ?? '50') + '%', val: S.f.cmpPct ?? '50', set: setF('cmpPct'), exportar: () => say('Comparación exportada como PDF') },
+      esps, espPronto: !LISTAS.includes(esp), dic, secs, barB: S.movil ? '64px' : '0', guardarConsulta: () => { const i = S.citas.findIndex((c) => c[3] === 'En consulta'); if (i >= 0) this.setCita(i, 'Atendido'); say('Consulta guardada'); go('agenda'); },
+      rxTabs, rx: { meds: S.rxTab === 'Medicamentos', lab: S.rxTab === 'Laboratorio', campos: !!RC[S.rxTab] }, meds, favoritos, labGrupos, rxCampos, prev, papelTxt: S.papel + (base.estado === 'Gratis' ? ' · Hecho con medira' : ''),
+      papeles: ['Media carta', 'Carta', 'A5'].map((t) => ({ t, pick: () => this.setState({ papel: t }), ...seg(S.papel === t) })), sinFirmar: !S.firmada, firmada: S.firmada, firmar: () => { this.setState({ firmada: true }); say('Receta firmada'); },
+      canales: [['Imprimir', 'Enviada a imprimir'], ['WhatsApp', 'Enviada por enlace seguro'], ['Correo', 'Enviada por correo']].map(([t, m]) => ({ t, run: () => say(m) })),
+      abrirNuevoEstudio: () => say('Se envió un aviso a su celular para tomar la foto'), estFilas: [['Colesterol total', '212 mg/dL', 'Alto', '#b45309'], ['LDL', '141 mg/dL', 'Alto', '#b45309'], ['HDL', '48 mg/dL', 'Normal', '#15803d'], ['Triglicéridos', '138 mg/dL', 'Normal', '#15803d']].map(([l, v, e, fg]) => ({ l, v, e, fg })),
+      progKpis: [['Peso inicial', '92.0 kg'], ['Peso actual', '86.4 kg'], ['Meta', '78.0 kg'], ['IMC', '28.5']].map(([l, v]) => ({ l, v })), progBarras: PW.map(([l, v], i) => ({ l, v: v.toFixed(1), h: Math.round(((v - 70) / 24) * 100) + '%', bg: i === PW.length - 1 ? '#0f766e' : '#d6d3d1' })),
+      progControles: [['25 nov', '86.4 kg', 'Cintura 96', 'Con foto'], ['11 nov', '88.2 kg', 'Cintura 98', 'Con foto'], ['28 oct', '88.9 kg', 'Cintura 99', 'Sin foto'], ['14 oct', '90.3 kg', 'Cintura 101', 'Con foto']].map(([f, p, c, foto]) => ({ f, p, c, foto })),
+      docTipos: Object.keys(DOCS).map((t) => ({ t, pick: () => putF('doc|tipo', t), ...chipSt(dTipo === t) })), docModos: ['Con plantilla', 'Con IA'].map((t) => ({ t, pick: () => putF('doc|modo', t), ...seg(dModo === t) })), docIA: dModo === 'Con IA',
+      docOrigen: [['Consulta', '25 nov 2026 · General'], ['Diagnóstico', 'Faringoamigdalitis aguda'], ['Receta', 'N.º 0142 · 2 medicamentos'], ['Alergias', 'Penicilina'], ['Estudios', 'Hemograma del 20 nov'], ['Próximo control', 'En 7 días']].map(([l, v]) => ({ l, v })),
+      docTxt: S.f['doc|txt|' + dTipo] ?? DOCS[dTipo], setDoc: setF('doc|txt|' + dTipo), docFirmar: () => { say('Documento firmado y enviado por enlace seguro'); go('ficha'); }, docRegenerar: () => say('Borrador regenerado · 39 de 150'),
+    };
+  }
+  vistasDinero(base, chip, seg) {
+    const S = this.state, go = this.go, say = this.say, D = base.rolTxt === 'Dueño';
+    const setF = (key) => (e) => this.setState({ f: { ...this.state.f, [key]: e.target.value } });
+    const chipSt = (on) => (on ? { bg: '#1c1917', fg: '#ffffff', bd: '#1c1917' } : { bg: '#ffffff', fg: '#1c1917', bd: '#d6d3d1' });
+    const contado = parseInt((S.f.arqueo ?? '12500').replace(/\D/g, ''), 10) || 0, dif = contado - 12500;
+    const PL = { Activa: ['Consultorio', 'US$49.95 al mes · próximo cobro el 25 de diciembre', 'Actualizar pago'], 'En prueba': ['Consultorio', 'Prueba de 3 días · hoy paga US$0 · primer cobro de US$49.95 el 28 de noviembre', 'Actualizar pago'], 'Pago fallido': ['Consultorio', 'No pudimos cobrar US$49.95 · quedan 7 días con todo su plan activo', 'Actualizar pago'], Cancelada: ['Consultorio', 'Su plan termina el 12 de enero. Después pasa a Gratis sin borrar nada.', 'Reactivar'], Gratis: ['Gratis', 'Solo entra el dueño · 3 usuarios suspendidos, no borrados · 86 pacientes visibles, sin crear nuevos', 'Recuperar mi plan'] }[base.estado];
+    if (base.cu && base.estado !== 'Gratis') { PL[0] = base.cu.plan; PL[1] = PL[1].split('US$49.95').join('US$' + Number(base.cu.precio).toFixed(2)); }
+    const sheet = S.sheet, movil = S.movil;
+    const ST = { nuevo: base.tabla.accion || '', paleta: 'Buscar', notif: 'Avisos', cita: 'Nueva cita', cobrar: 'Cobrar', limite: 'Llegó a 50 pacientes', mas: 'Más' };
+    const pq = (S.f.pq ?? '').toLowerCase();
+    const R = [['Ana Martínez', 'Exp. 0318', 'ficha'], ['Luis García', 'Exp. 0291', 'ficha'], ['Carla Díaz', 'Exp. 0340', 'ficha'], ['Nueva cita', 'Acción', '#cita'], ['Nuevo paciente', 'Acción', 'paciente'], ['Cobrar consulta', 'Acción', '#cobrar'], ['Generar documento', 'Acción', 'documento'], ['Receta y órdenes', 'Acción', 'receta'], ['Cerrar caja', 'Acción', 'caja'], ['Agenda', 'Ir a', 'agenda'], ['Plan y facturación', 'Ir a', 'plan'], ['Configuración', 'Ir a', 'config'], ['Actividad', 'Ir a', 't:actividad'], ['Sesiones activas', 'Seguridad', '#gen:sesiones'], ['Importar pacientes desde Excel', 'Acción', '#gen:excel'], ['Comparar fotos', 'Ir a', 'comparar'], ['Estudio por revisar', 'Ir a', 'estudio']];
+    const gid = sheet && sheet.startsWith('gen:') ? sheet.slice(4) : null;
+    const GEN = {
+      cxc: ['Enviar recordatorios de saldo', 0, [['Pacientes con saldo', '4'], ['Canal', 'WhatsApp, o correo si no tiene'], ['Mensaje', 'Saldo pendiente · Ver detalle'], ['Cuota', '4 mensajes de 500']], [], 'Enviar 4 recordatorios', 'Recordatorios enviados'],
+      honorarios: ['Liquidar periodo', 0, [['Periodo', 'Noviembre 2026'], ['Médicos', '3'], ['A pagar', 'RD$268,400'], ['Retención ISR', 'RD$26,840']], [], 'Liquidar', 'Liquidación generada'],
+      informes: ['Generar 606 y 607', 0, [['Formato 606', 'Compras · 4 comprobantes'], ['Formato 607', 'Ventas · 138 comprobantes'], ['Periodo', 'Noviembre 2026']], [], 'Generar archivos', 'Formatos listos para subir a la DGII'],
+      excel: ['Importar pacientes desde Excel', 0, [['Paso 1', 'Descargue la plantilla'], ['Paso 2', 'Suba su archivo .xlsx'], ['Paso 3', 'Revise las columnas: nombre, teléfono, documento'], ['Detectados', '128 pacientes · 3 con teléfono repetido']], [], 'Importar 125 pacientes', '125 pacientes importados'],
+      qr: ['Dictar con mi celular', 1, [['Paciente', base.pac.n], ['El código', 'Sirve una vez y vence en 2 minutos'], ['Solo lo acepta', 'Su cuenta de médico']], [], 'Ya escaneé el código', ''],
+      f2064: ['Formulario 2064', 0, [['Medicamento controlado', 'No sale en la receta en PDF']], ['Número del formulario 2064', 'Medicamento', 'Cantidad'], 'Registrar', 'Formulario 2064 registrado en el expediente'],
+      sesiones: ['Sesiones activas', 0, [['Chrome en Windows · Santo Domingo', 'Ahora · este equipo'], ['Safari en iPhone · Santo Domingo', 'Hace 2 horas'], ['Edge en Windows · Santiago', 'Ayer']], [], 'Cerrar todas las demás', 'Se cerraron 2 sesiones'],
+    }[gid];
+    const gen = GEN ? { qr: !!GEN[1], lineas: GEN[2].map(([l, v], i) => ({ l, v, sep: i ? '#f0eeec' : 'transparent' })), campos: GEN[3].map((l) => ({ l, val: S.f['gen|' + gid + '|' + l] ?? '', set: setF('gen|' + gid + '|' + l) })), btn: GEN[4], run: () => (gid === 'qr' ? this.setState({ dict: 1, sheet: null }) : say(GEN[5])) } : { lineas: [], campos: [] };
+    const tipo = S.f.citaTipo ?? 'Consulta', metodo = S.metodo, ars = metodo === 'ARS' || metodo === 'Mixto';
+    return {
+      abrirCobrar: () => this.setState({ sheet: 'cobrar' }), cerrando: S.cerrando, cerrarCaja: () => this.setState({ cerrando: !S.cerrando }),
+      cajaKpis: [['Efectivo', 'RD$9,500'], ['Tarjeta', 'RD$6,000'], ['Transferencia', 'RD$2,500'], ['Cobertura de ARS', 'RD$4,000']].map(([l, v]) => ({ l, v })),
+      arqueo: { val: S.f.arqueo ?? '12500', set: setF('arqueo'), dif: (dif < 0 ? '−' : '') + 'RD$' + Math.abs(dif).toLocaleString('en-US'), fg: dif === 0 ? '#15803d' : '#b45309' }, confirmarCierre: () => { this.setState({ cerrando: false }); say('Caja cerrada. Se envió el cierre al dueño.'); },
+      movs: [['10:12', 'María Peña · consulta sin cita', 'Efectivo · recibo 0912', 'RD$2,500'], ['09:20', 'Ana Martínez · consulta general', 'ARS Humano cubre RD$1,000 · tarjeta', 'RD$2,500'], ['08:58', 'José Rodríguez · control', 'Transferencia · abono parcial', 'RD$1,000'], ['08:40', 'Paquete de 10 sesiones · Carla Díaz', 'Tarjeta · anticipo', 'RD$12,500'], ['07:55', 'Apertura de caja', 'Monto inicial', 'RD$3,000']].map(([h, t, sub, m]) => ({ h, t, sub, m })),
+      plan: { nombre: PL[0], linea: PL[1], btn: PL[2], estado: base.estado, run: () => say('Abriendo la página de pago…'), cancelar: () => say('Antes de cancelar: puede bajar de plan en vez de cancelar') },
+      paquetes: [['500 mensajes de WhatsApp', 'US$10'], ['50 estudios con IA', 'US$10'], ['200 resúmenes con IA', 'US$10'], ['100 consultas dictadas con IA', 'US$10'], ['50 GB de almacenamiento', 'US$5/mes']].map(([t, p]) => ({ t, p, run: () => say('Paquete comprado: ' + t) })),
+      recibos: [['25 oct 2026', 'US$49.95'], ['25 sep 2026', 'US$49.95'], ['25 ago 2026', 'US$49.95']].map(([f, m]) => ({ f, m, run: () => say('Recibo descargado') })), verLimite: () => this.setState({ sheet: 'limite' }),
+      gen, abrir2064: () => this.setState({ sheet: 'gen:f2064' }),
+      sh: { on: !!sheet, t: ST[sheet] || (GEN ? GEN[0] : ''), paleta: sheet === 'paleta', notif: sheet === 'notif', cita: sheet === 'cita', cobrar: sheet === 'cobrar', limite: sheet === 'limite', mas: sheet === 'mas', nuevo: sheet === 'nuevo', gen: !!GEN, align: movil ? 'flex-end' : 'center', pad: movil ? '0' : '24px', radius: movil ? '16px 16px 0 0' : '14px' },
+      stop: (e) => e.stopPropagation(), pq: S.f.pq ?? '', setPq: setF('pq'),
+      resultados: R.filter((r) => !pq || r[0].toLowerCase().includes(pq)).slice(0, 7).map(([t, sub, id]) => ({ t, sub, run: () => (id[0] === '#' ? this.setState({ sheet: id.slice(1) }) : go(id)) })),
+      avisos: [['Estudio interpretado con IA listo', 'Perfil lipídico de Pedro Núñez. Revise antes de compartir.', '9:40'], ['El paciente pidió cambiar', 'Pedro Núñez respondió «Necesito cambiar» a la cita de las 11:30.', '8:15'], ['Va por el 85% de estudios con IA', '51 de 60 este mes. Puede comprar un paquete.', 'Ayer'], ...(D ? [['Julio Almonte se unió a su clínica', 'Rol: contador. No ve datos clínicos.', 'Ayer']] : [])].map(([t, sub, h]) => ({ t, sub, h })),
+      citaPac: { val: S.f.citaPac ?? '', set: setF('citaPac') }, citaTipos: ['Consulta', 'Control', 'Sesión'].map((t) => ({ t, pick: () => this.setState({ f: { ...this.state.f, citaTipo: t } }), ...chipSt(tipo === t) })),
+      citaHoras: ['8:00', '10:30', '12:00', '14:00', '14:30', '15:00', '16:30', '17:00'].map((t) => ({ t, pick: () => this.setState({ hora: t }), ...chipSt(S.hora === t) })), agendarTxt: 'Agendar · miércoles 25, ' + S.hora, agendar: () => say('Cita agendada para las ' + S.hora + '. Confirmación enviada por WhatsApp.'),
+      cobro: { ars, lineas: [['Consulta de control', 'RD$1,500', 400], ['Descuento', 'RD$0', 400], ...(ars ? [['Cubre la ARS', '−RD$1,000', 400]] : []), ['Paga el paciente', ars ? 'RD$500' : 'RD$1,500', 600]].map(([l, v, w], i) => ({ l, v, w, sep: i ? '#f0eeec' : 'transparent' })),
+        metodos: ['Efectivo', 'Tarjeta', 'Transferencia', 'ARS', 'Mixto'].map((t) => ({ t, pick: () => this.setState({ metodo: t }), ...chipSt(metodo === t) })), btn: 'Registrar pago · ' + (ars ? 'RD$500' : 'RD$1,500'), pagar: () => say('Pago registrado. Recibo 0913 emitido.') },
+      toastB: movil ? '84px' : '28px',
+    };
+  }
+}
+</script>
+</body>
+</html>

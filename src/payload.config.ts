@@ -4,6 +4,9 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
+import { es } from '@payloadcms/translations/languages/es'
+import { en } from '@payloadcms/translations/languages/en'
+import { APP_NAME } from './lib/brand'
 
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
@@ -12,6 +15,11 @@ import { Appointments } from './collections/Appointments'
 import { Visits } from './collections/Visits'
 import { Invoices } from './collections/Invoices'
 import { AuditLogs } from './collections/AuditLogs'
+import { BookingRequests } from './collections/BookingRequests'
+import { Programs, ProgressPhotos } from './collections/Programs'
+import { UsageCounters } from './collections/UsageCounters'
+import { QuotaPacks } from './collections/QuotaPacks'
+import { BillingEvents, BillingReceipts, TrialClaims } from './collections/Billing'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -23,10 +31,15 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     meta: {
-      titleSuffix: '— Clinic Management',
+      titleSuffix: `— ${APP_NAME}`,
     },
   },
-  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs],
+  // Admin panel (super admin only) and server-side validation messages in Spanish.
+  i18n: {
+    supportedLanguages: { es, en },
+    fallbackLanguage: 'es',
+  },
+  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests, Programs, ProgressPhotos, UsageCounters, QuotaPacks, BillingEvents, BillingReceipts, TrialClaims],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -65,6 +78,18 @@ export default buildConfig({
       }
     } catch (err) {
       payload.logger.error({ err }, 'Failed to create uniq_active_slot index')
+    }
+
+    // One usage counter per (tenant, period, resource): recordUsage's $inc upsert
+    // relies on it to turn a racing double insert into a retryable E11000. Mongoose
+    // autoIndex creates it too, but not under hot reload — so make sure here.
+    try {
+      await payload.db.collections?.usageCounters?.collection.createIndex(
+        { tenant: 1, period: 1, resource: 1 },
+        { unique: true },
+      )
+    } catch (err) {
+      payload.logger.error({ err }, 'Failed to create usageCounters unique index')
     }
   },
 })

@@ -31,11 +31,11 @@ type ClinicInput = {
 /** Create a clinic + its owner atomically (spec §8.1) — both or neither. */
 export async function createClinic(input: ClinicInput): Promise<ActionResult<{ id: string }>> {
   const ctx = await superCtx()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { payload } = ctx
 
   if (!input.name || !input.phone || !input.ownerEmail || !input.ownerPassword || !input.ownerName) {
-    return { ok: false, code: 'VALIDATION', message: 'Clinic name, phone and owner details are required.' }
+    return { ok: false, code: 'VALIDATION', message: 'El nombre del consultorio, el teléfono y los datos del titular son obligatorios.' }
   }
 
   const txn = await payload.db.beginTransaction()
@@ -92,7 +92,7 @@ export async function resolveUpgradeRequest(
   decision: 'approve' | 'reject',
 ): Promise<ActionResult<null>> {
   const ctx = await superCtx()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   try {
     const tenant = await ctx.payload.findByID({
       collection: 'tenants',
@@ -102,7 +102,7 @@ export async function resolveUpgradeRequest(
     })
     const requested = tenant.upgradeRequest?.requestedPlan
     if (!requested) {
-      return { ok: false, code: 'VALIDATION', message: 'This clinic has no pending upgrade request.' }
+      return { ok: false, code: 'VALIDATION', message: 'Este consultorio no tiene una solicitud de mejora de plan pendiente.' }
     }
 
     await ctx.payload.update({
@@ -127,7 +127,7 @@ export async function setClinicStatus(
   status: 'active' | 'suspended',
 ): Promise<ActionResult<null>> {
   const ctx = await superCtx()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   try {
     // Old status decides whether this is a signup decision (pending → active/suspended)
     // or a plain suspend/reactivate of a live clinic.
@@ -152,7 +152,7 @@ export async function setClinicStatus(
         return {
           ok: false,
           code: 'VALIDATION',
-          message: "The owner hasn't verified their email yet — approval is on hold until they do.",
+          message: 'El titular aún no ha verificado su correo; la aprobación queda en espera hasta que lo haga.',
         }
       }
     }

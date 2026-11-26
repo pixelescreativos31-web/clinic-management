@@ -1,25 +1,21 @@
-// src/lib/fonts.ts — Matab typography (replaces Inter entirely)
+// src/lib/fonts.ts — medira typography (design handoff 2026-11, "Clinical Calm")
 //
-// Wire-up in src/app/(frontend)/layout.tsx:
-//
-//   import { figtree, bricolage } from '@/lib/fonts'
-//   <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
-//
-// globals.css already maps --font-figtree / --font-bricolage to
-// --font-sans / --font-display. Remove every import/reference to Inter.
+// Geist for everything, Geist Mono for folios, codes and shortcuts. Wired up in
+// src/app/(frontend)/layout.tsx; globals.css maps --font-geist / --font-geist-mono
+// to --font-sans / --font-display / --font-mono.
 
-import { Bricolage_Grotesque, Figtree } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 
-export const figtree = Figtree({
+export const geist = Geist({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
-  variable: '--font-figtree',
+  variable: '--font-geist',
   display: 'swap',
 })
 
-export const bricolage = Bricolage_Grotesque({
+export const geistMono = Geist_Mono({
   subsets: ['latin'],
-  weight: ['600', '700'],
-  variable: '--font-bricolage',
+  weight: ['400', '500'],
+  variable: '--font-geist-mono',
   display: 'swap',
 })

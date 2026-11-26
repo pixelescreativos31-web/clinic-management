@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { Card as ShadCard } from '@/components/ui/card'
-import type { AppointmentStatus } from '@/lib/constants'
+import { ROLE_LABELS, type AppointmentStatus, type Role } from '@/lib/constants'
 
 // App-level primitives, built on shadcn/ui and the Matab tokens. Screens import
 // from here so the design language stays in one place.
@@ -15,16 +15,17 @@ export { StatusBadge, AllergyBanner } from './ui-kit'
 
 /** Day Rail status bars share the ui-kit palette (strong tones). */
 export const STATUS_BAR: Record<AppointmentStatus, string> = {
-  scheduled: 'bg-primary',
+  scheduled: 'bg-line-3',
   'checked-in': 'bg-blue',
   completed: 'bg-green-strong',
   cancelled: 'bg-faint',
-  'no-show': 'bg-amber',
+  'no-show': 'bg-inv',
 }
 
 const ROLE_STYLES: Record<string, string> = {
   owner: 'bg-primary-soft text-primary',
   doctor: 'bg-blue-soft text-blue',
+  therapist: 'bg-amber-soft text-amber',
   receptionist: 'bg-muted text-muted-foreground',
   superAdmin: 'bg-primary-soft text-primary',
 }
@@ -33,11 +34,11 @@ export function RoleBadge({ role }: { role: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize whitespace-nowrap',
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
         ROLE_STYLES[role] ?? 'bg-muted text-muted-foreground',
       )}
     >
-      {role === 'superAdmin' ? 'Super admin' : role}
+      {ROLE_LABELS[role as Role] ?? role}
     </span>
   )
 }
@@ -179,14 +180,14 @@ export const btnDanger = buttonVariants({ variant: 'destructive' })
 export const btnIcon = buttonVariants({ variant: 'outline', size: 'icon' })
 
 export const inputClass = cn(
-  'h-10 w-full min-w-0 rounded-md border border-input bg-card px-3 py-1 text-sm transition-colors duration-150 outline-none',
+  'h-11 w-full min-w-0 rounded-[10px] border border-input bg-card px-3 py-1 text-base md:text-[15px] transition-colors duration-150 outline-none',
   'placeholder:text-muted-foreground',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
   'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
 )
 
 export const textareaClass = cn(
-  'w-full rounded-md border border-input bg-card px-3 py-2 text-sm transition-colors duration-150 outline-none',
+  'w-full rounded-[10px] border border-input bg-card px-3 py-2 text-base md:text-[15px] transition-colors duration-150 outline-none',
   'placeholder:text-muted-foreground',
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
   'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
@@ -221,7 +222,7 @@ export function Th({ children, className = '' }: { children?: React.ReactNode; c
   return (
     <th
       className={cn(
-        'h-10 px-3 text-start align-middle text-[11px] font-medium tracking-wide uppercase text-muted-foreground',
+        'h-10 px-3 text-start align-middle text-xs font-medium text-muted-foreground',
         className,
       )}
     >

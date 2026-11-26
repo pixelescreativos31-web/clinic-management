@@ -10,7 +10,7 @@ import { startOfDayInTz } from '@/lib/reports'
 // the secret, and the digest goes only to tenants whose local clock reads 07:00 —
 // one hourly cron serving every timezone. A failing tenant never breaks the loop.
 
-const KHI = 'Asia/Karachi'
+const KHI = 'Europe/Madrid' // (was Asia/Karachi; only listed timezones validate)
 const NYC = 'America/New_York'
 
 /** An instant at HH:30 tomorrow on the given timezone's wall clock. */

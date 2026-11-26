@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9ecec;color:#15201e;font-family:'DM Sans',ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:#0d6e60;text-decoration:none}a:hover{color:#0a584d}
+*{box-sizing:border-box}
+input,textarea,button,select{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#9aa4a4}
+::-webkit-scrollbar{display:none}
+@keyframes emr-pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:{{ outerPad }}">
+<div data-screen-label="Agendar público" style="position:relative;width:100%;max-width:{{ shellW }};height:{{ shellH }};background:#f4f6f6;border-radius:{{ shellR }};border:{{ shellBorder }};box-shadow:{{ shellShadow }};overflow:hidden;display:flex;flex-direction:column">
+
+  <header style="background:#fff;border-bottom:1px solid #e3e7e7;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <span style="width:26px;height:26px;border-radius:7px;background:#0d6e60;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">+</span>
+    <span style="font-size:13px;color:#6b7577">Agenda en línea · <strong style="color:#15201e;font-weight:600">Consultorio Dra. Jiménez</strong></span>
+  </header>
+
+  <div style="flex:1;overflow:auto;padding:{{ contentPad }};scrollbar-width:none">
+  <div style="max-width:{{ innerMax }};margin:0 auto;display:grid;gap:14px;grid-template-columns:{{ cols }};align-items:start">
+
+    <!-- DOCTOR CARD -->
+    <div style="min-width:0;background:#fff;border:1px solid #e3e7e7;border-radius:16px;overflow:hidden">
+      <div style="height:6px;background:#0d6e60"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="width:64px;height:64px;border-radius:999px;background:#e6f1ee;color:#0d6e60;display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:20px;flex-shrink:0;overflow:hidden"><img src="public/images/hero-doctor2.jpg" alt="" style="width:100%;height:100%;object-fit:cover;object-position:50% 20%"></span>
+          <span style="min-width:0"><span style="display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;line-height:1.1">Dra. Ana Jiménez</span><span style="display:block;font-size:13px;color:#6b7577;margin-top:4px">Nutrición clínica · Exequatur 1234-56</span></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:20px;color:#0d6e60;line-height:1">location_on</span><span>Plaza Internacional, local 24, Santiago</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:20px;color:#0d6e60;line-height:1">schedule</span><span>Lun a vie · 9:00 a. m. – 5:00 p. m.</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:20px;color:#0d6e60;line-height:1">payments</span><span>Consulta RD$ 2,500 · Seguimiento RD$ 1,800</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOKING -->
+    <div style="min-width:0;display:flex;flex-direction:column;gap:12px">
+
+      <sc-if value="{{ notDone }}" hint-placeholder-val="{{ true }}">
+      <!-- progress -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="height:4px;border-radius:999px;background:{{ st.bar }}"></span><span style="font-size:11px;font-weight:600;color:{{ st.fg }}">{{ st.label }}</span></div>
+        </sc-for>
+      </div>
+
+      <!-- STEP 1: service + date + time -->
+      <sc-if value="{{ step1 }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid #e3e7e7;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:14px;font-weight:600">¿Qué tipo de cita?</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ services }}" as="sv" hint-placeholder-count="2">
+              <button onClick="{{ sv.pick }}" style="all:unset;cursor:pointer;padding:12px;border-radius:12px;border:1.5px solid {{ sv.border }};background:{{ sv.bg }};display:flex;flex-direction:column;gap:2px;min-height:64px;box-sizing:border-box"><span style="font-size:14px;font-weight:600">{{ sv.label }}</span><span style="font-size:12px;color:#6b7577">{{ sv.meta }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e3e7e7;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600">Elija el día</span><span style="font-size:12px;color:#6b7577">Octubre 2026</span></div>
+          <div style="display:flex;gap:6px;overflow:auto;scrollbar-width:none;margin:0 -4px;padding:0 4px;min-width:0;max-width:100%">
+            <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+              <button onClick="{{ d.pick }}" style="all:unset;cursor:{{ d.cursor }};flex:0 0 auto;width:54px;padding:10px 0;border-radius:12px;text-align:center;background:{{ d.bg }};color:{{ d.fg }};border:1px solid {{ d.border }};opacity:{{ d.op }}"><span style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.8">{{ d.dow }}</span><span style="display:block;font-size:18px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums">{{ d.num }}</span></button>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600">Horarios disponibles</span><span style="font-size:12px;color:#6b7577">{{ slotCount }}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px">
+            <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="8">
+              <button onClick="{{ sl.pick }}" style="all:unset;cursor:pointer;text-align:center;padding:12px 4px;border-radius:10px;font-size:14px;font-weight:600;background:{{ sl.bg }};color:{{ sl.fg }};border:1px solid {{ sl.border }};font-variant-numeric:tabular-nums;min-height:46px;box-sizing:border-box">{{ sl.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <button onClick="{{ toStep2 }}" style="all:unset;cursor:pointer;text-align:center;padding:15px;border-radius:12px;background:{{ ctaBg }};color:{{ ctaFg }};font-size:15px;font-weight:600;min-height:52px;box-sizing:border-box">{{ cta1 }}</button>
+      </sc-if>
+
+      <!-- STEP 2: patient data -->
+      <sc-if value="{{ step2 }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #e3e7e7;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#e6f1ee;color:#0d6e60;font-size:13px;font-weight:600"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">event_available</span>{{ summary }}<button onClick="{{ toStep1 }}" style="all:unset;cursor:pointer;margin-left:auto;font-size:12px;text-decoration:underline">Cambiar</button></div>
+          <label style="font-size:13px;font-weight:600;margin-top:4px">Nombre completo</label>
+          <input value="{{ name }}" onChange="{{ setName }}" placeholder="Como aparece en su cédula" autoComplete="name" style="width:100%;height:50px;border-radius:12px;border:1px solid #e3e7e7;padding:0 14px;font-size:16px;outline:none;background:#fafbfb">
+          <label style="font-size:13px;font-weight:600;margin-top:4px">WhatsApp</label>
+          <input value="{{ phone }}" onChange="{{ setPhone }}" placeholder="809-000-0000" inputMode="tel" autoComplete="tel" style="width:100%;height:50px;border-radius:12px;border:1px solid #e3e7e7;padding:0 14px;font-size:16px;outline:none;background:#fafbfb;font-variant-numeric:tabular-nums">
+          <span style="font-size:12px;color:#6b7577;margin-top:-4px">Le enviaremos la confirmación y un recordatorio por este número.</span>
+          <label style="font-size:13px;font-weight:600;margin-top:4px">Motivo <span style="font-weight:400;color:#6b7577">(opcional)</span></label>
+          <textarea value="{{ reason }}" onChange="{{ setReason }}" rows="2" placeholder="ej. Quiero bajar de peso antes de diciembre" style="width:100%;border-radius:12px;border:1px solid #e3e7e7;padding:12px 14px;font-size:15px;resize:none;outline:none;background:#fafbfb"></textarea>
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;margin-top:6px;min-height:44px"><input type="checkbox" checked="{{ firstTime }}" onChange="{{ toggleFirst }}" style="width:20px;height:20px;accent-color:#0d6e60">Es mi primera vez con la Dra. Jiménez</label>
+        </div>
+        <button onClick="{{ confirm }}" style="all:unset;cursor:pointer;text-align:center;padding:15px;border-radius:12px;background:{{ cta2Bg }};color:{{ cta2Fg }};font-size:15px;font-weight:600;min-height:52px;box-sizing:border-box">Confirmar cita</button>
+        <span style="font-size:12px;color:#6b7577;text-align:center">Sin pago en línea. Paga en el consultorio.</span>
+      </sc-if>
+      </sc-if>
+
+      <!-- STEP 3: confirmed -->
+      <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #e3e7e7;border-radius:16px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;animation:emr-pop .3s ease-out">
+          <span style="width:64px;height:64px;border-radius:999px;background:#e8f4ec;color:#1a7a50;display:flex;align-items:center;justify-content:center"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:36px;line-height:1;font-variation-settings:'FILL' 1">check_circle</span></span>
+          <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:24px;letter-spacing:-.02em;line-height:1.1">Cita confirmada</span>
+          <span style="font-size:15px;color:#6b7577">{{ doneLine }}</span>
+          <div style="width:100%;margin-top:6px;border:1px solid #e3e7e7;border-radius:12px;overflow:hidden;text-align:left">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Paciente</span><span style="font-weight:600">{{ name }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Tipo</span><span style="font-weight:600">{{ serviceLabel }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid #eef1f1;font-size:14px"><span style="color:#6b7577">Lugar</span><span style="font-weight:600;text-align:right">Plaza Internacional, local 24</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:11px 14px;font-size:14px"><span style="color:#6b7577">Código</span><span style="font-weight:600;font-variant-numeric:tabular-nums">CITA-7F3K</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:4px">
+            <button onClick="{{ calToast }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:10px;border:1px solid #e3e7e7;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">calendar_add_on</span>Añadir al calendario</button>
+            <button onClick="{{ waToast }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:10px;background:#0d6e60;color:#fff;font-size:14px;font-weight:600;min-height:46px;box-sizing:border-box"><span aria-hidden="true" style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">chat</span>Ver en WhatsApp</button>
+          </div>
+          <button onClick="{{ reset }}" style="all:unset;cursor:pointer;font-size:13px;color:#6b7577;text-decoration:underline;padding:8px">Necesito cambiar o cancelar</button>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+  </div>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:30;background:#15201e;color:#fff;border-radius:999px;padding:10px 16px;font-size:13px;font-weight:500;white-space:nowrap;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)">{{ toast }}</div>
+  </sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;vista&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Móvil&quot;,&quot;Escritorio&quot;],&quot;default&quot;:&quot;Móvil&quot;,&quot;tsType&quot;:&quot;'Móvil' | 'Escritorio'&quot;}}">
+class Component extends DCLogic {
+  state = { step: 1, service: 'Primera consulta', day: 0, slot: '', name: '', phone: '', reason: '', firstTime: true, toast: '' };
+  DAYS = [['JUE', 8, true], ['VIE', 9, true], ['SÁB', 10, false], ['DOM', 11, false], ['LUN', 12, true], ['MAR', 13, true], ['MIÉ', 14, true], ['JUE', 15, true], ['VIE', 16, true]];
+  SLOTS = { 0: ['11:30', '12:00', '2:00', '2:30', '3:30', '4:00'], 1: ['9:00', '9:30', '10:30', '11:00', '2:00', '3:00', '4:30'], 4: ['9:00', '10:00', '10:30', '11:30', '2:30', '3:00', '4:00', '4:30'], 5: ['9:30', '11:00', '3:00'], 6: ['9:00', '9:30', '10:00', '2:00', '2:30', '4:00'], 7: ['10:00', '11:00', '2:00', '3:30'], 8: ['9:00', '9:30', '1:00', '4:00'] };
+  say(t) { this.setState({ toast: t }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: '' }), 2400); }
+  renderVals() {
+    const s = this.state;
+    const mobile = (this.props.vista ?? 'Móvil') === 'Móvil';
+    const pill = (on, onBg = '#0d6e60') => on ? { bg: onBg, fg: '#fff', border: onBg } : { bg: '#fff', fg: '#15201e', border: '#e3e7e7' };
+    const slots = (this.SLOTS[s.day] || []).map(label => ({ label, ...pill(s.slot === label, '#15201e'), pick: () => this.setState({ slot: label }) }));
+    const d = this.DAYS[s.day];
+    const dayLabel = `${d[0].charAt(0) + d[0].slice(1).toLowerCase()} ${d[1]} de octubre`;
+    const ready1 = !!s.slot, ready2 = s.name.trim().length > 2 && s.phone.replace(/\D/g, '').length >= 10;
+    return {
+      outerPad: mobile ? '24px 12px' : '0', shellW: mobile ? '390px' : '100%', shellH: mobile ? '844px' : '100vh', shellR: mobile ? '40px' : '0', shellBorder: mobile ? '10px solid #15201e' : 'none', shellShadow: mobile ? '0 40px 80px -30px rgba(0,0,0,.5)' : 'none',
+      contentPad: mobile ? '14px 14px 32px' : '32px 24px 48px', innerMax: mobile ? 'none' : '960px', cols: mobile ? 'minmax(0,1fr)' : '340px minmax(0,1fr)',
+      notDone: s.step < 3, done: s.step === 3, step1: s.step === 1, step2: s.step === 2,
+      steps: ['Fecha y hora', 'Sus datos', 'Confirmación'].map((label, i) => ({ label, bar: i < s.step ? '#0d6e60' : '#dfe4e4', fg: i + 1 === s.step ? '#15201e' : '#6b7577' })),
+      services: [['Primera consulta', '45 min · RD$ 2,500'], ['Seguimiento', '30 min · RD$ 1,800']].map(([label, meta]) => ({ label, meta, bg: s.service === label ? '#e6f1ee' : '#fff', border: s.service === label ? '#0d6e60' : '#e3e7e7', pick: () => this.setState({ service: label }) })),
+      days: this.DAYS.map(([dow, num, open], i) => ({ dow, num, ...pill(s.day === i, '#15201e'), op: open ? 1 : .4, cursor: open ? 'pointer' : 'not-allowed', pick: () => open && this.setState({ day: i, slot: '' }) })),
+      slots, slotCount: `${slots.length} libres`,
+      cta1: ready1 ? `Continuar · ${dayLabel}, ${s.slot}` : 'Elija un horario', ctaBg: ready1 ? '#0d6e60' : '#dfe4e4', ctaFg: ready1 ? '#fff' : '#6b7577',
+      toStep2: () => ready1 ? this.setState({ step: 2 }) : this.say('Seleccione un horario disponible'), toStep1: () => this.setState({ step: 1 }),
+      summary: `${s.service} · ${dayLabel}, ${s.slot}`,
+      name: s.name, phone: s.phone, reason: s.reason, firstTime: s.firstTime,
+      setName: e => this.setState({ name: e.target.value }), setPhone: e => this.setState({ phone: e.target.value }), setReason: e => this.setState({ reason: e.target.value }), toggleFirst: () => this.setState(st => ({ firstTime: !st.firstTime })),
+      cta2Bg: ready2 ? '#0d6e60' : '#dfe4e4', cta2Fg: ready2 ? '#fff' : '#6b7577',
+      confirm: () => ready2 ? this.setState({ step: 3 }) : this.say('Complete nombre y WhatsApp'),
+      doneLine: `${dayLabel} a las ${s.slot} con la Dra. Ana Jiménez. Le enviamos la confirmación a ${s.phone}.`, serviceLabel: s.service,
+      calToast: () => this.say('Descargando evento .ics'), waToast: () => this.say('Abriendo WhatsApp…'),
+      reset: () => this.setState({ step: 1, slot: '' }),
+      hasToast: !!s.toast, toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

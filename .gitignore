@@ -57,3 +57,4 @@ CLAUDE.md
 
 # Demo media — keep the lightweight mp4 + gif, ignore the heavy source webm
 demo-videos/*.webm
+/backups

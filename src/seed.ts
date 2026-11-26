@@ -11,24 +11,24 @@ import 'dotenv/config'
 import { getPayload, type Payload } from 'payload'
 import config from './payload.config'
 import type { Plan } from './lib/plans'
+import { wallTimeToUTC } from './lib/reports'
 
 const PASSWORD = 'password123'
 
-const FIRST_NAMES = [
-  'Bilal', 'Ayesha', 'Hamza', 'Fatima', 'Usman', 'Zainab', 'Ali', 'Maryam',
-  'Hassan', 'Sana', 'Imran', 'Hira', 'Bilqis', 'Tariq', 'Nida', 'Saad',
-  'Rabia', 'Faisal', 'Amna', 'Kamran', 'Sadia', 'Noman', 'Iqra', 'Waleed',
-  'Mahnoor',
-]
+const FIRST_NAMES = {
+  female: ['María', 'Ana', 'Carmen', 'Rosa', 'Altagracia', 'Yokasta', 'Mercedes', 'Yolanda', 'Esperanza', 'Josefina', 'Margarita', 'Isabel', 'Lucía'],
+  male: ['José', 'Luis', 'Juan', 'Pedro', 'Miguel', 'Rafael', 'Francisco', 'Ramón', 'Manuel', 'Julio', 'Félix', 'Héctor'],
+} as const
 const LAST_NAMES = [
-  'Ahmed', 'Khan', 'Malik', 'Hussain', 'Raza', 'Sheikh', 'Butt', 'Qureshi',
-  'Iqbal', 'Farooq', 'Aslam', 'Javed', 'Nawaz', 'Siddiqui', 'Chaudhry',
+  'Rodríguez', 'Pérez', 'Martínez', 'Santos', 'Peña', 'Reyes', 'Jiménez', 'Díaz',
+  'Núñez', 'Almonte', 'Batista', 'Castillo', 'Guzmán', 'Vásquez', 'Rosario',
 ]
 const REASONS = [
-  'Fever', 'Follow-up', 'Cough & cold', 'Blood pressure check', 'Headache',
-  'Diabetes review', 'Skin rash', 'Stomach pain', 'Vaccination', 'General checkup',
+  'Fiebre', 'Seguimiento', 'Tos y gripe', 'Control de presión', 'Dolor de cabeza',
+  'Control de diabetes', 'Erupción en la piel', 'Dolor abdominal', 'Vacunación', 'Chequeo general',
 ]
-const ALLERGIES = ['Penicillin', 'Sulfa drugs', 'Aspirin', 'Pollen']
+const ALLERGIES = ['Penicilina', 'Sulfas', 'Aspirina', 'Polen']
+const INSURERS = ['ARS Humano', 'ARS Universal', 'ARS Palic', 'SeNaSa', 'ARS Mapfre Salud']
 const BLOOD = ['A+', 'B+', 'O+', 'AB+', 'A-', 'O-'] as const
 const GENDERS = ['male', 'female'] as const
 
@@ -40,6 +40,13 @@ const rnd = () => {
 }
 const pick = <T>(arr: readonly T[]): T => arr[Math.floor(rnd() * arr.length)]
 const int = (min: number, max: number) => min + Math.floor(rnd() * (max - min + 1))
+
+/** Local calendar date (YYYY-MM-DD) of a Date built with setDate on startOfToday. */
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/** Wall-clock time in the clinic's timezone → UTC Date (so demo hours look right). */
+const at = (tz: string, day: Date, h: number, m: number) =>
+  wallTimeToUTC(tz, ymd(day), `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
 
 const startOfToday = () => {
   const d = new Date()
@@ -60,6 +67,12 @@ type DoctorSpec = {
 type ClinicSpec = {
   name: string
   slug: string
+  /** Demo e-mail domain key: owner@<key>.app, asistente@<key>.app, doctorN@<key>.app */
+  emailKey: string
+  practiceType: 'individual' | 'clinic'
+  /** Independent practice: the owner IS the doctor (doctors[0] describes them). */
+  ownerPractises?: boolean
+  ownerEmail: string
   city: string
   country: string
   phone: string
@@ -71,45 +84,41 @@ type ClinicSpec = {
 
 const CLINICS: ClinicSpec[] = [
   {
-    name: 'City Care Clinic',
-    slug: 'city-care-clinic',
-    city: 'Rawalpindi',
-    country: 'Pakistan',
-    phone: '+92512345678',
-    currency: 'PKR',
-    timezone: 'Asia/Karachi',
-    plan: 'clinic', // 5 doctors — a paying clinic sitting at its plan ceiling
+    // The MVP persona: one independent doctor + her assistant.
+    name: 'Consultorio Dra. Carmen Rosario',
+    slug: 'consultorio-dra-carmen-rosario',
+    emailKey: 'demo',
+    practiceType: 'individual',
+    ownerPractises: true,
+    ownerEmail: 'doctora@demo.app',
+    city: 'Santo Domingo',
+    country: 'República Dominicana',
+    phone: '+18095551234',
+    currency: 'DOP',
+    timezone: 'America/Santo_Domingo',
+    plan: 'pro',
     doctors: [
-      // Different availability patterns, mirroring a real clinic:
-      { name: 'Dr. Hira Saleem', specialty: 'General Physician', fee: 1500, type: 'regular', days: ['sun','mon','tue','wed','thu','fri','sat'], from: '11:00', to: '13:00' },
-      { name: 'Dr. Asad Mehmood', specialty: 'Pediatrics', fee: 2000, type: 'regular', days: ['sun','mon','tue','wed','thu','fri','sat'], from: '14:00', to: '16:00' },
-      { name: 'Dr. Bilal Khan', specialty: 'Dermatology', fee: 1800, type: 'regular', days: ['mon','wed','fri'], from: '16:00', to: '18:00' },
-      { name: 'Dr. Sana Tariq', specialty: 'Cardiology', fee: 2500, type: 'onCall' },
-      { name: 'Dr. Imran Qureshi', specialty: 'Surgery', fee: 5000, type: 'byAppointment' },
+      { name: 'Dra. Carmen Rosario', specialty: 'Medicina interna', fee: 2500, type: 'regular', days: ['mon','tue','wed','thu','fri','sat'], from: '08:00', to: '17:00' },
     ],
   },
   {
-    name: 'Shifa Family Clinic',
-    slug: 'shifa-family-clinic',
-    city: 'Lahore',
-    country: 'Pakistan',
-    phone: '+92423456789',
-    currency: 'PKR',
-    timezone: 'Asia/Karachi',
-    plan: 'free', // single doctor on the free tier
-    doctors: [{ name: 'Dr. Nadia Hashmi', specialty: 'Family Medicine', fee: 1200 }],
-  },
-  {
-    // Market-agnostic flex: a Dubai clinic proves currency/timezone are settings.
-    name: 'Crescent Clinic',
-    slug: 'crescent-clinic',
-    city: 'Dubai',
-    country: 'United Arab Emirates',
-    phone: '+97143456789',
-    currency: 'AED',
-    timezone: 'Asia/Dubai',
-    plan: 'free', // single doctor on the free tier
-    doctors: [{ name: 'Dr. Omar Farid', specialty: 'General Physician', fee: 150 }],
+    // Growth path: a small clinic with several doctors (clinic mode).
+    name: 'Centro Médico Los Prados',
+    slug: 'centro-medico-los-prados',
+    emailKey: 'clinica',
+    practiceType: 'clinic',
+    ownerEmail: 'owner@clinica.app',
+    city: 'Santiago de los Caballeros',
+    country: 'República Dominicana',
+    phone: '+18095557890',
+    currency: 'DOP',
+    timezone: 'America/Santo_Domingo',
+    plan: 'clinic',
+    doctors: [
+      { name: 'Dr. Luis Almonte', specialty: 'Medicina general', fee: 1500, type: 'regular', days: ['mon','tue','wed','thu','fri'], from: '08:00', to: '12:00' },
+      { name: 'Dra. Ana Batista', specialty: 'Pediatría', fee: 2000, type: 'regular', days: ['mon','wed','fri'], from: '14:00', to: '18:00' },
+      { name: 'Dr. Rafael Guzmán', specialty: 'Cardiología', fee: 3500, type: 'onCall' },
+    ],
   },
 ]
 
@@ -121,15 +130,15 @@ async function wipe(payload: Payload) {
 }
 
 const DIAGNOSES = [
-  'Acute pharyngitis', 'Viral fever', 'Hypertension', 'Type 2 diabetes review',
-  'Migraine', 'Gastroenteritis', 'Allergic rhinitis', 'Lower back pain',
+  'Faringitis aguda', 'Síndrome febril viral', 'Hipertensión arterial', 'Diabetes mellitus tipo 2 en control',
+  'Migraña', 'Gastroenteritis aguda', 'Rinitis alérgica', 'Lumbalgia mecánica',
 ]
 const MEDICINES = [
-  { medicine: 'Amoxicillin', dosage: '500mg', frequency: 'tds', durationDays: 5, instructions: 'After meals' },
-  { medicine: 'Paracetamol', dosage: '500mg', frequency: 'qid', durationDays: 3, instructions: 'If fever' },
-  { medicine: 'Cetirizine', dosage: '10mg', frequency: 'od', durationDays: 7, instructions: 'At night' },
-  { medicine: 'Omeprazole', dosage: '20mg', frequency: 'od', durationDays: 14, instructions: 'Before breakfast' },
-  { medicine: 'Metformin', dosage: '500mg', frequency: 'bd', durationDays: 30, instructions: 'With food' },
+  { medicine: 'Amoxicilina', dosage: '500 mg', frequency: 'tds', durationDays: 7, quantity: '21 cápsulas', instructions: 'Después de las comidas' },
+  { medicine: 'Acetaminofén', dosage: '500 mg', frequency: 'qid', durationDays: 3, quantity: '12 tabletas', instructions: 'Si hay fiebre o dolor' },
+  { medicine: 'Loratadina', dosage: '10 mg', frequency: 'od', durationDays: 7, quantity: '7 tabletas', instructions: 'En la noche' },
+  { medicine: 'Omeprazol', dosage: '20 mg', frequency: 'od', durationDays: 14, quantity: '14 cápsulas', instructions: 'En ayunas' },
+  { medicine: 'Metformina', dosage: '850 mg', frequency: 'bd', durationDays: 30, quantity: '60 tabletas', instructions: 'Con las comidas' },
 ] as const
 
 export async function seed(payload: Payload) {
@@ -141,7 +150,7 @@ export async function seed(payload: Payload) {
     collection: 'users',
     overrideAccess: true,
     data: {
-      name: 'Platform Admin',
+      name: 'Administrador de plataforma',
       email: 'super@clinic.app',
       password: PASSWORD,
       role: 'superAdmin',
@@ -162,39 +171,65 @@ export async function seed(payload: Payload) {
         country: clinic.country,
         status: 'active',
         plan: clinic.plan,
+        practiceType: clinic.practiceType,
         onboardingSource: 'manual',
         settings: {
-          appointmentDurationMins: 15,
-          openTime: '09:00',
-          closeTime: '21:00',
+          appointmentDurationMins: 20,
+          openTime: '08:00',
+          closeTime: '18:00',
           currency: clinic.currency as never,
           timezone: clinic.timezone as never,
         },
       },
     })
 
-    const emailKey = clinic.slug.split('-')[0]
+    const emailKey = clinic.emailKey
+    const ALL = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+    const doctorObjs: { id: string; type: string; fromH: number; toH: number; days: string[]; fee: number }[] = []
 
-    // Owner
-    await payload.create({
+    // Owner — in an independent practice the owner is also the (only) doctor.
+    const lead = clinic.ownerPractises ? clinic.doctors[0] : null
+    const owner = await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
-        name: `Owner — ${clinic.name}`,
-        email: `owner@${emailKey}.app`,
+        name: lead ? lead.name : `Administración — ${clinic.name}`,
+        email: clinic.ownerEmail,
         password: PASSWORD,
         role: 'owner',
         tenant: tenant.id,
+        ...(lead
+          ? {
+              practitioner: true,
+              specialty: lead.specialty,
+              licenseNumber: '12345-06',
+              consultationFee: lead.fee,
+              availabilityType: (lead.type || 'regular') as never,
+              availableDays: (lead.days || ALL) as never,
+              availableFrom: lead.from || '09:00',
+              availableTo: lead.to || '17:00',
+            }
+          : {}),
       },
     })
+    if (lead) {
+      doctorObjs.push({
+        id: String(owner.id),
+        type: lead.type || 'regular',
+        fromH: parseInt((lead.from || '09:00').split(':')[0], 10),
+        toH: parseInt((lead.to || '17:00').split(':')[0], 10),
+        days: lead.days || ALL,
+        fee: lead.fee,
+      })
+    }
 
-    // Receptionist
+    // Assistant (receptionist role)
     await payload.create({
       collection: 'users',
       overrideAccess: true,
       data: {
-        name: 'Reception Desk',
-        email: `reception@${emailKey}.app`,
+        name: 'Yokasta Peña (asistente)',
+        email: `asistente@${emailKey}.app`,
         password: PASSWORD,
         role: 'receptionist',
         tenant: tenant.id,
@@ -202,9 +237,7 @@ export async function seed(payload: Payload) {
     })
 
     // Doctors (with varied availability patterns)
-    const ALL = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-    const doctorObjs: { id: string; type: string; fromH: number; toH: number; days: string[]; fee: number }[] = []
-    for (let i = 0; i < clinic.doctors.length; i++) {
+    for (let i = lead ? 1 : 0; i < clinic.doctors.length; i++) {
       const d = clinic.doctors[i]
       const type = d.type || 'regular'
       const doc = await payload.create({
@@ -218,6 +251,7 @@ export async function seed(payload: Payload) {
           tenant: tenant.id,
           active: true,
           specialty: d.specialty,
+          licenseNumber: `${10000 + i * 137}-0${i + 1}`,
           consultationFee: d.fee,
           availabilityType: type as never,
           availableDays: (d.days || ALL) as never,
@@ -237,21 +271,25 @@ export async function seed(payload: Payload) {
 
     // Patients (~20). A couple share a phone number to demo the dedupe warning.
     const patientIds: string[] = []
-    const sharedPhone = `+9230012${int(10000, 99999)}`
+    const sharedPhone = `+1809${int(2000000, 9999999)}`
     for (let p = 0; p < 20; p++) {
       const gender = pick(GENDERS)
-      const phone = p < 2 ? sharedPhone : `+9230${int(10, 99)}${int(1000000, 9999999)}`
+      const phone = p < 2 ? sharedPhone : `+1${pick(['809', '829', '849'])}${int(2000000, 9999999)}`
       const patient = await payload.create({
         collection: 'patients',
         overrideAccess: true,
         data: {
           tenant: tenant.id,
-          name: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
+          name: `${pick(FIRST_NAMES[gender])} ${pick(LAST_NAMES)}`,
           phone,
           gender,
           ageYears: int(3, 78),
+          documentType: 'cedula',
+          documentNumber: `${int(1, 402)}`.padStart(3, '0') + `${int(1000000, 9999999)}${int(0, 9)}`,
           bloodGroup: pick(BLOOD),
           allergies: rnd() < 0.18 ? pick(ALLERGIES) : undefined,
+          insurance: rnd() < 0.7 ? { provider: pick(INSURERS), affiliateNumber: String(int(10000000, 99999999)) } : undefined,
+          history: rnd() < 0.4 ? { chronicConditions: pick(['Hipertensión arterial', 'Diabetes tipo 2', 'Asma']), medications: pick(['Losartán 50 mg diario', 'Metformina 850 mg c/12h', 'Salbutamol inhalado SOS']) } : undefined,
         },
       })
       patientIds.push(String(patient.id))
@@ -283,8 +321,7 @@ export async function seed(payload: Payload) {
           while (used.has(hour) && guard++ < 10) hour = pick(hours)
           used.add(hour)
 
-          const start = new Date(probeDate)
-          start.setHours(hour, rnd() < 0.5 ? 0 : 30, 0, 0)
+          const start = at(clinic.timezone, probeDate, hour, rnd() < 0.5 ? 0 : 30)
 
           let status: string
           if (dayOffset < 0) status = pick(['completed', 'completed', 'completed', 'no-show', 'cancelled'])
@@ -301,10 +338,10 @@ export async function seed(payload: Payload) {
                 patient: patientId,
                 doctor: doc.id,
                 start: start.toISOString(),
-                durationMins: 15,
+                durationMins: 20,
                 reason: pick(REASONS),
                 status: status as never,
-                cancellationReason: status === 'cancelled' ? 'Patient rescheduled' : undefined,
+                cancellationReason: status === 'cancelled' ? 'El paciente reprogramó' : undefined,
               },
             })
             made++
@@ -318,12 +355,12 @@ export async function seed(payload: Payload) {
       }
     }
 
-    // A few walk-ins today (first-come-first-serve) to demo token numbers.
-    const regularToday = doctorObjs.find((d) => d.type === 'regular')
+    // A few walk-ins today (first-come-first-serve) to demo token numbers — only
+    // when today is one of that doctor's working days.
+    const regularToday = doctorObjs.find((d) => d.type === 'regular' && d.days.includes(dayCode(today)))
     if (regularToday) {
       for (let w = 0; w < 3; w++) {
-        const start = new Date(today)
-        start.setHours(regularToday.fromH, 10 + w * 5, 0, 0)
+        const start = at(clinic.timezone, today, regularToday.fromH, 10 + w * 5)
         try {
           await payload.create({
             collection: 'appointments',
@@ -333,8 +370,8 @@ export async function seed(payload: Payload) {
               patient: pick(patientIds),
               doctor: regularToday.id,
               start: start.toISOString(),
-              durationMins: 15,
-              reason: 'Walk-in',
+              durationMins: 20,
+              reason: 'Sin cita',
               status: 'checked-in' as never,
               isWalkIn: true,
             },
@@ -360,12 +397,17 @@ export async function seed(payload: Payload) {
             tenant: tenant.id,
             appointment: ca.id,
             visitDate: new Date().toISOString(),
+            chiefComplaint: pick(REASONS),
             diagnosis: pick(DIAGNOSES),
+            treatmentPlan: 'Reposo relativo, hidratación abundante. Volver si presenta signos de alarma.',
             vitals: {
               bpSystolic: int(110, 135),
               bpDiastolic: int(70, 90),
               temperatureC: 36 + Math.round(rnd() * 20) / 10,
               pulse: int(64, 92),
+              weightKg: int(55, 95),
+              heightCm: int(150, 185),
+              oxygenSaturation: int(95, 99),
             },
             prescription: [pick(MEDICINES), ...(rnd() < 0.5 ? [pick(MEDICINES)] : [])] as never,
           } as never,
@@ -388,7 +430,7 @@ export async function seed(payload: Payload) {
               tenant: tenant.id,
               visit: String(visit.id),
               patient: ca.patientId,
-              lineItems: [{ description: 'Consultation', quantity: 1, unitAmount: ca.fee }],
+              lineItems: [{ description: 'Consulta', quantity: 1, unitAmount: ca.fee }],
               payments,
             } as never,
           })
@@ -400,13 +442,13 @@ export async function seed(payload: Payload) {
     }
 
     payload.logger.info(
-      `  ✓ ${clinic.name}: ${doctorObjs.length} doctors, 20 patients, ~${made} appointments, ${visitsMade} visits, ${invoicesMade} invoices`,
+      `  ✓ ${clinic.name}: ${doctorObjs.length} médico(s), 20 pacientes, ~${made} citas, ${visitsMade} consultas, ${invoicesMade} facturas`,
     )
   }
 
-  payload.logger.info('Seed complete.')
-  payload.logger.info('Demo logins (password: password123):')
-  payload.logger.info('  super@clinic.app  ·  owner@city.app  ·  reception@city.app  ·  doctor1@city.app')
+  payload.logger.info('Datos de demostración listos.')
+  payload.logger.info('Accesos demo (contraseña: password123):')
+  payload.logger.info('  doctora@demo.app  ·  asistente@demo.app  ·  owner@clinica.app  ·  doctor1@clinica.app  ·  super@clinic.app')
 }
 
 // Allow running directly: `tsx src/seed.ts`

@@ -1,5 +1,5 @@
 /* ============================================================
-   Matab — globals.css (drop-in replacement)
+   globals.css — design tokens (based on Matab, rebranded)
    Tailwind CSS v4 + shadcn/ui token mapping
    ============================================================ */
 
@@ -10,54 +10,64 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ---------- 1. Matab palette → shadcn variables ----------
-   "Clinical calm": deep teal brand on warm paper surfaces. */
+/* ---------- 1. Brand palette → shadcn variables ----------
+   medira "Clinical Calm" (design handoff 2026-11, design_handoff_medira/README.md
+   "Tokens"): teal brand on warm off-white, stone neutrals, deep teal for heroes.
+   Hard rule: red (--destructive) only for clinical alerts (allergies, critical
+   values) — never for delete or form errors (those use ink / amber). */
 :root {
   /* surfaces & text */
-  --background: #f7f6f2; /* canvas — warm paper, not sterile grey */
-  --foreground: #182320; /* ink — all body text */
+  --background: #fafaf7; /* app background */
+  --foreground: #1c1917; /* ink — all body text */
   --card: #ffffff;
-  --card-foreground: #182320;
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #182320;
+  --popover-foreground: #1c1917;
 
   /* brand */
-  --primary: #0d6e60; /* deep medical teal */
+  --primary: #0f766e; /* medira teal (AA on white); hover #115e59 */
   --primary-foreground: #ffffff;
-  --secondary: #e2efec; /* primary-soft */
-  --secondary-foreground: #0d6e60;
-  --accent: #e2efec;
-  --accent-foreground: #0d6e60;
+  --secondary: #e6f1ee; /* primary-soft */
+  --sunken: #f0eeec; /* segmented tracks, skeletons */
+  --line-3: #d6d3d1; /* field & secondary-button border */
+  --inv: #1c1917; /* destructive actions, selected chip, toast */
+  --deep: #042f2e; /* hero, featured card, site header */
+  --deep-line: #134e4a;
+  --deep-muted: #b6d4cf;
+  --deep-accent: #2dd4bf;
+  --secondary-foreground: #115e59;
+  --accent: #e6f1ee;
+  --accent-foreground: #115e59;
 
   /* support */
-  --muted: #efeee8;
-  --muted-foreground: #65716c;
-  --destructive: #b3261e;
+  --muted: #f0eeec;
+  --muted-foreground: #57534e;
+  --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
-  --border: #e6e4dc;
-  --input: #dfddd4;
-  --ring: #0d6e60;
+  --border: #e7e5e4;
+  --input: #d6d3d1;
+  --ring: #0f766e;
 
-  /* status / semantic extras (Matab-specific) */
+  /* status / semantic extras */
   --amber: #b45309;
   --amber-soft: #faf3e6;
   --red-soft: #fbeceb;
-  --blue: #2563ab;
+  --blue: #1d4ed8;
   --blue-soft: #e9f0f9;
-  --green-strong: #1a7a50;
+  --green-strong: #15803d;
   --green-soft: #e8f4ec;
 
   /* charts: single-series discipline */
-  --chart-1: #0d6e60;
-  --chart-grid: #e6e4dc;
+  --chart-1: #0f766e;
+  --chart-grid: #e7e5e4;
 
-  /* dark sidebar (app chrome) */
-  --sidebar: #0c211d;
-  --sidebar-soft: #122b26;
-  --sidebar-foreground: #9fb5ae;
+  /* deep chrome (site header / legacy dark surfaces) */
+  --sidebar: #042f2e;
+  --sidebar-soft: #134e4a;
+  --sidebar-foreground: #b6d4cf;
   --sidebar-active-fg: #f3f7f5;
-  --sidebar-accent: #3ad6bb;
-  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-accent: #2dd4bf;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
 
   --radius: 0.75rem; /* 12px cards/dialogs; md = 8px for buttons/inputs */
 }
@@ -100,8 +110,17 @@
   --color-sidebar-border: var(--sidebar-border);
 
   /* typography (variables set by next/font in layout.tsx — see fonts.ts) */
-  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-figtree), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-sunken: var(--sunken);
+  --color-line-3: var(--line-3);
+  --color-inv: var(--inv);
+  --color-deep: var(--deep);
+  --color-deep-line: var(--deep-line);
+  --color-deep-muted: var(--deep-muted);
+  --color-deep-accent: var(--deep-accent);
 
   --radius-xl: calc(var(--radius) + 4px);
   --radius-lg: var(--radius);
@@ -127,7 +146,7 @@
   h3 {
     font-family: var(--font-display);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.03em;
   }
   /* visible focus everywhere — accessibility floor */
   :focus-visible {
@@ -151,11 +170,11 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: 0 1px 2px rgb(28 36 34 / 0.04);
+    box-shadow: 0 1px 2px rgb(19 26 43 / 0.05);
   }
   /* doctor off-hours zones on the Day Rail — calm flat tone, no noisy stripes */
   .stripes {
-    background-color: #f1f0ea;
+    background-color: #f0eeec;
   }
   /* day-rail scroll viewport: slim, unobtrusive scrollbars */
   .rail-scroll {
@@ -197,7 +216,7 @@
   }
   /* skeleton shimmer (loading states) */
   .skeleton {
-    background: linear-gradient(90deg, var(--muted) 25%, #e6ebe9 37%, var(--muted) 63%);
+    background: linear-gradient(90deg, var(--muted) 25%, #e7e5e4 37%, var(--muted) 63%);
     background-size: 400% 100%;
     animation: matab-shimmer 1.4s ease infinite;
     border-radius: var(--radius-sm);
@@ -215,7 +234,7 @@
 /* ---------- 5. shadcn de-shadowing (cards stay flat) ----------
    Shadows allowed ONLY on overlays (dialog/sheet/popover/dropdown). */
 [data-slot='card'] {
-  box-shadow: 0 1px 2px rgb(28 36 34 / 0.04);
+  box-shadow: 0 1px 2px rgb(19 26 43 / 0.05);
   border: 1px solid var(--border);
 }
 [data-slot='dialog-content'],
@@ -247,10 +266,10 @@
   --color-canvas: var(--background); /* legacy: bg-canvas → bg-background */
   --color-surface: var(--card); /* legacy: bg-surface → bg-card */
   --color-ink: var(--foreground); /* legacy: text-ink → text-foreground */
-  --color-faint: #97a09a; /* quietest text (timestamps, counts) */
+  --color-faint: #a8a29e; /* quietest text (timestamps, counts) */
   --color-red: var(--destructive); /* legacy: text-red → text-destructive */
   --color-primary-soft: var(--secondary); /* legacy: bg-primary-soft → bg-secondary */
-  --color-primary-hover: #0a584d; /* button hover tone */
+  --color-primary-hover: #115e59; /* button hover tone */
   --color-status-completed-bg: var(--green-soft);
   --color-status-completed-fg: var(--green-strong);
   --color-status-cancelled-bg: var(--muted);
@@ -261,7 +280,7 @@
 @layer utilities {
   /* legacy alias of .stripes (Day Rail pass will switch to .stripes) */
   .bg-offhours {
-    background-color: #f1f0ea;
+    background-color: #f0eeec;
   }
   .animate-fade-up {
     animation: fade-up 0.25s ease-out both;
@@ -275,5 +294,63 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+}
+
+/* ---------- Homepage motion (design handoff) ---------- */
+@keyframes emr-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes emr-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  70%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*='animate-[emr-'] {
+    animation: none !important;
+  }
+}
+@keyframes emr-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes emr-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ---------- medira sheets & toasts: translateY(12px) → 0 + fade, .2s ease-out ---------- */
+@keyframes md-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
   }
 }

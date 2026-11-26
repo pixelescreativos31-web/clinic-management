@@ -1,0 +1,116 @@
+import { hhmmLabel, type TimeFormat } from '@/lib/regional'
+// Public booking page — design handoff "Flujos · Reserva en línea" (390px column on sunken).
+// No login: the patient picks a service, a day and a free time, leaves name +
+// WhatsApp and gets a confirmed appointment.
+
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { connection } from 'next/server'
+import { getPayloadClient } from '@/lib/auth'
+import { bookableDates, dateInTz, getPublicClinic, BOOKING_WINDOW_DAYS, type PublicDoctor } from '@/lib/publicBooking'
+import { startOfDayInTz } from '@/lib/reports'
+import { weekdayInTz } from '@/lib/availability'
+import { WEEKDAYS } from '@/lib/constants'
+import { PublicBooking, type BookingDay, type BookingDoctor } from '@/components/PublicBooking'
+import { APP_NAME } from '@/lib/brand'
+
+type Props = { params: Promise<{ slug: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const clinic = await getPublicClinic(await getPayloadClient(), slug)
+  return {
+    title: clinic ? `Agendar cita — ${clinic.name}` : `Agendar cita — ${APP_NAME}`,
+    robots: { index: false },
+  }
+}
+
+const ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const SHORT: Record<string, string> = { mon: 'Lun', tue: 'Mar', wed: 'Mié', thu: 'Jue', fri: 'Vie', sat: 'Sáb', sun: 'Dom' }
+
+
+/** "Lun a vie · 9:00 a. m. – 5:00 p. m." (consecutive days collapse to a range). */
+function hoursLabel(d: PublicDoctor, fmt: TimeFormat) {
+  const ampm = (t: string) => hhmmLabel(t, fmt)
+  const idx = d.days.map((x) => ORDER.indexOf(x)).filter((i) => i >= 0).sort((a, b) => a - b)
+  const consecutive = idx.length > 2 && idx.every((v, i) => i === 0 || v === idx[i - 1] + 1)
+  const days = consecutive
+    ? `${SHORT[ORDER[idx[0]]]} a ${SHORT[ORDER[idx[idx.length - 1]]].toLowerCase()}`
+    : idx.map((i) => WEEKDAYS.find((w) => w.value === ORDER[i])?.label ?? SHORT[ORDER[i]]).join(', ')
+  return `${days} · ${ampm(d.from)} – ${ampm(d.to)}`
+}
+
+/** Public booking page: patients book a free slot inside each doctor's schedule. */
+export default async function BookingPage({ params }: Props) {
+  await connection() // slots depend on "now" — never prerender
+  const { slug } = await params
+  const clinic = await getPublicClinic(await getPayloadClient(), slug)
+  if (!clinic) notFound()
+
+  const now = new Date()
+  const doctors: BookingDoctor[] = clinic.doctors.map((d) => {
+    const open = new Set(bookableDates(clinic, d, now))
+    const days: BookingDay[] = []
+    for (let i = 0; i <= BOOKING_WINDOW_DAYS; i++) {
+      const noon = new Date(startOfDayInTz(clinic.tz, i, now).getTime() + 12 * 3600_000)
+      const date = dateInTz(noon, clinic.tz)
+      days.push({ date, dow: SHORT[weekdayInTz(noon, clinic.tz)] ?? '', num: Number(date.slice(8, 10)), open: open.has(date) })
+    }
+    return {
+      id: d.id,
+      name: d.name,
+      specialty: d.specialty,
+      licenseNumber: d.licenseNumber,
+      hours: hoursLabel(d, clinic.timeFormat),
+      services: d.services,
+      days,
+    }
+  })
+
+  const contact = [[clinic.address, clinic.city].filter(Boolean).join(', '), clinic.phone].filter(Boolean).join(' · ')
+
+  return (
+    <main className="flex min-h-screen flex-col items-center bg-sunken px-4 pt-[clamp(20px,5vw,56px)] pb-14 text-[15px] leading-[1.45] text-foreground">
+      <div className="w-full max-w-[390px]">
+        {/* Clinic letterhead (handoff "Páginas del paciente") */}
+        <header className="mb-4 flex items-center gap-2.5">
+          {clinic.logo && (
+            <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-border bg-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={clinic.logo} alt="" className="max-h-full max-w-full object-contain" />
+            </span>
+          )}
+          <div className="min-w-0">
+            <div className="truncate font-semibold">{clinic.name}</div>
+            <div className="truncate text-[13px] text-muted-foreground tabular-nums">{contact || 'Agenda en línea'}</div>
+          </div>
+        </header>
+
+        {doctors.length === 0 ? (
+          <div className="rounded-[14px] border border-border bg-card p-[clamp(20px,5vw,28px)]">
+            <h1 className="text-[22px] leading-[1.2] font-semibold tracking-[-0.03em]">Reserve su cita</h1>
+            <p className="mt-1.5 text-[15px] text-muted-foreground">
+              Por ahora no hay horarios disponibles en línea. Llame al consultorio
+              {clinic.phone ? ` al ${clinic.phone}` : ''} para agendar.
+            </p>
+          </div>
+        ) : (
+          <PublicBooking
+            slug={clinic.slug}
+            clinic={{
+              name: clinic.name,
+              phone: clinic.phone,
+              address: [clinic.address, clinic.city].filter(Boolean).join(', ') || null,
+              currency: clinic.currency,
+              requestsEnabled: clinic.requestsEnabled,
+              timeFormat: clinic.timeFormat,
+            }}
+            doctors={doctors}
+          />
+        )}
+        <p className="mt-3.5 text-center text-xs text-muted-foreground">Enviado con {APP_NAME}</p>
+        <p className="mt-1 text-center text-xs text-muted-foreground">Si es una emergencia que pone en riesgo la vida, llame al 911.</p>
+      </div>
+    </main>
+  )
+}

@@ -74,6 +74,14 @@ export interface Config {
     visits: Visit;
     invoices: Invoice;
     auditLogs: AuditLog;
+    bookingRequests: BookingRequest;
+    programs: Program;
+    progressPhotos: ProgressPhoto;
+    usageCounters: UsageCounter;
+    quotaPacks: QuotaPack;
+    billingEvents: BillingEvent;
+    billingReceipts: BillingReceipt;
+    trialClaims: TrialClaim;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +96,14 @@ export interface Config {
     visits: VisitsSelect<false> | VisitsSelect<true>;
     invoices: InvoicesSelect<false> | InvoicesSelect<true>;
     auditLogs: AuditLogsSelect<false> | AuditLogsSelect<true>;
+    bookingRequests: BookingRequestsSelect<false> | BookingRequestsSelect<true>;
+    programs: ProgramsSelect<false> | ProgramsSelect<true>;
+    progressPhotos: ProgressPhotosSelect<false> | ProgressPhotosSelect<true>;
+    usageCounters: UsageCountersSelect<false> | UsageCountersSelect<true>;
+    quotaPacks: QuotaPacksSelect<false> | QuotaPacksSelect<true>;
+    billingEvents: BillingEventsSelect<false> | BillingEventsSelect<true>;
+    billingReceipts: BillingReceiptsSelect<false> | BillingReceiptsSelect<true>;
+    trialClaims: TrialClaimsSelect<false> | TrialClaimsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -135,25 +151,31 @@ export interface Tenant {
   id: string;
   name: string;
   /**
-   * Auto-generated from the name; used for public URLs later.
+   * Se genera a partir del nombre; para URLs públicas en el futuro.
    */
   slug?: string | null;
   phone: string;
+  /**
+   * Imagen como data URL (PNG/JPEG/WebP). Se sube desde Configuración.
+   */
+  logo?: string | null;
   address?: string | null;
   city?: string | null;
   country?: string | null;
+  taxId?: string | null;
+  practiceType: 'individual' | 'clinic';
   status: 'pending' | 'active' | 'suspended';
   /**
-   * Subscription tier; limits enforced in code (src/lib/plans.ts).
+   * Nivel de suscripción; límites definidos en código (src/lib/plans.ts).
    */
-  plan: 'free' | 'clinic' | 'plus';
+  plan: 'free' | 'pro' | 'clinic' | 'plus' | 'public';
   upgradeRequest?: {
-    requestedPlan?: ('free' | 'clinic' | 'plus') | null;
+    requestedPlan?: ('free' | 'pro' | 'clinic' | 'plus' | 'public') | null;
     requestedAt?: string | null;
     note?: string | null;
   };
   /**
-   * How this clinic was created — for analytics.
+   * Cómo se creó este consultorio (analítica).
    */
   onboardingSource: 'self-serve' | 'manual';
   settings: {
@@ -161,13 +183,77 @@ export interface Tenant {
     openTime: string;
     closeTime: string;
     /**
-     * Market-agnostic core — all amounts are formatted from this.
+     * Todos los montos se muestran en esta moneda.
      */
-    currency: 'PKR' | 'USD' | 'GBP' | 'AED' | 'SAR' | 'INR';
+    currency: 'DOP' | 'USD' | 'EUR' | 'MXN' | 'COP' | 'PEN' | 'CLP' | 'GTQ' | 'CRC' | 'PAB';
     /**
-     * All times are displayed in this timezone.
+     * Todas las horas se muestran en esta zona horaria.
      */
-    timezone: 'Asia/Karachi' | 'Asia/Dubai' | 'Asia/Riyadh' | 'Asia/Kolkata' | 'Europe/London' | 'America/New_York';
+    timezone:
+      | 'America/Santo_Domingo'
+      | 'America/Puerto_Rico'
+      | 'America/New_York'
+      | 'America/Mexico_City'
+      | 'America/Bogota'
+      | 'America/Lima'
+      | 'America/Santiago'
+      | 'America/Guatemala'
+      | 'America/Costa_Rica'
+      | 'America/Panama'
+      | 'Europe/Madrid';
+    timeFormat?: ('12h' | '24h') | null;
+    weekStart?: ('sunday' | 'monday') | null;
+    /**
+     * El peso se guarda siempre en kg; se muestra en esta unidad con la otra al lado.
+     */
+    weightUnit?: ('lb' | 'kg') | null;
+    heightUnit?: ('cm' | 'in') | null;
+    orgType?: ('consultorio' | 'estetica' | 'especialidades' | 'policlinica' | 'hospital') | null;
+    /**
+     * Define qué fichas e historias clínicas usa el consultorio.
+     */
+    consultTemplate?: ('general' | 'nutrition' | 'aesthetic') | null;
+    /**
+     * Para perfiles con programa (Nutrición, Estética y spa).
+     */
+    programName?: string | null;
+    /**
+     * Los pacientes agendan desde el enlace público, dentro del horario de cada médico.
+     */
+    onlineBookingEnabled?: boolean | null;
+    /**
+     * Permite pedir una cita fuera de los horarios publicados; el consultorio la revisa.
+     */
+    onlineRequestsEnabled?: boolean | null;
+    security?: {
+      require2faAll?: boolean | null;
+      twoFactorGraceUntil?: string | null;
+    };
+  };
+  /**
+   * Estado de la suscripción de PayPal. Lo actualizan los avisos de PayPal.
+   */
+  billing?: {
+    subscriptionId?: string | null;
+    pendingSubscriptionId?: string | null;
+    pendingSince?: string | null;
+    status?: ('none' | 'trialing' | 'active' | 'past_due' | 'cancelled') | null;
+    billingPlan?: ('free' | 'pro' | 'clinic' | 'plus' | 'public') | null;
+    interval?: ('month' | 'year') | null;
+    quantity?: number | null;
+    trialUsed?: boolean | null;
+    trialEndsAt?: string | null;
+    trialEndingNotifiedAt?: string | null;
+    currentPeriodEnd?: string | null;
+    pastDueSince?: string | null;
+    dunningStage?: number | null;
+    downgradedAt?: string | null;
+    downgradeReason?: ('unpaid' | 'cancelled') | null;
+    downgradedFromPlan?: ('free' | 'pro' | 'clinic' | 'plus' | 'public') | null;
+    winbackStage?: number | null;
+    payerEmailMasked?: string | null;
+    cancelReason?: string | null;
+    lastEventAt?: string | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -179,25 +265,82 @@ export interface Tenant {
 export interface User {
   id: string;
   name: string;
-  role: 'superAdmin' | 'owner' | 'doctor' | 'receptionist';
+  role: 'superAdmin' | 'owner' | 'doctor' | 'therapist' | 'receptionist';
   /**
-   * Required for all roles except super admin.
+   * Obligatorio para todos los roles excepto superadministrador.
    */
   tenant?: (string | null) | Tenant;
   phone?: string | null;
   active?: boolean | null;
+  planSuspendedAt?: string | null;
   emailVerified?: boolean | null;
   verifyTokenHash?: string | null;
   verifyTokenExp?: string | null;
+  twoFactorEnabled?: boolean | null;
+  twoFactor?: {
+    secretEnc?: string | null;
+    pendingSecretEnc?: string | null;
+    pendingAt?: string | null;
+    backupCodes?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    enabledAt?: string | null;
+    epoch?: number | null;
+    lastUsedStep?: number | null;
+    failedAttempts?: number | null;
+    lockedUntil?: string | null;
+  };
+  practitioner?: boolean | null;
+  specialtyKey?:
+    | (
+        | 'general'
+        | 'internal'
+        | 'family'
+        | 'nutrition'
+        | 'aesthetic'
+        | 'ophthalmology'
+        | 'dentistry'
+        | 'obgyn'
+        | 'pediatrics'
+        | 'dermatology'
+        | 'physiotherapy'
+        | 'mentalHealth'
+        | 'cardiology'
+        | 'endocrinology'
+        | 'neurology'
+        | 'plasticSurgery'
+        | 'orthopedics'
+        | 'ent'
+        | 'gastro'
+        | 'urology'
+        | 'pulmonology'
+        | 'podiatry'
+        | 'optometry'
+        | 'occupational'
+      )
+    | null;
   specialty?: string | null;
+  defaultFormat?: ('general' | 'nutrition' | 'massage') | null;
+  licenseNumber?: string | null;
   /**
-   * In the clinic currency. Used by billing (v2).
+   * En la moneda del consultorio. Se usa al facturar.
    */
   consultationFee?: number | null;
+  bookingServices?:
+    | {
+        name: string;
+        durationMins: number;
+        price?: number | null;
+        id?: string | null;
+      }[]
+    | null;
   availabilityType?: ('regular' | 'onCall' | 'byAppointment') | null;
-  /**
-   * Days this doctor sees patients (daily = all; alternate = e.g. Mon/Wed/Fri; weekly = one).
-   */
   availableDays?: ('sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat')[] | null;
   availableFrom?: string | null;
   availableTo?: string | null;
@@ -228,19 +371,63 @@ export interface Patient {
   id: string;
   tenant: string | Tenant;
   /**
-   * Auto-assigned per clinic.
+   * Se asigna automáticamente por consultorio.
    */
   mrn?: string | null;
   name: string;
+  documentType?: ('cedula' | 'passport' | 'other') | null;
+  documentNumber?: string | null;
   phone: string;
-  gender: 'male' | 'female' | 'other';
+  email?: string | null;
+  gender?: ('male' | 'female' | 'other') | null;
   dateOfBirth?: string | null;
   ageYears?: number | null;
-  bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
   /**
-   * Shown prominently on the patient profile (safety).
+   * Registrado desde la reserva en línea; falta edad o sexo.
+   */
+  pendingIntake?: boolean | null;
+  bloodGroup?: ('A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-') | null;
+  address?: string | null;
+  occupation?: string | null;
+  nationality?: string | null;
+  maritalStatus?: ('single' | 'married' | 'common-law' | 'divorced' | 'widowed') | null;
+  religion?: string | null;
+  referredBy?: string | null;
+  insurance?: {
+    provider?: string | null;
+    affiliateNumber?: string | null;
+    plan?: string | null;
+  };
+  emergencyContact?: {
+    name?: string | null;
+    relationship?: string | null;
+    phone?: string | null;
+  };
+  /**
+   * Se muestra de forma destacada en el expediente (seguridad).
    */
   allergies?: string | null;
+  history?: {
+    childhood?: string | null;
+    personal?: string | null;
+    chronicConditions?: string | null;
+    surgical?: string | null;
+    familyMother?: string | null;
+    familyFather?: string | null;
+    familySiblings?: string | null;
+    family?: string | null;
+    medications?: string | null;
+    habits?: string | null;
+    gynecoObstetric?: string | null;
+    obstetric?: {
+      pregnancies?: number | null;
+      abortions?: number | null;
+      births?: number | null;
+      cesareans?: number | null;
+    };
+    vaccines?: string | null;
+    otherFindings?: string | null;
+  };
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -260,8 +447,9 @@ export interface Appointment {
   reason?: string | null;
   status: 'scheduled' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
   isWalkIn?: boolean | null;
+  source?: ('staff' | 'online') | null;
   /**
-   * Auto-assigned per clinic per day for walk-ins.
+   * Se asigna automáticamente por día a pacientes sin cita.
    */
   tokenNumber?: string | null;
   cancellationReason?: string | null;
@@ -280,18 +468,156 @@ export interface Visit {
   patient: string | Patient;
   doctor: string | User;
   visitDate: string;
+  chiefComplaint?: string | null;
   symptoms?: string | null;
+  physicalExam?: string | null;
   diagnosis?: string | null;
   /**
-   * Visible to all clinic staff.
+   * Se imprime en la receta como indicaciones generales.
+   */
+  treatmentPlan?: string | null;
+  /**
+   * Laboratorios, imágenes u otros estudios. Se imprime en la receta.
+   */
+  labOrders?: string | null;
+  /**
+   * Solo visibles para el personal clínico.
    */
   notes?: string | null;
   vitals?: {
     bpSystolic?: number | null;
     bpDiastolic?: number | null;
-    temperatureC?: number | null;
-    weightKg?: number | null;
     pulse?: number | null;
+    respiratoryRate?: number | null;
+    temperatureC?: number | null;
+    oxygenSaturation?: number | null;
+    weightKg?: number | null;
+    heightCm?: number | null;
+    glucoseMgDl?: number | null;
+  };
+  format?: ('general' | 'nutrition' | 'massage' | 'program') | null;
+  nutrition?: {
+    constipation?: ('yes' | 'no') | null;
+    waterIntake?: ('good' | 'poor') | null;
+    anxiety?: ('yes' | 'no') | null;
+    stress?: ('yes' | 'no') | null;
+    sleepHours?: number | null;
+    sleepQuality?: string | null;
+    goal?: string | null;
+    usualWeightKg?: number | null;
+    armCm?: number | null;
+    waistCm?: number | null;
+    abdomenCm?: number | null;
+    glutesCm?: number | null;
+    hipCm?: number | null;
+    labHemogram?: string | null;
+    labFastingGlucose?: number | null;
+    labHba1c?: number | null;
+    labGlucoseOther?: string | null;
+    labTotalCholesterol?: number | null;
+    labLdl?: number | null;
+    labHdl?: number | null;
+    labTriglycerides?: number | null;
+    labUrinalysis?: string | null;
+    labAbdominalUltrasound?: string | null;
+    labThyroidUltrasound?: string | null;
+    labStool?: string | null;
+    changes?: string | null;
+    exercise?: string | null;
+    diet?: string | null;
+  };
+  program?: (string | null) | Program;
+  programWeek?: number | null;
+  body?: {
+    muscleMass?: number | null;
+    bodyFatPct?: number | null;
+    bodyWaterPct?: number | null;
+    waistCm?: number | null;
+    chestCm?: number | null;
+    hipCm?: number | null;
+    armRightCm?: number | null;
+    armLeftCm?: number | null;
+    legRightCm?: number | null;
+    legLeftCm?: number | null;
+    muscleMassUnit?: ('kg' | 'lb' | '%') | null;
+  };
+  massage?: {
+    services?:
+      | (
+          | 'relaxing'
+          | 'antistress'
+          | 'decontracting'
+          | 'sports'
+          | 'stretching'
+          | 'volcanicStones'
+          | 'myofascial'
+          | 'reducing'
+          | 'anticellulite'
+          | 'lymphatic'
+          | 'postop'
+          | 'gluteLift'
+          | 'facial'
+          | 'woodTherapy'
+        )[]
+      | null;
+    servicesOther?: string | null;
+    zones?: string | null;
+    goals?: ('relaxation' | 'tension' | 'recovery' | 'aesthetic')[] | null;
+    goalOther?: string | null;
+    surgeryDate?: string | null;
+    medicalAuthorization?: ('yes' | 'no' | 'na') | null;
+    hypertension?: ('yes' | 'no') | null;
+    hypertensionDetail?: string | null;
+    diabetes?: ('yes' | 'no') | null;
+    diabetesDetail?: string | null;
+    cardio?: ('yes' | 'no') | null;
+    cardioDetail?: string | null;
+    varices?: ('yes' | 'no') | null;
+    varicesDetail?: string | null;
+    cancer?: ('yes' | 'no') | null;
+    cancerDetail?: string | null;
+    pregnancy?: ('yes' | 'no') | null;
+    pregnancyDetail?: string | null;
+    recentSurgery?: ('yes' | 'no') | null;
+    recentSurgeryDetail?: string | null;
+    skin?: ('yes' | 'no') | null;
+    skinDetail?: string | null;
+    osteo?: ('yes' | 'no') | null;
+    osteoDetail?: string | null;
+    anticoagulants?: ('yes' | 'no') | null;
+    anticoagulantsDetail?: string | null;
+    otherCondition?: ('yes' | 'no') | null;
+    otherConditionDetail?: string | null;
+    pain?: ('yes' | 'no') | null;
+    painDetail?: string | null;
+    painIntensity?: number | null;
+    painSince?: string | null;
+    injuries?: ('yes' | 'no') | null;
+    injuriesDetail?: string | null;
+    wounds?: ('yes' | 'no') | null;
+    woundsDetail?: string | null;
+    inflammation?: ('yes' | 'no') | null;
+    inflammationDetail?: string | null;
+    sensitiveAreas?: string | null;
+    allergyOils?: ('yes' | 'no') | null;
+    allergyOilsDetail?: string | null;
+    allergyCreams?: ('yes' | 'no') | null;
+    allergyCreamsDetail?: string | null;
+    allergyFragrances?: ('yes' | 'no') | null;
+    allergyFragrancesDetail?: string | null;
+    allergyLatex?: ('yes' | 'no') | null;
+    allergyLatexDetail?: string | null;
+    allergyHeat?: ('yes' | 'no') | null;
+    allergyHeatDetail?: string | null;
+    avoidProducts?: string | null;
+    skinObservations?: string | null;
+    pressure?: ('soft' | 'moderate' | 'firm') | null;
+    precautions?: string | null;
+    postpone?: ('yes' | 'no') | null;
+    postponeDetail?: string | null;
+    sessionNotes?: string | null;
+    consent?: boolean | null;
+    guardianName?: string | null;
   };
   prescription?:
     | {
@@ -300,11 +626,30 @@ export interface Visit {
         frequency?: ('od' | 'bd' | 'tds' | 'qid' | 'sos' | 'other') | null;
         frequencyNote?: string | null;
         durationDays?: number | null;
+        quantity?: string | null;
         instructions?: string | null;
         id?: string | null;
       }[]
     | null;
   followUpDate?: string | null;
+  createdBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "programs".
+ */
+export interface Program {
+  id: string;
+  tenant: string | Tenant;
+  patient: string | Patient;
+  name: string;
+  status: 'active' | 'completed' | 'cancelled';
+  startDate: string;
+  endDate?: string | null;
+  goal?: string | null;
+  responsible?: (string | null) | User;
   createdBy?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
@@ -317,13 +662,13 @@ export interface Invoice {
   id: string;
   tenant: string | Tenant;
   /**
-   * Auto-assigned per clinic (INV-0001).
+   * Asignado automáticamente por consultorio (FAC-0001).
    */
   invoiceNumber?: string | null;
   visit?: (string | null) | Visit;
   patient: string | Patient;
   /**
-   * Snapshotted from the clinic at create time.
+   * Tomada de la configuración del consultorio al crear la factura.
    */
   currency?: string | null;
   lineItems: {
@@ -331,7 +676,7 @@ export interface Invoice {
     quantity: number;
     unitAmount: number;
     /**
-     * quantity × unit amount.
+     * Cantidad × precio unitario.
      */
     amount?: number | null;
     id?: string | null;
@@ -340,7 +685,7 @@ export interface Invoice {
   payments?:
     | {
         amount: number;
-        method: 'cash' | 'card' | 'bank-transfer' | 'other';
+        method: 'cash' | 'card' | 'bank-transfer' | 'insurance' | 'other';
         receivedAt?: string | null;
         receivedBy?: (string | null) | User;
         id?: string | null;
@@ -378,15 +723,37 @@ export interface AuditLog {
     | 'plan.upgrade-requested'
     | 'plan.upgrade-rejected'
     | 'plan.changed'
-    | 'export.generated';
+    | 'export.generated'
+    | 'patient.created'
+    | 'patient.updated'
+    | 'visit.created'
+    | 'visit.updated'
+    | 'program.enrolled'
+    | 'program.updated'
+    | 'photo.added'
+    | 'photo.deleted'
+    | '2fa.enabled'
+    | '2fa.disabled'
+    | '2fa.reset'
+    | '2fa.backup-regenerated'
+    | '2fa.backup-used'
+    | '2fa.required-changed'
+    | 'password.changed'
+    | 'quota.pack-added'
+    | 'billing.subscribed'
+    | 'billing.cancelled'
+    | 'billing.payment-failed'
+    | 'billing.recovered'
+    | 'billing.downgraded'
+    | 'billing.pack-bought';
   targetCollection: string;
   targetId: string;
   /**
-   * Human-readable, e.g. "Cancelled Bilal Ahmed's 5:30 pm appointment".
+   * Texto legible, p. ej., "Canceló la cita de Ana Pérez de las 5:30 p. m.".
    */
   summary: string;
   /**
-   * Small structured context (old/new role, amount…). Never a full doc snapshot.
+   * Contexto estructurado breve (rol anterior/nuevo, monto…). Nunca una copia completa del documento.
    */
   meta?:
     | {
@@ -397,6 +764,142 @@ export interface AuditLog {
     | number
     | boolean
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookingRequests".
+ */
+export interface BookingRequest {
+  id: string;
+  tenant: string | Tenant;
+  patient: string | Patient;
+  doctor?: (string | null) | User;
+  preferredDate?: string | null;
+  reason: string;
+  urgent?: boolean | null;
+  status: 'pending' | 'handled' | 'dismissed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "progressPhotos".
+ */
+export interface ProgressPhoto {
+  id: string;
+  tenant: string | Tenant;
+  program: string | Program;
+  patient: string | Patient;
+  week: number;
+  view: 'front' | 'rightProfile' | 'leftProfile' | 'back';
+  takenAt: string;
+  uploadedBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usageCounters".
+ */
+export interface UsageCounter {
+  id: string;
+  tenant: string | Tenant;
+  /**
+   * AAAA-MM en la zona horaria del consultorio, o "total" para almacenamiento.
+   */
+  period: string;
+  resource:
+    | 'whatsappMessages'
+    | 'aiDictations'
+    | 'aiStudies'
+    | 'aiSummaries'
+    | 'opticalOrders'
+    | 'emailReminders'
+    | 'storageBytes';
+  count: number;
+  notified80At?: string | null;
+  notified100At?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Unidades extra de una cuota mensual. Duran 90 días o hasta agotarse.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotaPacks".
+ */
+export interface QuotaPack {
+  id: string;
+  tenant: string | Tenant;
+  resource: 'whatsappMessages' | 'aiDictations' | 'aiStudies' | 'aiSummaries';
+  units: number;
+  used?: number | null;
+  /**
+   * Por defecto, 90 días desde hoy.
+   */
+  expiresAt?: string | null;
+  source: 'gift' | 'admin' | 'paypal';
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingEvents".
+ */
+export interface BillingEvent {
+  id: string;
+  eventId: string;
+  type: string;
+  eventTime?: string | null;
+  tenant?: (string | null) | Tenant;
+  resourceId?: string | null;
+  status: 'processed' | 'stale' | 'ignored' | 'rejected' | 'error';
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingReceipts".
+ */
+export interface BillingReceipt {
+  id: string;
+  number: string;
+  tenant: string | Tenant;
+  paidAt: string;
+  kind: 'plan' | 'pack';
+  concept: string;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  totalUsd: number;
+  status: 'paid' | 'refunded';
+  method?: string | null;
+  payerEmailMasked?: string | null;
+  transactionId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trialClaims".
+ */
+export interface TrialClaim {
+  id: string;
+  kind: 'email' | 'phone' | 'taxId' | 'payer';
+  valueHash: string;
+  tenant: string | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -451,6 +954,38 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'auditLogs';
         value: string | AuditLog;
+      } | null)
+    | ({
+        relationTo: 'bookingRequests';
+        value: string | BookingRequest;
+      } | null)
+    | ({
+        relationTo: 'programs';
+        value: string | Program;
+      } | null)
+    | ({
+        relationTo: 'progressPhotos';
+        value: string | ProgressPhoto;
+      } | null)
+    | ({
+        relationTo: 'usageCounters';
+        value: string | UsageCounter;
+      } | null)
+    | ({
+        relationTo: 'quotaPacks';
+        value: string | QuotaPack;
+      } | null)
+    | ({
+        relationTo: 'billingEvents';
+        value: string | BillingEvent;
+      } | null)
+    | ({
+        relationTo: 'billingReceipts';
+        value: string | BillingReceipt;
+      } | null)
+    | ({
+        relationTo: 'trialClaims';
+        value: string | TrialClaim;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -502,9 +1037,12 @@ export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   phone?: T;
+  logo?: T;
   address?: T;
   city?: T;
   country?: T;
+  taxId?: T;
+  practiceType?: T;
   status?: T;
   plan?: T;
   upgradeRequest?:
@@ -523,6 +1061,45 @@ export interface TenantsSelect<T extends boolean = true> {
         closeTime?: T;
         currency?: T;
         timezone?: T;
+        timeFormat?: T;
+        weekStart?: T;
+        weightUnit?: T;
+        heightUnit?: T;
+        orgType?: T;
+        consultTemplate?: T;
+        programName?: T;
+        onlineBookingEnabled?: T;
+        onlineRequestsEnabled?: T;
+        security?:
+          | T
+          | {
+              require2faAll?: T;
+              twoFactorGraceUntil?: T;
+            };
+      };
+  billing?:
+    | T
+    | {
+        subscriptionId?: T;
+        pendingSubscriptionId?: T;
+        pendingSince?: T;
+        status?: T;
+        billingPlan?: T;
+        interval?: T;
+        quantity?: T;
+        trialUsed?: T;
+        trialEndsAt?: T;
+        trialEndingNotifiedAt?: T;
+        currentPeriodEnd?: T;
+        pastDueSince?: T;
+        dunningStage?: T;
+        downgradedAt?: T;
+        downgradeReason?: T;
+        downgradedFromPlan?: T;
+        winbackStage?: T;
+        payerEmailMasked?: T;
+        cancelReason?: T;
+        lastEventAt?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -537,11 +1114,38 @@ export interface UsersSelect<T extends boolean = true> {
   tenant?: T;
   phone?: T;
   active?: T;
+  planSuspendedAt?: T;
   emailVerified?: T;
   verifyTokenHash?: T;
   verifyTokenExp?: T;
+  twoFactorEnabled?: T;
+  twoFactor?:
+    | T
+    | {
+        secretEnc?: T;
+        pendingSecretEnc?: T;
+        pendingAt?: T;
+        backupCodes?: T;
+        enabledAt?: T;
+        epoch?: T;
+        lastUsedStep?: T;
+        failedAttempts?: T;
+        lockedUntil?: T;
+      };
+  practitioner?: T;
+  specialtyKey?: T;
   specialty?: T;
+  defaultFormat?: T;
+  licenseNumber?: T;
   consultationFee?: T;
+  bookingServices?:
+    | T
+    | {
+        name?: T;
+        durationMins?: T;
+        price?: T;
+        id?: T;
+      };
   availabilityType?: T;
   availableDays?: T;
   availableFrom?: T;
@@ -571,12 +1175,61 @@ export interface PatientsSelect<T extends boolean = true> {
   tenant?: T;
   mrn?: T;
   name?: T;
+  documentType?: T;
+  documentNumber?: T;
   phone?: T;
+  email?: T;
   gender?: T;
   dateOfBirth?: T;
   ageYears?: T;
+  pendingIntake?: T;
   bloodGroup?: T;
+  address?: T;
+  occupation?: T;
+  nationality?: T;
+  maritalStatus?: T;
+  religion?: T;
+  referredBy?: T;
+  insurance?:
+    | T
+    | {
+        provider?: T;
+        affiliateNumber?: T;
+        plan?: T;
+      };
+  emergencyContact?:
+    | T
+    | {
+        name?: T;
+        relationship?: T;
+        phone?: T;
+      };
   allergies?: T;
+  history?:
+    | T
+    | {
+        childhood?: T;
+        personal?: T;
+        chronicConditions?: T;
+        surgical?: T;
+        familyMother?: T;
+        familyFather?: T;
+        familySiblings?: T;
+        family?: T;
+        medications?: T;
+        habits?: T;
+        gynecoObstetric?: T;
+        obstetric?:
+          | T
+          | {
+              pregnancies?: T;
+              abortions?: T;
+              births?: T;
+              cesareans?: T;
+            };
+        vaccines?: T;
+        otherFindings?: T;
+      };
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -595,6 +1248,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   reason?: T;
   status?: T;
   isWalkIn?: T;
+  source?: T;
   tokenNumber?: T;
   cancellationReason?: T;
   createdBy?: T;
@@ -611,17 +1265,138 @@ export interface VisitsSelect<T extends boolean = true> {
   patient?: T;
   doctor?: T;
   visitDate?: T;
+  chiefComplaint?: T;
   symptoms?: T;
+  physicalExam?: T;
   diagnosis?: T;
+  treatmentPlan?: T;
+  labOrders?: T;
   notes?: T;
   vitals?:
     | T
     | {
         bpSystolic?: T;
         bpDiastolic?: T;
-        temperatureC?: T;
-        weightKg?: T;
         pulse?: T;
+        respiratoryRate?: T;
+        temperatureC?: T;
+        oxygenSaturation?: T;
+        weightKg?: T;
+        heightCm?: T;
+        glucoseMgDl?: T;
+      };
+  format?: T;
+  nutrition?:
+    | T
+    | {
+        constipation?: T;
+        waterIntake?: T;
+        anxiety?: T;
+        stress?: T;
+        sleepHours?: T;
+        sleepQuality?: T;
+        goal?: T;
+        usualWeightKg?: T;
+        armCm?: T;
+        waistCm?: T;
+        abdomenCm?: T;
+        glutesCm?: T;
+        hipCm?: T;
+        labHemogram?: T;
+        labFastingGlucose?: T;
+        labHba1c?: T;
+        labGlucoseOther?: T;
+        labTotalCholesterol?: T;
+        labLdl?: T;
+        labHdl?: T;
+        labTriglycerides?: T;
+        labUrinalysis?: T;
+        labAbdominalUltrasound?: T;
+        labThyroidUltrasound?: T;
+        labStool?: T;
+        changes?: T;
+        exercise?: T;
+        diet?: T;
+      };
+  program?: T;
+  programWeek?: T;
+  body?:
+    | T
+    | {
+        muscleMass?: T;
+        bodyFatPct?: T;
+        bodyWaterPct?: T;
+        waistCm?: T;
+        chestCm?: T;
+        hipCm?: T;
+        armRightCm?: T;
+        armLeftCm?: T;
+        legRightCm?: T;
+        legLeftCm?: T;
+        muscleMassUnit?: T;
+      };
+  massage?:
+    | T
+    | {
+        services?: T;
+        servicesOther?: T;
+        zones?: T;
+        goals?: T;
+        goalOther?: T;
+        surgeryDate?: T;
+        medicalAuthorization?: T;
+        hypertension?: T;
+        hypertensionDetail?: T;
+        diabetes?: T;
+        diabetesDetail?: T;
+        cardio?: T;
+        cardioDetail?: T;
+        varices?: T;
+        varicesDetail?: T;
+        cancer?: T;
+        cancerDetail?: T;
+        pregnancy?: T;
+        pregnancyDetail?: T;
+        recentSurgery?: T;
+        recentSurgeryDetail?: T;
+        skin?: T;
+        skinDetail?: T;
+        osteo?: T;
+        osteoDetail?: T;
+        anticoagulants?: T;
+        anticoagulantsDetail?: T;
+        otherCondition?: T;
+        otherConditionDetail?: T;
+        pain?: T;
+        painDetail?: T;
+        painIntensity?: T;
+        painSince?: T;
+        injuries?: T;
+        injuriesDetail?: T;
+        wounds?: T;
+        woundsDetail?: T;
+        inflammation?: T;
+        inflammationDetail?: T;
+        sensitiveAreas?: T;
+        allergyOils?: T;
+        allergyOilsDetail?: T;
+        allergyCreams?: T;
+        allergyCreamsDetail?: T;
+        allergyFragrances?: T;
+        allergyFragrancesDetail?: T;
+        allergyLatex?: T;
+        allergyLatexDetail?: T;
+        allergyHeat?: T;
+        allergyHeatDetail?: T;
+        avoidProducts?: T;
+        skinObservations?: T;
+        pressure?: T;
+        precautions?: T;
+        postpone?: T;
+        postponeDetail?: T;
+        sessionNotes?: T;
+        consent?: T;
+        guardianName?: T;
       };
   prescription?:
     | T
@@ -631,6 +1406,7 @@ export interface VisitsSelect<T extends boolean = true> {
         frequency?: T;
         frequencyNote?: T;
         durationDays?: T;
+        quantity?: T;
         instructions?: T;
         id?: T;
       };
@@ -689,6 +1465,137 @@ export interface AuditLogsSelect<T extends boolean = true> {
   targetId?: T;
   summary?: T;
   meta?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookingRequests_select".
+ */
+export interface BookingRequestsSelect<T extends boolean = true> {
+  tenant?: T;
+  patient?: T;
+  doctor?: T;
+  preferredDate?: T;
+  reason?: T;
+  urgent?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "programs_select".
+ */
+export interface ProgramsSelect<T extends boolean = true> {
+  tenant?: T;
+  patient?: T;
+  name?: T;
+  status?: T;
+  startDate?: T;
+  endDate?: T;
+  goal?: T;
+  responsible?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "progressPhotos_select".
+ */
+export interface ProgressPhotosSelect<T extends boolean = true> {
+  tenant?: T;
+  program?: T;
+  patient?: T;
+  week?: T;
+  view?: T;
+  takenAt?: T;
+  uploadedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "usageCounters_select".
+ */
+export interface UsageCountersSelect<T extends boolean = true> {
+  tenant?: T;
+  period?: T;
+  resource?: T;
+  count?: T;
+  notified80At?: T;
+  notified100At?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotaPacks_select".
+ */
+export interface QuotaPacksSelect<T extends boolean = true> {
+  tenant?: T;
+  resource?: T;
+  units?: T;
+  used?: T;
+  expiresAt?: T;
+  source?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingEvents_select".
+ */
+export interface BillingEventsSelect<T extends boolean = true> {
+  eventId?: T;
+  type?: T;
+  eventTime?: T;
+  tenant?: T;
+  resourceId?: T;
+  status?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingReceipts_select".
+ */
+export interface BillingReceiptsSelect<T extends boolean = true> {
+  number?: T;
+  tenant?: T;
+  paidAt?: T;
+  kind?: T;
+  concept?: T;
+  periodStart?: T;
+  periodEnd?: T;
+  totalUsd?: T;
+  status?: T;
+  method?: T;
+  payerEmailMasked?: T;
+  transactionId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trialClaims_select".
+ */
+export interface TrialClaimsSelect<T extends boolean = true> {
+  kind?: T;
+  valueHash?: T;
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }

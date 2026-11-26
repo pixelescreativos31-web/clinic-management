@@ -10,36 +10,40 @@ import type { ReactNode } from 'react'
 /* ------------------------------------------------------------------ */
 
 const STATUS_STYLES: Record<string, string> = {
-  // appointments
-  scheduled: 'bg-secondary text-primary',
-  'checked-in': 'bg-blue-soft text-blue',
-  completed: 'bg-green-soft text-green-strong',
-  cancelled: 'bg-muted text-muted-foreground',
-  'no-show': 'bg-amber-soft text-amber',
+  // appointments (design "Insignia de estado"; spec 16.3: Confirmada light blue, green only for Atendida)
+  scheduled: 'border-line-3 bg-card text-muted-foreground',
+  confirmed: 'border-[#bfdbfe] bg-[#eff6ff] text-blue',
+  'checked-in': 'border-blue bg-blue text-white',
+  'in-consult': 'border-primary bg-primary text-white',
+  completed: 'border-[#bbf7d0] bg-green-soft text-green-strong',
+  cancelled: 'border-sunken bg-sunken text-muted-foreground',
+  'no-show': 'border-inv bg-inv text-white',
   // invoices (v2)
-  paid: 'bg-green-soft text-green-strong',
-  partial: 'bg-amber-soft text-amber',
-  unpaid: 'bg-muted text-muted-foreground',
-  voided: 'bg-red-soft text-destructive line-through',
+  paid: 'border-[#bbf7d0] bg-green-soft text-green-strong',
+  partial: 'border-amber bg-card text-amber',
+  unpaid: 'border-line-3 bg-card text-muted-foreground',
+  voided: 'border-sunken bg-sunken text-muted-foreground line-through',
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  scheduled: 'Scheduled',
-  'checked-in': 'Checked in',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-  'no-show': 'No-show',
-  paid: 'Paid',
-  partial: 'Partial',
-  unpaid: 'Unpaid',
-  voided: 'Voided',
+  scheduled: 'Programada',
+  confirmed: 'Confirmada',
+  'checked-in': 'En sala',
+  'in-consult': 'En consulta',
+  completed: 'Atendida',
+  cancelled: 'Cancelada',
+  'no-show': 'No asistió',
+  paid: 'Pagada',
+  partial: 'Parcial',
+  unpaid: 'Pendiente',
+  voided: 'Anulada',
 }
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
+        'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold whitespace-nowrap',
         STATUS_STYLES[status] ?? 'bg-muted text-muted-foreground',
         className,
       )}
@@ -154,7 +158,7 @@ export function AllergyBanner({ allergies }: { allergies?: string | null }) {
           d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
       </svg>
       <p>
-        <span className="font-semibold">Allergies:</span> {allergies}
+        <span className="font-semibold">Alergias:</span> {allergies}
       </p>
     </div>
   )

@@ -1,31 +1,32 @@
+import { minutesLabel, regionalOf } from '@/lib/regional'
+// Agenda — design_handoff_medira «Agenda». Server side loads the
+// day's appointments with their consultation / invoice so each card can offer the
+// right next step; AgendaBoard renders the list, timeline and quick sheets.
+
 import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { startOfDayInTz } from '@/lib/reports'
-import { formatTime } from '@/lib/format'
-import { btnPrimary, PageTitle } from '@/components/primitives'
-import { IconChevronLeft, IconChevronRight, IconPlus } from '@/components/icons'
-import { DayRail, type DoctorColumn } from '@/components/DayRail'
+import { formatDate, formatDateTime } from '@/lib/format'
 import { hhmmToMinutes, windowOf, weekdayInTz, minutesInTz } from '@/lib/availability'
-import { waReminderLink } from '@/lib/whatsapp'
-import { DEFAULT_TIMEZONE, WEEKDAYS, type AppointmentStatus } from '@/lib/constants'
-import type { Appointment, Patient, User } from '@/payload-types'
+import { toWaDigits, waReminderLink } from '@/lib/whatsapp'
+import { DEFAULT_TIMEZONE, type AppointmentStatus } from '@/lib/constants'
+import type { Appointment, BookingRequest, Invoice, Patient, User, Visit } from '@/payload-types'
+import { canStartVisits, practitionerWhere } from '@/lib/practice'
+import { AppHeader, AppContent } from '@/components/AppHeader'
+import { AgendaBoard, type AgendaAppt, type AgendaDay, type AgendaDoctor } from '@/components/AgendaBoard'
+import { OnlineRequests, type OnlineRequestRow } from '@/components/OnlineRequests'
 
-function minutesFromMidnight(date: Date, tz: string): number {
-  return minutesInTz(date, tz)
-}
+const relId = (v: unknown) => (v && typeof v === 'object' && 'id' in (v as object) ? String((v as { id: unknown }).id) : String(v))
 
 function addDays(dateStr: string, delta: number): string {
   const [y, m, d] = dateStr.split('-').map(Number)
-  const dt = new Date(Date.UTC(y, m - 1, d + delta))
-  return dt.toISOString().slice(0, 10)
+  return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10)
 }
 
-export default async function AppointmentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ date?: string }>
-}) {
+const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<{ date?: string; ok?: string }> }) {
   const { user, tenant } = await requireDashboardSession()
   const payload = await getPayloadClient()
   const tenantID = getTenantID(user)!
@@ -33,150 +34,170 @@ export default async function AppointmentsPage({
 
   const params = await searchParams
   const todayStr = startOfDayInTz(tz, 0).toLocaleDateString('en-CA', { timeZone: tz })
-  const dateStr = params.date || todayStr
+  const dateStr = params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : todayStr
   const isToday = dateStr === todayStr
 
-  // Day range in tenant tz for the chosen date.
   const [y, m, d] = dateStr.split('-').map(Number)
   const dayStart = startOfDayInTz(tz, 0, new Date(Date.UTC(y, m - 1, d, 12)))
   const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000)
 
-  const [doctorsRes, apptsRes] = await Promise.all([
+  const [doctorsRes, apptsRes, requestsRes] = await Promise.all([
     payload.find({
       collection: 'users',
-      where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
+      where: { and: [practitionerWhere(String(tenantID)), { active: { equals: true } }] },
       limit: 50,
       overrideAccess: true,
       sort: 'name',
     }),
     payload.find({
       collection: 'appointments',
-      where: {
-        tenant: { equals: tenantID },
-        start: { greater_than_equal: dayStart.toISOString(), less_than: dayEnd.toISOString() },
-      },
-      limit: 200,
+      where: { tenant: { equals: tenantID }, start: { greater_than_equal: dayStart.toISOString(), less_than: dayEnd.toISOString() } },
+      limit: 300,
       depth: 1,
       overrideAccess: true,
       sort: 'start',
     }),
+    payload.find({
+      collection: 'bookingRequests',
+      where: { tenant: { equals: tenantID }, status: { equals: 'pending' } },
+      sort: '-createdAt',
+      limit: 20,
+      depth: 1,
+      overrideAccess: false,
+      user,
+    }),
   ])
+  const appts = apptsRes.docs as Appointment[]
 
-  const openMinutes = hhmmToMinutes(tenant?.settings?.openTime || '09:00')
-  const closeMinutes = hhmmToMinutes(tenant?.settings?.closeTime || '21:00')
-  const viewedWeekday = weekdayInTz(dayStart, tz)
-  const nowMinutes = isToday ? minutesFromMidnight(new Date(), tz) : null
+  // Consultation + invoice per completed appointment (next step on the card).
+  const completedIds = appts.filter((a) => a.status === 'completed').map((a) => String(a.id))
+  const visits = completedIds.length
+    ? ((await payload.find({ collection: 'visits', where: { tenant: { equals: tenantID }, appointment: { in: completedIds } }, limit: 300, depth: 0, overrideAccess: true })).docs as Visit[])
+    : []
+  const visitByAppt = new Map(visits.map((v) => [relId(v.appointment), String(v.id)]))
+  const invoices = visits.length
+    ? ((await payload.find({
+        collection: 'invoices',
+        where: { tenant: { equals: tenantID }, visit: { in: visits.map((v) => String(v.id)) }, voided: { not_equals: true } },
+        limit: 300,
+        depth: 0,
+        overrideAccess: true,
+      })).docs as Invoice[])
+    : []
+  const invoiceByVisit = new Map(invoices.map((i) => [relId(i.visit), String(i.id)]))
 
-  const prettyDate = new Date(dayStart).toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: tz,
+  const viewedWeekday = weekdayInTz(new Date(dayStart.getTime() + 12 * 3600_000), tz)
+  const doctors: AgendaDoctor[] = (doctorsRes.docs as User[]).map((doc) => {
+    const type = doc.availabilityType || 'regular'
+    if (type !== 'regular') {
+      return { id: String(doc.id), name: doc.name, fromMin: hhmmToMinutes(tenant?.settings?.openTime || '08:00'), toMin: hhmmToMinutes(tenant?.settings?.closeTime || '18:00') }
+    }
+    const days = (doc.availableDays as string[] | null | undefined) ?? []
+    const works = days.length === 0 || days.includes(viewedWeekday)
+    const win = windowOf(doc)
+    return { id: String(doc.id), name: doc.name, fromMin: works ? hhmmToMinutes(win.from) : null, toMin: works ? hhmmToMinutes(win.to) : null }
   })
 
-  const columns: DoctorColumn[] = (doctorsRes.docs as User[]).map((doc) => {
-    const type = (doc.availabilityType as string) || 'regular'
-    let windowFrom: number | null = null
-    let windowTo: number | null = null
-    let availabilityNote: string | null = null
-
-    if (type === 'onCall') {
-      availabilityNote = 'On call'
-    } else if (type === 'byAppointment') {
-      availabilityNote = 'By appointment'
-    } else {
-      const days = (doc.availableDays as string[] | undefined) || []
-      const onToday = days.length === 0 || days.includes(viewedWeekday)
-      const win = windowOf(doc)
-      if (onToday) {
-        windowFrom = hhmmToMinutes(win.from)
-        windowTo = hhmmToMinutes(win.to)
-      } else {
-        const dayList = WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
-        availabilityNote = `Off today · ${dayList || '—'}`
-      }
-    }
-
+  const prettyDate = dayStart.toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz })
+  const rows: AgendaAppt[] = appts.map((a) => {
+    const p = a.patient as Patient
+    const doc = a.doctor as User
+    const startMin = minutesInTz(new Date(a.start), tz)
+    const visitId = visitByAppt.get(String(a.id)) ?? null
     return {
-      id: String(doc.id),
-      name: doc.name,
-      windowFrom,
-      windowTo,
-      availabilityNote,
-      blocks: (apptsRes.docs as Appointment[])
-        .filter((a) => String((a.doctor as User)?.id ?? a.doctor) === String(doc.id))
-        .map((a) => ({
-          id: String(a.id),
-          patientName: (a.patient as Patient)?.name ?? 'Patient',
-          reason: a.reason ?? '',
-          status: a.status as AppointmentStatus,
-          timeLabel: formatTime(a.start, tenant),
-          startMinutes: minutesFromMidnight(new Date(a.start), tz),
-          durationMins: a.durationMins,
-          isWalkIn: Boolean(a.isWalkIn),
-          token: (a as { tokenNumber?: string }).tokenNumber,
-          doctorName: doc.name,
-          waHref: waReminderLink({
-            phone: (a.patient as Patient)?.phone,
-            currency: tenant?.settings?.currency,
-            doctorName: doc.name,
-            clinicName: tenant?.name ?? 'the clinic',
-            dateLabel: prettyDate,
-            timeLabel: formatTime(a.start, tenant),
-          }),
-        })),
+      id: String(a.id),
+      hhmm: '',
+      timeLabel: '',
+      startMin,
+      durationMins: a.durationMins,
+      patientId: String(p?.id ?? a.patient),
+      patientName: p?.name ?? 'Paciente',
+      reason: a.reason ?? '',
+      status: a.status as AppointmentStatus,
+      isWalkIn: Boolean(a.isWalkIn),
+      token: (a as { tokenNumber?: string | null }).tokenNumber ?? null,
+      online: a.source === 'online',
+      doctorId: String(doc?.id ?? a.doctor),
+      doctorName: doc?.name ?? '',
+      waHref: waReminderLink({
+        phone: p?.phone,
+        currency: tenant?.settings?.currency,
+        doctorName: doc?.name ?? 'su médico',
+        clinicName: tenant?.name ?? 'el consultorio',
+        dateLabel: prettyDate,
+        timeLabel: minutesLabel(startMin, regionalOf(tenant).timeFormat),
+      }),
+      visitId,
+      invoiceId: visitId ? invoiceByVisit.get(visitId) ?? null : null,
     }
   })
 
-  const totalToday = apptsRes.docs.length
+  // Day strip: three days back, ten ahead.
+  const days: AgendaDay[] = Array.from({ length: 14 }, (_, i) => {
+    const ds = addDays(todayStr, i - 3)
+    const dt = new Date(`${ds}T12:00:00Z`)
+    return { date: ds, dow: DOW[dt.getUTCDay()], num: dt.getUTCDate(), href: `/dashboard/appointments?date=${ds}`, active: ds === dateStr }
+  })
+  if (!days.some((x) => x.active)) {
+    const dt = new Date(`${dateStr}T12:00:00Z`)
+    days.push({ date: dateStr, dow: DOW[dt.getUTCDay()], num: dt.getUTCDate(), href: `/dashboard/appointments?date=${dateStr}`, active: true })
+  }
+
+  const requests: OnlineRequestRow[] = (requestsRes.docs as BookingRequest[]).map((r) => {
+    const p = r.patient as Patient
+    const digits = toWaDigits(p?.phone, tenant?.settings?.currency)
+    const text = `Hola ${p?.name ?? ''}, le escribimos de ${tenant?.name ?? 'el consultorio'} por su solicitud de cita.`
+    return {
+      id: String(r.id),
+      patientId: String(p?.id ?? r.patient),
+      patientName: p?.name ?? 'Paciente',
+      phone: p?.phone ?? '',
+      waHref: digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null,
+      doctorName: (r.doctor as User | null | undefined)?.name ?? null,
+      preferredDate: r.preferredDate ? formatDate(r.preferredDate, tenant) : null,
+      reason: r.reason,
+      urgent: Boolean(r.urgent),
+      receivedLabel: formatDateTime(r.createdAt, tenant),
+    }
+  })
+
+  const nowMin = isToday ? minutesInTz(new Date(), tz) : null
+  const nowMinutes = minutesInTz(new Date(), tz)
+  const nowHHMM = `${String(Math.floor(nowMinutes / 60)).padStart(2, '0')}:${String(nowMinutes % 60).padStart(2, '0')}`
+  const defaultDoctorId =
+    doctors.find((x) => x.id === String(user.id))?.id ?? doctors.find((x) => rows.some((r) => r.doctorId === x.id))?.id ?? doctors[0]?.id ?? ''
+  const subtitle = doctors.length === 1 ? doctors[0].name : prettyDate.charAt(0).toUpperCase() + prettyDate.slice(1)
 
   return (
-    <div>
-      <PageTitle
-        subtitle={`${prettyDate} · ${totalToday} appointment${totalToday === 1 ? '' : 's'}`}
-        action={
-          <>
-            <div className="flex items-center rounded-lg border border-border bg-surface">
-              <Link
-                href={`/dashboard/appointments?date=${addDays(dateStr, -1)}`}
-                className="flex size-9 items-center justify-center rounded-s-lg text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
-                title="Previous day"
-              >
-                <IconChevronLeft size={15} />
-              </Link>
-              <Link
-                href="/dashboard/appointments"
-                className={`tabular border-x border-border px-3.5 text-[13px] font-medium leading-9 transition-colors hover:bg-canvas ${
-                  isToday ? 'text-primary' : 'text-ink'
-                }`}
-              >
-                {isToday ? 'Today' : dateStr}
-              </Link>
-              <Link
-                href={`/dashboard/appointments?date=${addDays(dateStr, 1)}`}
-                className="flex size-9 items-center justify-center rounded-e-lg text-muted-foreground transition-colors hover:bg-canvas hover:text-ink"
-                title="Next day"
-              >
-                <IconChevronRight size={15} />
-              </Link>
-            </div>
-            <Link href="/dashboard/appointments/new" className={btnPrimary}>
-              <IconPlus size={15} />
-              New appointment
+    <>
+      <AppHeader title="Agenda" subtitle={isToday ? `Hoy · ${subtitle}` : subtitle} />
+      <AppContent>
+        {requests.length > 0 && <OnlineRequests rows={requests} />}
+        {doctors.length === 0 ? (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-[#e7e5e4] bg-white px-4 py-6 text-sm text-[#57534e]">
+            Todavía no hay médicos que atiendan pacientes.
+            <Link href="/dashboard/settings" className="font-medium text-[#0f766e] hover:text-[#115e59]">
+              Ir a Configuración
             </Link>
-          </>
-        }
-      >
-        Appointments
-      </PageTitle>
-
-      <DayRail
-        columns={columns}
-        openMinutes={openMinutes}
-        closeMinutes={closeMinutes}
-        nowMinutes={nowMinutes}
-        canRecordVisit={user.role === 'doctor' || user.role === 'owner'}
-      />
-    </div>
+          </div>
+        ) : (
+          <AgendaBoard
+            days={days}
+            date={dateStr}
+            today={todayStr}
+            dateLabel={prettyDate}
+            isToday={isToday}
+            nowMin={nowMin}
+            nowHHMM={nowHHMM}
+            durationMins={tenant?.settings?.appointmentDurationMins || 20}
+            doctors={doctors}
+            appts={rows}
+            clinical={canStartVisits(user)}
+            defaultDoctorId={defaultDoctorId}
+            initialToast={params.ok?.slice(0, 120)}
+          />
+        )}
+      </AppContent>
+    </>
   )
 }

@@ -2,14 +2,20 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { Card, StatusBadge, Avatar, Th, Td, btnGhost } from '@/components/primitives'
-import { IconChevronLeft, IconPrinter } from '@/components/icons'
+import { StatusBadge } from '@/components/ui-kit'
+import { btnGhost } from '@/components/primitives'
+import { AppHeader, AppContent } from '@/components/AppHeader'
 import { InvoiceActions } from '@/components/InvoiceActions'
 import { formatMoney, formatDateTime } from '@/lib/format'
-import type { Invoice, Patient, User } from '@/payload-types'
+import { avatarTint, initialsOf } from '@/lib/apptStatus'
+import { PAYMENT_METHODS } from '@/lib/constants'
+import type { Invoice, Patient } from '@/payload-types'
 
 const relId = (v: unknown): string =>
   v && typeof v === 'object' && 'id' in (v as Record<string, unknown>) ? String((v as { id: unknown }).id) : String(v)
+
+const CARD = 'rounded-[12px] border border-[#e7e5e4] bg-white'
+const TH = 'px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap text-[#57534e]'
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = await requireDashboardSession()
@@ -31,114 +37,126 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const patient = invoice.patient as Patient
   const lines = invoice.lineItems ?? []
   const payments = invoice.payments ?? []
+  const name = patient?.name ?? 'Paciente'
+  const tint = avatarTint(name)
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link href="/dashboard/appointments" className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-ink">
-        <IconChevronLeft size={14} />
-        Dashboard
-      </Link>
-
-      <div className="mt-3 mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="tabular font-display text-2xl font-semibold tracking-tight">{invoice.invoiceNumber}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{formatDateTime(invoice.createdAt, moneyCtx)}</p>
-        </div>
-        <StatusBadge status={invoice.voided ? 'voided' : (invoice.paymentStatus ?? 'unpaid')} />
-      </div>
-
-      {invoice.voided && (
-        <div className="mb-4 rounded-lg border border-destructive/25 bg-red-soft px-4 py-3 text-sm text-destructive">
-          <span className="font-semibold">Voided.</span> {invoice.voidReason}
-        </div>
-      )}
-
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="flex flex-col gap-4">
-          {/* Patient */}
-          <Card className="flex items-center gap-3 p-4">
-            <Avatar name={patient?.name ?? 'Patient'} />
-            <div className="min-w-0">
-              <Link href={`/dashboard/patients/${relId(patient)}`} className="truncate text-sm font-semibold hover:text-primary">
-                {patient?.name}
-              </Link>
-              <div className="tabular text-xs text-muted-foreground">{patient?.mrn}</div>
-            </div>
-          </Card>
-
-          {/* Line items */}
-          <Card className="overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-canvas/50">
-                  <Th>Description</Th>
-                  <Th className="text-end">Qty</Th>
-                  <Th className="text-end">Unit</Th>
-                  <Th className="text-end">Amount</Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {lines.map((li, i) => (
-                  <tr key={i}>
-                    <Td>{li.description}</Td>
-                    <Td className="tabular text-end">{li.quantity}</Td>
-                    <Td className="tabular text-end">{m(li.unitAmount)}</Td>
-                    <Td className="tabular text-end font-medium">{m(li.amount)}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <dl className="divide-y divide-border border-t border-border text-sm">
-              <div className="flex items-center justify-between px-3 py-2.5">
-                <dt className="text-muted-foreground">Total</dt>
-                <dd className="tabular font-semibold">{m(invoice.totalAmount)}</dd>
-              </div>
-              <div className="flex items-center justify-between px-3 py-2.5">
-                <dt className="text-muted-foreground">Paid</dt>
-                <dd className="tabular">{m(invoice.amountPaid)}</dd>
-              </div>
-              <div className="flex items-center justify-between px-3 py-2.5">
-                <dt className="font-medium">Balance due</dt>
-                <dd className="tabular font-semibold text-ink">{m(invoice.balanceDue)}</dd>
-              </div>
-            </dl>
-          </Card>
-
-          {/* Payments */}
-          {payments.length > 0 && (
-            <Card className="overflow-hidden">
-              <div className="border-b border-border px-4 py-3 text-sm font-semibold">Payments</div>
-              <ul className="divide-y divide-border text-sm">
-                {payments.map((p, i) => (
-                  <li key={i} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <span className="capitalize text-muted-foreground">{(p.method ?? '').replace('-', ' ')}</span>
-                    <span className="flex items-center gap-3">
-                      <span className="tabular text-xs text-faint">{p.receivedAt ? formatDateTime(p.receivedAt, moneyCtx) : ''}</span>
-                      <span className="tabular font-medium">{m(p.amount)}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-        </div>
-
-        {/* Actions */}
-        <Card className="sticky top-6 p-4">
-          <div className="mb-3 text-sm font-semibold">Billing</div>
-          <InvoiceActions
-            invoiceId={String(invoice.id)}
-            balanceDue={invoice.balanceDue ?? 0}
-            voided={Boolean(invoice.voided)}
-            canVoid={user.role === 'owner'}
-          />
-          {invoice.voided && <p className="text-sm text-muted-foreground">This invoice is voided and locked.</p>}
-          <Link href={`/print/receipt/${invoice.id}`} target="_blank" className={`${btnGhost} mt-3 w-full`}>
-            <IconPrinter size={15} />
-            Print / Download PDF
+    <>
+      <AppHeader
+        title={`Factura ${invoice.invoiceNumber}`}
+        subtitle={formatDateTime(invoice.createdAt, moneyCtx)}
+        backHref="/dashboard/invoices"
+        actions={
+          <Link href={`/print/receipt/${invoice.id}`} target="_blank" className={btnGhost}>
+            Imprimir recibo
           </Link>
-        </Card>
-      </div>
-    </div>
+        }
+      />
+      <AppContent>
+        {invoice.voided && (
+          <div className="mb-3 rounded-[12px] border border-[#1c1917] bg-white px-4 py-3 text-sm">
+            <span className="font-semibold">Anulada.</span> <span className="text-[#57534e]">{invoice.voidReason}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex min-w-0 flex-col gap-3">
+            {/* Patient */}
+            <div className={`${CARD} flex items-center gap-3 px-4 py-3.5`}>
+              <span
+                className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                style={{ background: tint.bg, color: tint.fg }}
+                aria-hidden
+              >
+                {initialsOf(name)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <Link href={`/dashboard/patients/${relId(patient)}`} className="block truncate text-[15px] font-semibold text-[#1c1917] hover:text-[#0f766e]">
+                  {patient?.name}
+                </Link>
+                <div className="font-mono text-xs text-[#57534e]">{patient?.mrn}</div>
+              </div>
+              <StatusBadge status={invoice.voided ? 'voided' : (invoice.paymentStatus ?? 'unpaid')} />
+            </div>
+
+            {/* Line items */}
+            <section className={`${CARD} overflow-hidden`}>
+              <div className="px-4 py-3.5 text-[15px] font-semibold">Detalle</div>
+              <div className="overflow-x-auto border-t border-[#f0eeec]">
+                <table className="w-full min-w-[520px] text-sm">
+                  <thead>
+                    <tr className="bg-[#fafaf7]">
+                      <th className={TH}>Descripción</th>
+                      <th className={`${TH} text-right`}>Cant.</th>
+                      <th className={`${TH} text-right`}>Precio unit.</th>
+                      <th className={`${TH} text-right`}>Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((li, i) => (
+                      <tr key={i} className="border-t border-[#f0eeec]">
+                        <td className="px-4 py-[11px] break-words">{li.description}</td>
+                        <td className="tabular px-4 py-[11px] text-right">{li.quantity}</td>
+                        <td className="tabular px-4 py-[11px] text-right whitespace-nowrap">{m(li.unitAmount)}</td>
+                        <td className="tabular px-4 py-[11px] text-right font-medium whitespace-nowrap">{m(li.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <dl className="border-t border-[#f0eeec] text-sm">
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <dt className="text-[#57534e]">Total</dt>
+                  <dd className="tabular font-semibold">{m(invoice.totalAmount)}</dd>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#f0eeec] px-4 py-2.5">
+                  <dt className="text-[#57534e]">Pagado</dt>
+                  <dd className="tabular">{m(invoice.amountPaid)}</dd>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#1c1917] px-4 py-3">
+                  <dt className="font-semibold">Saldo pendiente</dt>
+                  <dd className="tabular text-[17px] font-semibold">{m(invoice.balanceDue)}</dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Payments */}
+            {payments.length > 0 && (
+              <section className={`${CARD} overflow-hidden`}>
+                <div className="px-4 py-3.5 text-[15px] font-semibold">Pagos</div>
+                <ul className="text-sm">
+                  {payments.map((p, i) => (
+                    <li key={i} className="flex items-center justify-between gap-3 border-t border-[#f0eeec] px-4 py-[11px]">
+                      <span className="min-w-0">
+                        <span className="block font-medium">
+                          {PAYMENT_METHODS.find((pm) => pm.value === p.method)?.label ?? (p.method ?? '').replace('-', ' ')}
+                        </span>
+                        {p.receivedAt && <span className="tabular block text-[13px] text-[#57534e]">{formatDateTime(p.receivedAt, moneyCtx)}</span>}
+                      </span>
+                      <span className="tabular shrink-0 font-medium">{m(p.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          {/* Actions */}
+          <section className={`${CARD} p-4 lg:sticky lg:top-[72px]`}>
+            <div className="mb-3 text-[15px] font-semibold">Cobro</div>
+            <InvoiceActions
+              invoiceId={String(invoice.id)}
+              balanceDue={invoice.balanceDue ?? 0}
+              voided={Boolean(invoice.voided)}
+              canVoid={user.role === 'owner'}
+            />
+            {invoice.voided && <p className="text-sm text-[#57534e]">Esta factura está anulada y bloqueada.</p>}
+            <Link href={`/print/receipt/${invoice.id}`} target="_blank" className={`${btnGhost} mt-3 w-full`}>
+              Imprimir o descargar PDF
+            </Link>
+          </section>
+        </div>
+      </AppContent>
+    </>
   )
 }

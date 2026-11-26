@@ -55,7 +55,7 @@ describe('v4-A — export route', () => {
     const res = await call('patients', RANGE, token)
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toContain('text/csv')
-    expect(res.headers.get('content-disposition')).toContain('matab-patients-')
+    expect(res.headers.get('content-disposition')).toContain('-pacientes-')
 
     const body = await res.text()
     expect(body).toContain('Patient A')
@@ -101,6 +101,6 @@ describe('v4-A — export route', () => {
       overrideAccess: true,
     })
     expect(audit.totalDocs).toBeGreaterThan(0)
-    expect(audit.docs[0]!.summary).toContain('patients')
+    expect(audit.docs[0]!.summary).toContain('pacientes')
   })
 })

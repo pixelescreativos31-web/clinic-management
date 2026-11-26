@@ -14,7 +14,7 @@ export async function resetPasswordAction(
   const confirm = String(formData.get('confirm') || '')
 
   if (password !== confirm) {
-    return { ok: false, code: ERROR_CODES.VALIDATION, message: "Passwords don't match." }
+    return { ok: false, code: ERROR_CODES.VALIDATION, message: 'Las contraseñas no coinciden.' }
   }
 
   try {

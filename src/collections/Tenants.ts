@@ -8,12 +8,24 @@ import {
   DEFAULT_APPOINTMENT_DURATION,
   DEFAULT_OPEN_TIME,
   DEFAULT_CLOSE_TIME,
+  DEFAULT_COUNTRY,
+  PRACTICE_TYPES,
 } from '@/lib/constants'
 import { PLANS, planLabel } from '@/lib/plans'
+import { DEFAULT_REGIONAL, HEIGHT_UNITS, TIME_FORMATS, WEEK_STARTS, WEIGHT_UNITS } from '@/lib/regional'
+import { PROFILES } from '@/lib/profiles'
+import { ORG_TYPES } from '@/lib/specialties'
+
+/** Logos are stored inline as a small data URL (resized client-side, ≤ 300 KB). */
+export const MAX_LOGO_CHARS = 400_000
 import { auditTenants } from '@/hooks/audit'
 
+// The slug is the clinic's public booking URL (/agendar/<slug>), so accents are
+// folded ("Jiménez" → "jimenez") instead of turning into dashes.
 const slugify = (value: string): string =>
   value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
@@ -21,7 +33,7 @@ const slugify = (value: string): string =>
 
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
-  labels: { singular: 'Clinic', plural: 'Clinics' },
+  labels: { singular: 'Consultorio', plural: 'Consultorios' },
   admin: { useAsTitle: 'name', defaultColumns: ['name', 'city', 'status'] },
   access: {
     read: tenantSelfRead,
@@ -47,7 +59,7 @@ export const Tenants: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
-      label: 'Clinic name',
+      label: 'Nombre del consultorio',
     },
     {
       name: 'slug',
@@ -55,7 +67,7 @@ export const Tenants: CollectionConfig = {
       unique: true,
       index: true,
       access: { update: superAdminField },
-      admin: { description: 'Auto-generated from the name; used for public URLs later.' },
+      admin: { description: 'Se genera a partir del nombre; para URLs públicas en el futuro.' },
       hooks: {
         beforeValidate: [
           ({ value, data }) => value || (data?.name ? slugify(data.name) : value),
@@ -66,17 +78,47 @@ export const Tenants: CollectionConfig = {
       name: 'phone',
       type: 'text',
       required: true,
+      label: 'Teléfono',
       validate: (value: string | null | undefined) => {
-        if (!value) return 'Phone is required.'
+        if (!value) return 'El teléfono es obligatorio.'
         // Generic, market-agnostic validation: digits and +, 7–15 chars.
         return /^\+?[0-9]{7,15}$/.test(value.replace(/[\s-]/g, ''))
           ? true
-          : 'Enter a valid phone number (7–15 digits).'
+          : 'Ingrese un teléfono válido (7 a 15 dígitos).'
       },
     },
-    { name: 'address', type: 'textarea' },
-    { name: 'city', type: 'text' },
-    { name: 'country', type: 'text', defaultValue: 'Pakistan' },
+    {
+      // Shown in the app sidebar, the public booking page and printed documents.
+      name: 'logo',
+      type: 'textarea',
+      label: 'Logo',
+      admin: { description: 'Imagen como data URL (PNG/JPEG/WebP). Se sube desde Configuración.' },
+      validate: (value: string | null | undefined) => {
+        if (!value) return true
+        if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value)) return 'El logo debe ser una imagen PNG, JPEG o WebP.'
+        return value.length <= MAX_LOGO_CHARS ? true : 'El logo es demasiado grande.'
+      },
+    },
+    { name: 'address', type: 'textarea', label: 'Dirección' },
+    { name: 'city', type: 'text', label: 'Ciudad' },
+    { name: 'country', type: 'text', defaultValue: DEFAULT_COUNTRY, label: 'País' },
+    {
+      // Tax id printed on receipts (DR: RNC). Optional.
+      name: 'taxId',
+      type: 'text',
+      label: 'RNC / identificación fiscal',
+    },
+    {
+      // MVP: `individual` (one doctor, optional assistant) hides multi-doctor tooling
+      // in the UI. Data model is identical either way, so growing into `clinic` is a
+      // settings change, not a migration.
+      name: 'practiceType',
+      type: 'select',
+      required: true,
+      defaultValue: 'individual',
+      label: 'Tipo de práctica',
+      options: PRACTICE_TYPES.map((t) => ({ label: t.label, value: t.value })),
+    },
     {
       name: 'status',
       type: 'select',
@@ -86,9 +128,9 @@ export const Tenants: CollectionConfig = {
       options: [
         // `pending` = a self-serve signup awaiting super-admin approval (v3 §3.2).
         // Manually-created clinics start `active`; self-serve start `pending`.
-        { label: 'Pending approval', value: 'pending' },
-        { label: 'Active', value: 'active' },
-        { label: 'Suspended', value: 'suspended' },
+        { label: 'Pendiente de aprobación', value: 'pending' },
+        { label: 'Activo', value: 'active' },
+        { label: 'Suspendido', value: 'suspended' },
       ],
     },
     {
@@ -98,14 +140,15 @@ export const Tenants: CollectionConfig = {
       defaultValue: 'free',
       access: { update: superAdminField }, // only superAdmin moves a tenant between plans
       options: PLANS.map((p) => ({ label: planLabel(p), value: p })),
-      admin: { description: 'Subscription tier; limits enforced in code (src/lib/plans.ts).' },
+      label: 'Plan',
+      admin: { description: 'Nivel de suscripción; límites definidos en código (src/lib/plans.ts).' },
     },
     {
       // Owner's pending "Request upgrade" (v3 spec §5). Cleared by superAdmin on
       // approve/reject. No real billing — the enforcement & workflow are the product.
       name: 'upgradeRequest',
       type: 'group',
-      label: 'Upgrade request',
+      label: 'Solicitud de mejora de plan',
       fields: [
         {
           name: 'requestedPlan',
@@ -113,7 +156,7 @@ export const Tenants: CollectionConfig = {
           options: PLANS.map((p) => ({ label: planLabel(p), value: p })),
         },
         { name: 'requestedAt', type: 'date' },
-        { name: 'note', type: 'textarea', label: 'Owner note' },
+        { name: 'note', type: 'textarea', label: 'Nota del titular' },
       ],
     },
     {
@@ -123,22 +166,22 @@ export const Tenants: CollectionConfig = {
       defaultValue: 'manual',
       access: { update: superAdminField },
       options: [
-        { label: 'Self-serve', value: 'self-serve' },
+        { label: 'Autoregistro', value: 'self-serve' },
         { label: 'Manual', value: 'manual' },
       ],
-      admin: { description: 'How this clinic was created — for analytics.' },
+      admin: { description: 'Cómo se creó este consultorio (analítica).' },
     },
     {
       name: 'settings',
       type: 'group',
-      label: 'Settings',
+      label: 'Configuración',
       fields: [
         {
           name: 'appointmentDurationMins',
           type: 'number',
           required: true,
           defaultValue: DEFAULT_APPOINTMENT_DURATION,
-          label: 'Default slot length (minutes)',
+          label: 'Duración por defecto de la cita (minutos)',
           min: 5,
           max: 120,
         },
@@ -147,14 +190,14 @@ export const Tenants: CollectionConfig = {
           type: 'text',
           required: true,
           defaultValue: DEFAULT_OPEN_TIME,
-          label: 'Opening time (HH:mm)',
+          label: 'Hora de apertura (HH:mm)',
         },
         {
           name: 'closeTime',
           type: 'text',
           required: true,
           defaultValue: DEFAULT_CLOSE_TIME,
-          label: 'Closing time (HH:mm)',
+          label: 'Hora de cierre (HH:mm)',
         },
         {
           name: 'currency',
@@ -162,7 +205,8 @@ export const Tenants: CollectionConfig = {
           required: true,
           defaultValue: DEFAULT_CURRENCY,
           options: CURRENCIES.map((c) => ({ label: c.label, value: c.value })),
-          admin: { description: 'Market-agnostic core — all amounts are formatted from this.' },
+          label: 'Moneda',
+          admin: { description: 'Todos los montos se muestran en esta moneda.' },
         },
         {
           name: 'timezone',
@@ -170,8 +214,163 @@ export const Tenants: CollectionConfig = {
           required: true,
           defaultValue: DEFAULT_TIMEZONE,
           options: TIMEZONES.map((t) => ({ label: t.label, value: t.value })),
-          admin: { description: 'All times are displayed in this timezone.' },
+          label: 'Zona horaria',
+          admin: { description: 'Todas las horas se muestran en esta zona horaria.' },
         },
+        // Formato regional (src/lib/regional.ts). Optional with defaults, so clinics
+        // that never set them get 12 h, Sunday, lb and cm.
+        {
+          name: 'timeFormat',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.timeFormat,
+          options: TIME_FORMATS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Formato de hora',
+        },
+        {
+          name: 'weekStart',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.weekStart,
+          options: WEEK_STARTS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'La semana empieza el',
+        },
+        {
+          name: 'weightUnit',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.weightUnit,
+          options: WEIGHT_UNITS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Unidad de peso',
+          admin: { description: 'El peso se guarda siempre en kg; se muestra en esta unidad con la otra al lado.' },
+        },
+        {
+          name: 'heightUnit',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.heightUnit,
+          options: HEIGHT_UNITS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Unidad de talla',
+        },
+        {
+          // Macro profile (src/lib/specialties.ts). Blank on older clinics: derived
+          // from practiceType + profile by orgTypeOf().
+          name: 'orgType',
+          type: 'select',
+          options: ORG_TYPES.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Tipo de organización',
+        },
+        {
+          name: 'consultTemplate',
+          type: 'select',
+          defaultValue: 'general',
+          // Stored under its historical name; it now holds the practice profile
+          // (src/lib/profiles.ts), which decides the available record templates.
+          options: PROFILES.map((p) => ({ label: p.label, value: p.value })),
+          label: 'Perfil del consultorio',
+          admin: { description: 'Define qué fichas e historias clínicas usa el consultorio.' },
+        },
+        {
+          // Each clinic names its weight-management programme (Fénix: «Impulso Vital»).
+          name: 'programName',
+          type: 'text',
+          label: 'Nombre del programa de control de peso',
+          admin: { description: 'Para perfiles con programa (Nutrición, Estética y spa).' },
+        },
+        {
+          name: 'onlineBookingEnabled',
+          type: 'checkbox',
+          defaultValue: true,
+          label: 'Reservas en línea',
+          admin: { description: 'Los pacientes agendan desde el enlace público, dentro del horario de cada médico.' },
+        },
+        {
+          name: 'onlineRequestsEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+          label: 'Solicitudes adicionales o de emergencia',
+          admin: { description: 'Permite pedir una cita fuera de los horarios publicados; el consultorio la revisa.' },
+        },
+        {
+          // Fase 1 — two-step verification policy (spec §10). Written only by
+          // src/lib/twoFactorServer.ts (the Titular's toggle and the grace date).
+          name: 'security',
+          type: 'group',
+          label: 'Seguridad',
+          access: { update: superAdminField },
+          fields: [
+            {
+              name: 'require2faAll',
+              type: 'checkbox',
+              defaultValue: false,
+              label: 'Exigir verificación en dos pasos a todo el equipo',
+            },
+            {
+              // Until this date, a required user without 2FA only sees a reminder.
+              // Missing on clinics that predate 2FA: set to +14 days on first view.
+              name: 'twoFactorGraceUntil',
+              type: 'date',
+              label: 'Plazo para activar la verificación en dos pasos',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      // Fase 3 — PayPal subscription state (spec §3). Written only by
+      // src/lib/billing/service.ts (webhook, return page, daily job). A clinic with
+      // no subscriptionId is on a manual plan set by the super admin and is never
+      // touched by billing (no trial, no dunning, no downgrade).
+      name: 'billing',
+      type: 'group',
+      label: 'Suscripción',
+      access: { update: superAdminField },
+      admin: { description: 'Estado de la suscripción de PayPal. Lo actualizan los avisos de PayPal.' },
+      fields: [
+        { name: 'subscriptionId', type: 'text', label: 'Suscripción de PayPal', index: true },
+        { name: 'pendingSubscriptionId', type: 'text', label: 'Suscripción pendiente de aprobación', index: true },
+        { name: 'pendingSince', type: 'date', label: 'Pendiente desde' },
+        {
+          name: 'status',
+          type: 'select',
+          label: 'Estado',
+          defaultValue: 'none',
+          options: [
+            { label: 'Sin suscripción', value: 'none' },
+            { label: 'En prueba', value: 'trialing' },
+            { label: 'Activa', value: 'active' },
+            { label: 'Pago fallido', value: 'past_due' },
+            { label: 'Cancelada', value: 'cancelled' },
+          ],
+        },
+        { name: 'billingPlan', type: 'select', label: 'Plan pagado', options: PLANS.map((p) => ({ label: planLabel(p), value: p })) },
+        {
+          name: 'interval',
+          type: 'select',
+          label: 'Ciclo',
+          options: [
+            { label: 'Mensual', value: 'month' },
+            { label: 'Anual', value: 'year' },
+          ],
+        },
+        { name: 'quantity', type: 'number', label: 'Médicos pagados (Clínica privada)' },
+        { name: 'trialUsed', type: 'checkbox', label: 'Ya usó su prueba', defaultValue: false },
+        { name: 'trialEndsAt', type: 'date', label: 'Fin de la prueba' },
+        { name: 'trialEndingNotifiedAt', type: 'date', label: 'Aviso «su prueba termina mañana»' },
+        { name: 'currentPeriodEnd', type: 'date', label: 'Fin del periodo pagado' },
+        { name: 'pastDueSince', type: 'date', label: 'Pago fallido desde' },
+        { name: 'dunningStage', type: 'number', label: 'Avisos de cobranza enviados', defaultValue: 0 },
+        { name: 'downgradedAt', type: 'date', label: 'Bajó a Gratis el' },
+        {
+          name: 'downgradeReason',
+          type: 'select',
+          label: 'Motivo de la bajada',
+          options: [
+            { label: 'Impago', value: 'unpaid' },
+            { label: 'Cancelación', value: 'cancelled' },
+          ],
+        },
+        { name: 'downgradedFromPlan', type: 'select', label: 'Plan anterior', options: PLANS.map((p) => ({ label: planLabel(p), value: p })) },
+        { name: 'winbackStage', type: 'number', label: 'Avisos «recupere su plan» enviados', defaultValue: 0 },
+        { name: 'payerEmailMasked', type: 'text', label: 'Cuenta de PayPal' },
+        { name: 'cancelReason', type: 'text', label: 'Motivo de cancelación' },
+        { name: 'lastEventAt', type: 'date', label: 'Último aviso de PayPal aplicado' },
       ],
     },
   ],

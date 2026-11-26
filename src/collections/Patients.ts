@@ -1,9 +1,10 @@
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { superAdminOnly, tenantScoped, getTenantID } from '@/access'
+import { superAdminOnly, tenantScoped, getTenantID, clinicalReadField } from '@/access'
 import { forceTenant } from '@/hooks/tenant'
 import { enforcePlanLimit } from '@/hooks/planLimit'
-import { GENDERS, BLOOD_GROUPS, ERROR_CODES } from '@/lib/constants'
+import { GENDERS, GENDER_LABELS, BLOOD_GROUPS, DOCUMENT_TYPES, ERROR_CODES, MARITAL_STATUSES } from '@/lib/constants'
+import { auditPatients } from '@/hooks/audit'
 
 /** Strip spaces/dashes; keep leading + and digits. Market-agnostic. */
 const normalizePhone = (raw: string): string => {
@@ -15,7 +16,8 @@ const normalizePhone = (raw: string): string => {
 
 export const Patients: CollectionConfig = {
   slug: 'patients',
-  admin: { useAsTitle: 'name', defaultColumns: ['mrn', 'name', 'phone', 'gender'] },
+  labels: { singular: 'Paciente', plural: 'Pacientes' },
+  admin: { useAsTitle: 'name', defaultColumns: ['mrn', 'name', 'documentNumber', 'phone'] },
   access: {
     read: tenantScoped,
     create: tenantScoped,
@@ -25,12 +27,27 @@ export const Patients: CollectionConfig = {
   timestamps: true,
   hooks: {
     beforeValidate: [
-      ({ data }) => {
+      ({ data, originalDoc }) => {
         if (!data) return data
         if (data.phone) data.phone = normalizePhone(data.phone)
-        // Clinics often know only the age. Require at least one of DOB / age.
-        if (!data.dateOfBirth && (data.ageYears === undefined || data.ageYears === null)) {
-          throw new APIError('Provide a date of birth or an age.', 400, {
+        if (data.emergencyContact?.phone) {
+          data.emergencyContact.phone = normalizePhone(data.emergencyContact.phone)
+        }
+        // Cédula is stored digits-only (001-1234567-8 → 00112345678) so search and
+        // dedupe don't depend on how it was typed.
+        if (data.documentNumber && (data.documentType ?? 'cedula') === 'cedula') {
+          data.documentNumber = String(data.documentNumber).replace(/[^0-9]/g, '')
+        }
+        // Clinics often know only the age. Require at least one of DOB / age, and
+        // the sex — except for patients who booked online with just name + phone
+        // (`pendingIntake`); staff complete those at check-in, which clears the flag.
+        const merged = { ...(originalDoc ?? {}), ...data }
+        const hasAge = Boolean(merged.dateOfBirth) || (merged.ageYears !== undefined && merged.ageYears !== null)
+        const complete = hasAge && Boolean(merged.gender)
+        if (complete) {
+          if (merged.pendingIntake) data.pendingIntake = false
+        } else if (!merged.pendingIntake) {
+          throw new APIError(hasAge ? 'Indique el sexo del paciente.' : 'Indique la fecha de nacimiento o la edad.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -47,7 +64,7 @@ export const Patients: CollectionConfig = {
         if (operation !== 'create') return data
         const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
         if (!tenantID) {
-          throw new APIError('Cannot assign a patient number without a clinic.', 400, {
+          throw new APIError('No se puede asignar un número de expediente sin consultorio.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -61,6 +78,7 @@ export const Patients: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [auditPatients],
   },
   fields: [
     {
@@ -74,38 +92,127 @@ export const Patients: CollectionConfig = {
     {
       name: 'mrn',
       type: 'text',
-      label: 'Patient number',
-      admin: { readOnly: true, description: 'Auto-assigned per clinic.' },
+      label: 'N.º de expediente',
+      admin: { readOnly: true, description: 'Se asigna automáticamente por consultorio.' },
     },
-    { name: 'name', type: 'text', required: true },
-    { name: 'phone', type: 'text', required: true, index: true },
+    { name: 'name', type: 'text', required: true, label: 'Nombre completo' },
+    {
+      name: 'documentType',
+      type: 'select',
+      defaultValue: 'cedula',
+      label: 'Tipo de documento',
+      options: DOCUMENT_TYPES.map((d) => ({ label: d.label, value: d.value })),
+    },
+    { name: 'documentNumber', type: 'text', index: true, label: 'N.º de documento' },
+    { name: 'phone', type: 'text', required: true, index: true, label: 'Teléfono' },
+    { name: 'email', type: 'email', label: 'Correo electrónico' },
     {
       name: 'gender',
       type: 'select',
-      required: true,
-      options: GENDERS.map((g) => ({ label: g, value: g })),
+      label: 'Sexo', // required by the beforeValidate hook unless pendingIntake
+      options: GENDERS.map((g) => ({ label: GENDER_LABELS[g], value: g })),
     },
     {
       name: 'dateOfBirth',
       type: 'date',
+      label: 'Fecha de nacimiento',
       admin: { date: { pickerAppearance: 'dayOnly' } },
     },
-    { name: 'ageYears', type: 'number', min: 0, max: 130, label: 'Age (years)' },
+    { name: 'ageYears', type: 'number', min: 0, max: 130, label: 'Edad (años)' },
+    {
+      name: 'pendingIntake',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Datos por completar',
+      admin: { description: 'Registrado desde la reserva en línea; falta edad o sexo.' },
+    },
     {
       name: 'bloodGroup',
       type: 'select',
+      label: 'Grupo sanguíneo',
       options: BLOOD_GROUPS.map((b) => ({ label: b, value: b })),
+    },
+    { name: 'address', type: 'textarea', label: 'Dirección' },
+    { name: 'occupation', type: 'text', label: 'Ocupación' },
+    { name: 'nationality', type: 'text', label: 'Nacionalidad' },
+    {
+      name: 'maritalStatus',
+      type: 'select',
+      label: 'Estado civil',
+      options: MARITAL_STATUSES.map((m) => ({ label: m.label, value: m.value })),
+    },
+    { name: 'religion', type: 'text', label: 'Religión' },
+    { name: 'referredBy', type: 'text', label: 'Referido por' },
+    {
+      name: 'insurance',
+      type: 'group',
+      label: 'Seguro médico',
+      fields: [
+        { name: 'provider', type: 'text', label: 'Aseguradora (ARS)' },
+        { name: 'affiliateNumber', type: 'text', label: 'N.º de afiliado' },
+        { name: 'plan', type: 'text', label: 'Plan' },
+      ],
+    },
+    {
+      name: 'emergencyContact',
+      type: 'group',
+      label: 'Contacto de emergencia',
+      fields: [
+        { name: 'name', type: 'text', label: 'Nombre' },
+        { name: 'relationship', type: 'text', label: 'Parentesco' },
+        { name: 'phone', type: 'text', label: 'Teléfono' },
+      ],
     },
     {
       name: 'allergies',
       type: 'textarea',
-      admin: { description: 'Shown prominently on the patient profile (safety).' },
+      label: 'Alergias',
+      admin: { description: 'Se muestra de forma destacada en el expediente (seguridad).' },
     },
-    { name: 'notes', type: 'textarea' },
+    {
+      // Background ("antecedentes") — the part of the clinical history that changes
+      // rarely and is reviewed at every consultation.
+      name: 'history',
+      type: 'group',
+      label: 'Antecedentes',
+      // Clinical background is for clinical roles only; an assistant registers the
+      // patient's demographics but never reads or edits their medical history.
+      access: { read: clinicalReadField, create: clinicalReadField, update: clinicalReadField },
+      fields: [
+        { name: 'childhood', type: 'textarea', label: 'Patologías de la niñez' },
+        { name: 'personal', type: 'textarea', label: 'Patologías de la adultez (patológicos personales)' },
+        { name: 'chronicConditions', type: 'textarea', label: 'Enfermedades crónicas' },
+        { name: 'surgical', type: 'textarea', label: 'Antecedentes quirúrgicos' },
+        // Family history by relative (programme requirement), plus a free field.
+        { name: 'familyMother', type: 'textarea', label: 'Antecedentes familiares — Madre' },
+        { name: 'familyFather', type: 'textarea', label: 'Antecedentes familiares — Padre' },
+        { name: 'familySiblings', type: 'textarea', label: 'Antecedentes familiares — Hermanos' },
+        { name: 'family', type: 'textarea', label: 'Antecedentes familiares — Otros' },
+        { name: 'medications', type: 'textarea', label: 'Medicamentos actuales' },
+        { name: 'habits', type: 'textarea', label: 'Hábitos (tabaco, alcohol, actividad física)' },
+        { name: 'gynecoObstetric', type: 'textarea', label: 'Antecedentes gineco-obstétricos' },
+        // E-A-P-C: embarazos, abortos, partos, cesáreas (one numeric box each).
+        {
+          name: 'obstetric',
+          type: 'group',
+          label: 'E-A-P-C',
+          fields: [
+            { name: 'pregnancies', type: 'number', min: 0, max: 30, label: 'Embarazos (E)' },
+            { name: 'abortions', type: 'number', min: 0, max: 30, label: 'Abortos (A)' },
+            { name: 'births', type: 'number', min: 0, max: 30, label: 'Partos (P)' },
+            { name: 'cesareans', type: 'number', min: 0, max: 30, label: 'Cesáreas (C)' },
+          ],
+        },
+        { name: 'vaccines', type: 'textarea', label: 'Vacunas' },
+        { name: 'otherFindings', type: 'textarea', label: 'Otros antecedentes y hallazgos actuales' },
+      ],
+    },
+    { name: 'notes', type: 'textarea', label: 'Notas' },
   ],
   // Compound indexes (spec §5)
   indexes: [
     { fields: ['tenant', 'phone'] },
+    { fields: ['tenant', 'documentNumber'] },
     { fields: ['tenant', 'mrn'], unique: true },
   ],
 }

@@ -1,16 +1,17 @@
 import React from 'react'
-import { figtree, bricolage } from '@/lib/fonts'
+import { geist, geistMono } from '@/lib/fonts'
+import { APP_NAME, APP_TAGLINE } from '@/lib/brand'
 import './globals.css'
 
 export const metadata = {
-  title: 'Matab — clinic management, simplified',
+  title: `${APP_NAME} — ${APP_TAGLINE}`,
   description:
-    'Multi-tenant clinic management for small clinics — appointments, patients and staff in one calm dashboard.',
+    'Agenda, historia clínica, recetas, caja y recordatorios por WhatsApp para médicos y clínicas en República Dominicana.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
+    <html lang="es" className={`${geist.variable} ${geistMono.variable}`}>
       <body>{children}</body>
     </html>
   )

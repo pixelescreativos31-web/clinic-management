@@ -1,5 +1,7 @@
 'use server'
 
+import { asFormat } from '@/lib/profiles'
+import { asSpecialty } from '@/lib/specialties'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { toActionError, type ActionResult } from '@/lib/errors'
@@ -15,9 +17,12 @@ type StaffInput = {
   name: string
   email: string
   password: string
-  role: 'doctor' | 'receptionist' | 'owner'
+  role: 'doctor' | 'therapist' | 'receptionist' | 'owner'
   phone?: string
   specialty?: string
+  /** Clinical specialty (catalogue key) — doctors only. */
+  specialtyKey?: string
+  defaultFormat?: string
   consultationFee?: number
   availabilityType?: string
   availableDays?: string[]
@@ -27,10 +32,12 @@ type StaffInput = {
 
 export async function createStaff(input: StaffInput): Promise<ActionResult<{ id: string }>> {
   const ctx = await ownerCtx()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   if (!input.name || !input.email || !input.password) {
-    return { ok: false, code: 'VALIDATION', message: 'Name, email and password are required.' }
+    return { ok: false, code: 'VALIDATION', message: 'El nombre, el correo y la contraseña son obligatorios.' }
   }
+  // Doctors and therapists both carry a bookable profile (specialty, hours, fee).
+  const bookable = input.role === 'doctor' || input.role === 'therapist'
   try {
     const created = await ctx.payload.create({
       collection: 'users',
@@ -42,12 +49,14 @@ export async function createStaff(input: StaffInput): Promise<ActionResult<{ id:
         password: input.password,
         role: input.role,
         phone: input.phone || undefined,
-        specialty: input.role === 'doctor' ? input.specialty : undefined,
-        consultationFee: input.role === 'doctor' ? input.consultationFee : undefined,
-        availabilityType: input.role === 'doctor' ? input.availabilityType || 'regular' : undefined,
-        availableDays: input.role === 'doctor' ? input.availableDays : undefined,
-        availableFrom: input.role === 'doctor' ? input.availableFrom || '09:00' : undefined,
-        availableTo: input.role === 'doctor' ? input.availableTo || '17:00' : undefined,
+        specialty: bookable ? input.specialty : undefined,
+        defaultFormat: input.role === 'doctor' ? asFormat(input.defaultFormat) ?? undefined : undefined,
+        specialtyKey: input.role === 'doctor' ? asSpecialty(input.specialtyKey) ?? undefined : undefined,
+        consultationFee: bookable ? input.consultationFee : undefined,
+        availabilityType: bookable ? input.availabilityType || 'regular' : undefined,
+        availableDays: bookable ? input.availableDays : undefined,
+        availableFrom: bookable ? input.availableFrom || '09:00' : undefined,
+        availableTo: bookable ? input.availableTo || '17:00' : undefined,
       } as never,
     })
     revalidatePath('/dashboard/staff')
@@ -61,12 +70,20 @@ type StaffUpdateInput = Omit<StaffInput, 'password'> & { password?: string }
 
 export async function updateStaff(id: string, input: StaffUpdateInput): Promise<ActionResult<{ id: string }>> {
   const ctx = await ownerCtx()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   if (!input.name || !input.email) {
-    return { ok: false, code: 'VALIDATION', message: 'Name and email are required.' }
+    return { ok: false, code: 'VALIDATION', message: 'El nombre y el correo son obligatorios.' }
+  }
+  // Guard against locking yourself out: the account owner can't demote themselves
+  // from this screen (their medical profile lives in Configuración).
+  if (String(id) === String(ctx.user.id) && input.role !== ctx.user.role) {
+    return { ok: false, code: 'VALIDATION', message: 'No puede cambiar su propio rol.' }
   }
   try {
-    const isDoctor = input.role === 'doctor'
+    const isDoctor = input.role === 'doctor' || input.role === 'therapist'
+    // Owners' practitioner details are managed in Configuración → Mi perfil médico;
+    // leave them untouched here (null would wipe a practising owner's profile).
+    const keep = input.role === 'owner' ? undefined : null
     await ctx.payload.update({
       collection: 'users',
       id,
@@ -79,8 +96,11 @@ export async function updateStaff(id: string, input: StaffUpdateInput): Promise<
         ...(input.password ? { password: input.password } : {}),
         role: input.role,
         phone: input.phone || null,
-        specialty: isDoctor ? input.specialty || null : null,
-        consultationFee: isDoctor ? (input.consultationFee ?? null) : null,
+        specialty: isDoctor ? input.specialty || null : keep,
+        ...(input.role === 'doctor' ? { defaultFormat: asFormat(input.defaultFormat), specialtyKey: asSpecialty(input.specialtyKey) } : {}),
+        // A doctor turned therapist/receptionist loses the clinical specialty.
+        ...(input.role === 'therapist' || input.role === 'receptionist' ? { specialtyKey: null } : {}),
+        consultationFee: isDoctor ? (input.consultationFee ?? null) : keep,
         availabilityType: isDoctor ? input.availabilityType || 'regular' : undefined,
         availableDays: isDoctor ? input.availableDays : undefined,
         availableFrom: isDoctor ? input.availableFrom || '09:00' : undefined,
@@ -96,7 +116,10 @@ export async function updateStaff(id: string, input: StaffUpdateInput): Promise<
 
 export async function toggleStaffActive(id: string, active: boolean): Promise<ActionResult<null>> {
   const ctx = await ownerCtx()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
+  if (!active && String(id) === String(ctx.user.id)) {
+    return { ok: false, code: 'VALIDATION', message: 'No puede desactivar su propia cuenta.' }
+  }
   try {
     await ctx.payload.update({
       collection: 'users',

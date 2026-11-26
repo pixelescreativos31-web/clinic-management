@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#fafaf7;color:#1c1917;font-family:Geist,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:#0f766e;text-decoration:none}
+a:hover{color:#115e59}
+*{box-sizing:border-box}
+button,input,textarea,select{font-family:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #0f766e;outline-offset:1px}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;align-items:flex-start">
+  <aside style="flex:1 1 240px;max-width:{{ railMax }};position:{{ railPos }};top:0;max-height:{{ railH }};overflow-y:auto;padding:16px 16px 20px;background:#ffffff;border-right:1px solid #e7e5e4;border-bottom:1px solid #e7e5e4">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><a href="medira Inicio.dc.html" style="font-size:21px;font-weight:600;letter-spacing:-.04em;color:#1c1917">medira</a><span style="font-size:12px;color:#78716c">Flujos · {{ total }} pantallas</span></div>
+    <sc-if value="{{ movil }}" hint-placeholder-val="{{ false }}">
+      <select value="{{ actual }}" onChange="{{ elegir }}" style="margin-top:12px;width:100%;height:44px;padding:0 10px;border:1px solid #d6d3d1;border-radius:10px;background:#ffffff;font-size:15px;color:#1c1917">
+        <sc-for list="{{ todas }}" as="o" hint-placeholder-count="6"><option value="{{ o.id }}">{{ o.n }}</option></sc-for>
+      </select>
+    </sc-if>
+    <sc-if value="{{ escritorio }}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="4">
+        <div style="padding:14px 8px 4px;font-size:12px;font-weight:500;color:#78716c">{{ g.g }}</div>
+        <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="6"><button onClick="{{ i.pick }}" style="width:100%;min-height:32px;padding:5px 10px;border:0;border-radius:8px;background:{{ i.bg }};color:{{ i.fg }};font-size:14px;font-weight:{{ i.w }};text-align:left;cursor:pointer" style-hover="background:#f0eeec">{{ i.n }}</button></sc-for>
+      </sc-for>
+    </sc-if>
+  </aside>
+
+  <main data-screen-label="{{ p.n }}" style="flex:4 1 360px;min-width:0;min-height:{{ mainH }};display:flex;flex-direction:column;align-items:center;padding:clamp(20px,5vw,56px) 16px 56px;background:{{ p.fondo }}">
+    <div style="width:100%;max-width:{{ p.ancho }}">
+      <sc-if value="{{ p.clinica }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <div style="width:40px;height:40px;border-radius:10px;background:repeating-linear-gradient(135deg,#e7e5e4 0 6px,#f5f5f4 6px 12px);display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:9px;color:#57534e">logo</div>
+          <div><div style="font-weight:600">Consultorio Dra. Carmen Rosario</div><div style="font-size:13px;color:#57534e">Av. Abraham Lincoln 1001 · 809-555-0100</div></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ p.marca }}" hint-placeholder-val="{{ true }}"><div style="margin-bottom:20px;font-size:22px;font-weight:600;letter-spacing:-.04em;text-align:center">medira</div></sc-if>
+      <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:14px;padding:clamp(20px,5vw,28px)">
+        <sc-if value="{{ p.conPaso }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:4px;margin-bottom:6px"><sc-for list="{{ p.barras }}" as="b" hint-placeholder-count="4"><div style="flex:1;height:4px;border-radius:2px;background:{{ b }}"></div></sc-for></div>
+          <div style="margin-bottom:16px;font-size:12px;color:#57534e">{{ p.pasoTxt }}</div>
+        </sc-if>
+        <h1 style="margin:0;font-size:22px;font-weight:600;line-height:1.2;letter-spacing:-.03em;text-wrap:balance">{{ p.t }}</h1>
+        <p style="margin:6px 0 0;font-size:15px;color:#57534e;text-wrap:pretty">{{ p.sub }}</p>
+
+        <sc-if value="{{ p.conAlerta }}" hint-placeholder-val="{{ false }}"><div style="margin-top:14px;padding:10px 12px;border:1px solid {{ p.alertaC }};border-radius:10px;color:{{ p.alertaC }};font-size:14px;font-weight:500">{{ p.alerta }}</div></sc-if>
+
+        <sc-if value="{{ p.b.estado }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;display:flex;gap:2px;padding:3px;border-radius:10px;background:#f0eeec"><sc-for list="{{ p.estados }}" as="e" hint-placeholder-count="3"><button onClick="{{ e.pick }}" style="flex:1;height:32px;border:0;border-radius:8px;background:{{ e.bg }};color:{{ e.fg }};font-size:13px;font-weight:500;cursor:pointer">{{ e.t }}</button></sc-for></div>
+          <div style="margin-top:12px;padding:16px;border-radius:10px;background:{{ p.est.bg }};color:#ffffff"><div style="font-size:18px;font-weight:600">{{ p.est.t }}</div><div style="margin-top:2px;font-size:14px">{{ p.est.d }}</div></div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.espera }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px"><div style="height:12px;width:70%;border-radius:6px;background:#f0eeec"></div><div style="height:12px;width:92%;border-radius:6px;background:#f0eeec"></div><div style="height:12px;width:54%;border-radius:6px;background:#f0eeec"></div></div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.opciones }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ p.opciones }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.pick }}" style="min-height:52px;padding:10px 14px;border:1px solid {{ o.bd }};border-radius:10px;background:{{ o.bg }};color:{{ o.fg }};text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px"><span><span style="display:block;font-size:15px;font-weight:600">{{ o.t }}</span><span style="display:block;font-size:13px;color:{{ o.sub }}">{{ o.d }}</span></span><span style="flex:none;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums">{{ o.v }}</span></button></sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.lineas }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;border:1px solid #e7e5e4;border-radius:10px;overflow:hidden">
+            <sc-for list="{{ p.lineas }}" as="l" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;gap:16px;padding:11px 14px;border-top:1px solid {{ l.sep }};font-size:14px"><span style="color:#57534e">{{ l.l }}</span><span style="font-weight:500;text-align:right;font-variant-numeric:tabular-nums">{{ l.v }}</span></div></sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.doc }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;border:1px solid #d6d3d1;border-radius:8px;padding:16px;font-size:14px">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:2px solid #1c1917"><span style="font-weight:600">Dra. Carmen Rosario</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#57534e">{{ p.docFolio }}</span></div>
+            <sc-for list="{{ p.doc }}" as="d" hint-placeholder-count="3"><div style="padding:10px 0;border-bottom:1px solid #f0eeec"><div style="font-weight:500">{{ d.a }}</div><div style="font-size:13px;color:#57534e">{{ d.b }}</div></div></sc-for>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:10px;font-size:12px;color:#57534e"><div style="width:40px;height:40px;background:repeating-linear-gradient(135deg,#1c1917 0 3px,#ffffff 3px 6px)"></div>Verifique este documento con el código QR.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.qr }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+            <div style="width:132px;height:132px;border-radius:8px;background:repeating-linear-gradient(135deg,#1c1917 0 5px,#ffffff 5px 10px);display:flex;align-items:center;justify-content:center"><span style="background:#ffffff;padding:2px 6px;font-family:'Geist Mono',monospace;font-size:11px">código QR</span></div>
+            <div style="flex:1 1 160px;font-size:14px"><div style="color:#57534e">O escriba esta clave en su app:</div><div style="margin-top:4px;font-family:'Geist Mono',monospace;font-size:15px;font-weight:500;word-break:break-all">JBSW Y3DP EHPK 3PXP</div></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.respaldo }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><sc-for list="{{ p.respaldo }}" as="c" hint-placeholder-count="10"><div style="padding:9px 10px;border:1px solid #e7e5e4;border-radius:8px;font-family:'Geist Mono',monospace;font-size:14px;text-align:center">{{ c }}</div></sc-for></div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.usuarios }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;border:1px solid #e7e5e4;border-radius:10px;overflow:hidden">
+            <sc-for list="{{ p.usuarios }}" as="u" hint-placeholder-count="4"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-top:1px solid {{ u.sep }};font-size:14px"><span><span style="display:block;font-weight:500">{{ u.n }}</span><span style="display:block;font-size:13px;color:#57534e">{{ u.r }}</span></span><button onClick="{{ u.toggle }}" disabled="{{ u.fijo }}" style="flex:none;width:48px;height:28px;padding:3px;border:0;border-radius:14px;background:{{ u.bg }};cursor:pointer;display:flex;justify-content:{{ u.j }}"><span style="width:22px;height:22px;border-radius:50%;background:#ffffff"></span></button></div></sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.conSeg }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;font-size:13px;font-weight:500;color:#44403c">{{ p.segL }}</div>
+          <div style="margin-top:6px;display:flex;gap:2px;padding:3px;border-radius:10px;background:#f0eeec"><sc-for list="{{ p.seg }}" as="e" hint-placeholder-count="2"><button onClick="{{ e.pick }}" style="flex:1;min-height:40px;padding:4px 8px;border:0;border-radius:8px;background:{{ e.bg }};color:{{ e.fg }};font-size:14px;font-weight:500;cursor:pointer">{{ e.t }}</button></sc-for></div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.estrellas }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px"><sc-for list="{{ p.estrellas }}" as="e" hint-placeholder-count="5"><button onClick="{{ e.pick }}" style="height:52px;border:1px solid {{ e.bd }};border-radius:10px;background:{{ e.bg }};color:{{ e.fg }};font-size:18px;font-weight:600;cursor:pointer">{{ e.n }}</button></sc-for></div>
+          <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:12px;color:#57534e"><span>Mala</span><span>Excelente</span></div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.campos }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ p.campos }}" as="c" hint-placeholder-count="3"><label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">{{ c.l }}<input type="{{ c.type }}" value="{{ c.val }}" onChange="{{ c.set }}" placeholder="{{ c.ph }}" style="height:48px;padding:0 12px;border:1px solid #d6d3d1;border-radius:10px;background:#ffffff;font-size:16px;font-weight:400;color:#1c1917;width:100%"><span style="font-size:12px;font-weight:400;color:#57534e">{{ c.hint }}</span></label></sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ p.b.codigo }}" hint-placeholder-val="{{ false }}">
+          <label style="margin-top:16px;display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">Código de 6 dígitos<input value="{{ codigo }}" onChange="{{ setCodigo }}" inputMode="numeric" maxLength="6" placeholder="000000" style="height:56px;padding:0 12px;border:1px solid #d6d3d1;border-radius:10px;font-family:'Geist Mono',monospace;font-size:26px;letter-spacing:.4em;text-align:center;color:#1c1917;width:100%"></label>
+        </sc-if>
+
+        <sc-if value="{{ p.b.firma }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ firmar }}" style="margin-top:16px;width:100%;height:120px;border:1px dashed {{ firma.bd }};border-radius:10px;background:#fafaf7;color:{{ firma.fg }};font-size:15px;font-weight:500;cursor:pointer">{{ firma.t }}</button>
+        </sc-if>
+
+        <sc-if value="{{ p.conCheck }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ p.toggleCheck }}" style="margin-top:14px;display:flex;align-items:center;gap:10px;min-height:44px;padding:0;border:0;background:none;font-size:14px;color:#1c1917;text-align:left;cursor:pointer"><span style="flex:none;width:22px;height:22px;border-radius:6px;border:1px solid {{ p.checkBd }};background:{{ p.checkBg }};color:#ffffff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">{{ p.checkMark }}</span>{{ p.check }}</button>
+        </sc-if>
+
+        <sc-if value="{{ p.conBtn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.run }}" style="margin-top:18px;width:100%;height:50px;border:0;border-radius:10px;background:{{ p.btnBg }};color:#ffffff;font-size:16px;font-weight:600;cursor:pointer">{{ p.btn }}</button></sc-if>
+        <sc-if value="{{ p.conBtn2 }}" hint-placeholder-val="{{ false }}"><button onClick="{{ p.run2 }}" style="margin-top:8px;width:100%;height:46px;border:1px solid #d6d3d1;border-radius:10px;background:#ffffff;color:#1c1917;font-size:15px;font-weight:500;cursor:pointer">{{ p.btn2 }}</button></sc-if>
+        <sc-if value="{{ p.conNota }}" hint-placeholder-val="{{ false }}"><p style="margin:14px 0 0;font-size:13px;color:#57534e;text-wrap:pretty">{{ p.nota }}</p></sc-if>
+      </div>
+      <sc-if value="{{ p.clinica }}" hint-placeholder-val="{{ false }}"><div style="margin-top:14px;text-align:center;font-size:12px;color:#78716c">Enviado con medira</div></sc-if>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;pantallaInicial&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;r0&quot;,&quot;e1&quot;,&quot;c1&quot;,&quot;p1&quot;],&quot;default&quot;:&quot;r0&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { id: null, movil: false, f: {}, sel: {}, chk: {}, off: {}, codigo: '', firmado: false, err: '' };
+  componentDidMount() {
+    this._mq = () => { const movil = window.innerWidth < 820; if (movil !== this.state.movil) this.setState({ movil }); };
+    this._mq(); window.addEventListener('resize', this._mq);
+    if (window.ResizeObserver) { this._ro = new ResizeObserver(this._mq); this._ro.observe(document.documentElement); }
+    requestAnimationFrame(this._mq); this._t1 = setTimeout(this._mq, 400); this._t2 = setTimeout(this._mq, 1500);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._mq); if (this._ro) this._ro.disconnect(); clearTimeout(this._t1); clearTimeout(this._t2); }
+  renderVals() {
+    const S = this.state, movil = S.movil;
+    const g = (k, d) => S.f[k] ?? d;
+    const PLANES = [['Gratis', 0, '1 médico, 50 pacientes, sin tarjeta'], ['Médico independiente', 34.95, '1 médico y su asistente'], ['Consultorio', 49.95, 'Hasta 3 médicos, personal ilimitado'], ['Clínica privada', 14.95, 'Por médico, mínimo 4']];
+    const ORG = [['Consultorio', 'Un médico o pocos, con asistente', 1], ['Clínica estética', 'Médicos y terapeutas, paquetes de sesiones', 2], ['Clínica de especialidades', 'Varios médicos de distintas especialidades', 3], ['Policlínica', 'Varias áreas y cajas', 3], ['Hospital', 'Contrato institucional con demo guiada', -1]];
+    const oi = S.sel.r3 ?? 0, org = ORG[oi][0], sug = ORG[oi][2], pi = S.sel.r0 ?? 2, plan = PLANES[pi], atiende = (S.sel.atiende ?? 0) === 0;
+    const medicos = Math.max(pi === 3 ? 4 : 1, parseInt(g('r3|Número de médicos', pi === 3 ? '4' : '1'), 10) || 1);
+    const precio = pi === 3 ? plan[1] * medicos : plan[1], usd = (n) => 'US$' + n.toFixed(2);
+    const cu = { nombre: g('r1|Nombre', ''), correo: g('r1|Correo', ''), clinica: g('r3|Nombre de la clínica o consultorio', ''), esp: g('r3|Su especialidad', 'General'), org, plan: plan[0], precio, atiende, medicos, estado: pi ? 'En prueba' : 'Activa' };
+    const email = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+    const VAL = {
+      r1: () => (!cu.nombre.trim() ? 'Escriba su nombre.' : !email(cu.correo) ? 'Escriba un correo válido.' : g('r1|Contraseña', '').length < 10 ? 'La contraseña necesita al menos 10 caracteres.' : ''),
+      r2: () => (S.codigo.length < 6 ? 'Escriba los 6 dígitos del código.' : ''), r4: () => (S.codigo.length < 6 ? 'Escriba el código de su app para activar.' : ''), e2: () => (S.codigo.length < 6 ? 'Escriba los 6 dígitos del código.' : ''),
+      r3: () => (org === 'Hospital' ? '' : !cu.clinica.trim() ? 'Escriba el nombre de la clínica o consultorio.' : atiende && !cu.esp.trim() ? 'Escriba su especialidad.' : ''),
+      e1: () => (!email(g('e1|Correo', cu.correo)) ? 'Escriba un correo válido.' : !g('e1|Contraseña', '') ? 'Escriba su contraseña.' : ''),
+      e6: () => (g('e6|Contraseña nueva', '').length < 10 ? 'La contraseña necesita al menos 10 caracteres.' : g('e6|Contraseña nueva', '') !== g('e6|Repita la contraseña', '') ? 'Las contraseñas no coinciden.' : ''),
+      p1: () => (!g('p1|Fecha de nacimiento', '') ? 'Escriba su fecha de nacimiento.' : ''), p8: () => (!g('p8|Nombre completo', 'Ana Martínez').trim() ? 'Escriba su nombre.' : ''),
+      b2: () => (g('b2|Nombre completo', '').trim().length < 3 ? 'Escriba su nombre completo.' : g('b2|Teléfono (WhatsApp)', '').replace(/\D/g, '').length < 10 ? 'Escriba un teléfono de 10 dígitos.' : ''), o2: () => (S.codigo.length < 6 ? 'Escriba los 6 dígitos del código.' : ''),
+    };
+    const ir = (id) => () => {
+      if (id === 'app') { try { if (cu.nombre && cu.clinica) localStorage.setItem('medira-cuenta', JSON.stringify(cu)); } catch (e) {} window.location.href = 'medira App.dc.html'; return; }
+      if (id === 'precios') { window.location.href = 'medira Precios.dc.html'; return; }
+      if (id === 'sitio-h') { window.location.href = 'medira Sitio.dc.html#hospitales'; return; }
+      if (id.startsWith('@plan')) { this.setState({ sel: { ...this.state.sel, r0: +id.slice(5) }, err: '' }); return; }
+      this.setState({ id, codigo: '', firmado: false, err: '' }); window.scrollTo(0, 0);
+    };
+    const P = [
+      // Registro
+      { id: 'r0', g: 'Registro', n: 'Elegir plan', def: 2, t: '¿Cómo quiere empezar?', sub: 'Los planes de pago empiezan con 3 días gratis. Puede cambiar de plan cuando quiera.', b: 'opciones', opciones: PLANES.map((p) => [p[0], p[2], p[1] ? usd(p[1]) + '/mes' : 'US$0']), btn: ['Continuar', 'r1'], btn2: ['Soy un hospital o institución', 'sitio-h'] },
+      { id: 'r1', g: 'Registro', n: '1. Cuenta', paso: [1, 4], t: 'Cree su cuenta', sub: pi ? '3 días gratis en el plan ' + plan[0] + '. Hoy paga US$0.' : 'Empieza gratis, sin tarjeta.', campos: ['Nombre||text||Dra. Carmen Rosario', 'Correo||email||carmen@correo.do', 'Contraseña||password|Mínimo 10 caracteres'], check: 'Acepto los términos y la política de privacidad', exige: true, btn: ['Crear cuenta', 'r2'], btn2: ['Ya tengo cuenta', 'e1'] },
+      { id: 'r1b', g: 'Registro', n: 'Correo ya registrado', t: 'Cree su cuenta', sub: '', alerta: ['warn', 'Ya existe una cuenta con este correo.'], campos: ['Correo|carmen@correo.do|email'], btn: ['Entrar', 'e1'], btn2: ['Recuperar contraseña', 'e5'] },
+      { id: 'r2', g: 'Registro', n: '2. Verificar correo', paso: [2, 4], t: 'Verifique su correo', sub: 'Enviamos un código de 6 dígitos a ' + (cu.correo || 'su correo') + '.', b: 'codigo', btn: ['Verificar', 'r3'], btn2: ['Corregir el correo', 'r1'], nota: 'Puede pedir otro código en 60 segundos. Sin verificar, la cuenta funciona 24 horas.' },
+      { id: 'r3', g: 'Registro', n: '3. Su práctica', paso: [3, 4], t: 'Su práctica', sub: 'Define el plan sugerido y los módulos visibles. Se elige una vez por clínica.', b: 'opciones', opciones: ORG.map((o) => [o[0], o[1]]), seg: ['atiende', '¿Usted atiende pacientes?', ['Sí, soy médico', 'No, solo administro']], alerta: org === 'Hospital' ? ['info', 'Los hospitales se contratan con una demo guiada, sin prueba de 3 días.'] : sug !== pi ? ['info', 'Para ' + org.toLowerCase() + ' sugerimos el plan ' + PLANES[sug][0] + '. Usted eligió ' + plan[0] + '.'] : null, campos: org === 'Hospital' ? [] : ['Nombre de la clínica o consultorio||text||Consultorio Dra. Carmen Rosario', 'Teléfono||tel||809-555-0100', ...(atiende ? ['Su especialidad|General|text|Define su ficha de consulta, receta y resumen médico'] : []), ...(pi === 3 || oi > 0 ? ['Número de médicos|' + (pi === 3 ? '4' : '1') + '|number|' + (pi === 3 ? 'Clínica privada se cobra por médico, mínimo 4' : 'Cada plan incluye un número de médicos')] : []), 'País, moneda y zona horaria|República Dominicana · RD$ · GMT−4|text|Detectados automáticamente; puede cambiarlos'], btn: org === 'Hospital' ? ['Pedir demo guiada', 'sitio-h'] : ['Continuar', 'r4'], btn2: org !== 'Hospital' && sug !== pi ? ['Cambiar al plan ' + PLANES[sug][0], '@plan' + sug] : null },
+      { id: 'r4', g: 'Registro', n: '4. Proteja su cuenta', paso: [4, 4], t: 'Proteja su cuenta', sub: 'Escanee el código con Google Authenticator, Microsoft Authenticator o 1Password. Es obligatorio para dueños.', b: 'qr', codigo: true, btn: ['Activar verificación en dos pasos', 'r5'] },
+      { id: 'r5', g: 'Registro', n: 'Códigos de respaldo', t: 'Guarde sus códigos de respaldo', sub: 'Cada uno sirve una sola vez si pierde su teléfono. Descárguelos o imprímalos.', b: 'respaldo', check: 'Ya guardé mis códigos en un lugar seguro', exige: true, btn: ['Continuar', pi ? 'c1' : 'c3g'], btn2: ['Descargar códigos', 'r5'] },
+      // Entrar
+      { id: 'e1', g: 'Entrar y 2FA', n: 'Entrar', t: 'Entrar', sub: '', campos: ['Correo|' + cu.correo + '|email||su@correo.do', 'Contraseña||password'], btn: ['Entrar', 'e2'], btn2: ['Olvidé mi contraseña', 'e5'] },
+      { id: 'e2', g: 'Entrar y 2FA', n: 'Código de dos pasos', t: 'Verificación en dos pasos', sub: 'Escriba el código de su app autenticadora.', b: 'codigo', check: 'Recordar este dispositivo 30 días (no en computadoras compartidas)', btn: ['Verificar', 'app'], btn2: ['Usar un código de respaldo', 'e3'] },
+      { id: 'e3', g: 'Entrar y 2FA', n: 'Código de respaldo', t: 'Use un código de respaldo', sub: 'Le quedan 8 de 10. Le avisaremos por correo que se usó uno.', campos: ['Código de respaldo||text'], btn: ['Entrar', 'app'], btn2: ['Perdí mi teléfono y mis códigos', 'e4'] },
+      { id: 'e4', g: 'Entrar y 2FA', n: 'Perdí mi teléfono', t: 'Perdió su teléfono', sub: 'Hay tres caminos, del más rápido al más lento.', b: 'lineas', lineas: [['1', 'Use un código de respaldo'], ['2', 'Otro dueño o administrador restablece su 2FA'], ['3', 'Soporte verifica su identidad y espera 72 horas']], btn: ['Pedir ayuda a soporte', 'e4'], btn2: ['Volver', 'e2'], nota: 'Si usted es el único dueño, soporte pide su cédula y una videollamada, y avisa a su correo antes de quitar la verificación.' },
+      { id: 'e5', g: 'Entrar y 2FA', n: 'Olvidé mi contraseña', t: 'Recupere su contraseña', sub: 'Le enviamos un enlace para crear una nueva.', campos: ['Correo|carmen@correo.do|email'], btn: ['Enviar enlace', 'e6'], btn2: ['Volver a entrar', 'e1'] },
+      { id: 'e6', g: 'Entrar y 2FA', n: 'Nueva contraseña', t: 'Cree una contraseña nueva', sub: '', campos: ['Contraseña nueva||password|Mínimo 10 caracteres', 'Repita la contraseña||password'], btn: ['Guardar contraseña', 'e1'], nota: 'Se rechazan las contraseñas que aparecen en filtraciones conocidas. Cambiarla cierra todas las otras sesiones.' },
+      { id: 'e7', g: 'Entrar y 2FA', n: 'Demasiados intentos', t: 'Entrar', sub: '', alerta: ['warn', '5 intentos fallidos. Espere 2 minutos para volver a intentar. Avisamos a su correo.'], campos: ['Correo|carmen@correo.do|email', 'Contraseña||password'], btn: ['Entrar', 'e7'], inactivo: true },
+      { id: 'e8', g: 'Entrar y 2FA', n: 'Aceptar invitación', t: 'Le invitaron a una clínica', sub: 'Dra. Carmen Rosario le invitó a Consultorio Dra. Carmen Rosario como médico. La invitación caduca en 7 días.', campos: ['Correo|miguel@correo.do|email', 'Cree su contraseña||password|Mínimo 10 caracteres'], btn: ['Aceptar invitación', 'e9'] },
+      { id: 'e9', g: 'Entrar y 2FA', n: 'Perfil del médico invitado', t: 'Su perfil médico', sub: 'Se imprime en sus recetas.', campos: ['Especialidad|Nutrición', 'Título para la receta|Dr. Miguel Tavárez', 'Exequátur|', 'Firma|Subir o dibujar'], btn: ['Guardar y continuar', 'r4'] },
+      { id: 'e10', g: 'Entrar y 2FA', n: 'Invitación vencida', t: 'Esta invitación venció', sub: 'Pida al administrador de la clínica que le envíe otra.', btn: ['Ir a entrar', 'e1'] },
+      { id: 'e11', g: 'Entrar y 2FA', n: 'Sesión por vencer', t: 'Su sesión se cierra en 60 segundos', sub: 'Por seguridad cerramos la sesión tras 30 minutos sin actividad. Su borrador de consulta está guardado.', btn: ['Seguir trabajando', 'app'], btn2: ['Cerrar sesión', 'e1'] },
+      // Cobro
+      { id: 'c1', g: 'Plan y cobro', n: 'Resumen de la prueba', t: 'Resumen antes de pagar', sub: 'Puede cancelar antes del primer cobro sin costo.', b: 'lineas', lineas: [['Plan', plan[0]], ['Clínica', cu.clinica || 'Sin nombre todavía'], ['Titular', cu.nombre || 'Sin nombre todavía'], ...(pi === 3 ? [['Médicos', medicos + ' × ' + usd(plan[1])]] : []), ['Hoy paga', 'US$0'], ['Primer cobro', usd(precio) + ' el 28 de noviembre'], ['Después', usd(precio) + ' cada mes']], btn: ['Continuar al pago', 'c2'], btn2: ['Elegir otro plan', 'r0'] },
+      { id: 'c1b', g: 'Plan y cobro', n: 'Resumen sin prueba', t: 'Resumen antes de pagar', sub: '', alerta: ['info', 'Esta clínica ya tuvo su prueba. El cobro empieza hoy.'], b: 'lineas', lineas: [['Plan', 'Consultorio'], ['Hoy paga', 'US$49.95'], ['Después', 'US$49.95 cada mes']], btn: ['Continuar al pago', 'c2'] },
+      { id: 'c2', g: 'Plan y cobro', n: 'Confirmando', t: 'Confirmando su suscripción', sub: 'Esto toma unos segundos.', b: 'espera', btn2: ['Ver cómo queda al confirmar', 'c3'], nota: 'Si tarda, se activará sola y le avisaremos por correo.' },
+      { id: 'c3', g: 'Plan y cobro', n: 'Prueba iniciada', t: 'Su prueba de 3 días comenzó', sub: 'El plan ' + plan[0] + ' ya está activo con todos sus límites.', b: 'lineas', lineas: [['Clínica', cu.clinica || 'Sin nombre todavía'], ['Mañana', 'Correo «Su prueba termina mañana»'], ['28 de noviembre', 'Primer cobro de ' + usd(precio)]], btn: ['Ir a mi panel', 'app'] },
+      { id: 'c3g', g: 'Plan y cobro', n: 'Cuenta Gratis lista', t: 'Su cuenta está lista', sub: 'Plan Gratis: 1 médico y 50 pacientes, sin tarjeta. Puede mejorar cuando quiera.', b: 'lineas', lineas: [['Clínica', cu.clinica || 'Sin nombre todavía'], ['Titular', cu.nombre || 'Sin nombre todavía'], ['Especialidad', atiende ? cu.esp : 'No atiende pacientes']], btn: ['Ir a mi panel', 'app'], btn2: ['Ver planes de pago', 'r0'] },
+      { id: 'c4', g: 'Plan y cobro', n: 'No completado', t: 'No se completó la suscripción', sub: 'No se cobró nada. Puede intentarlo de nuevo o seguir en el plan Gratis.', btn: ['Intentar de nuevo', 'c1'], btn2: ['Seguir en Gratis', 'app'] },
+      { id: 'c5', g: 'Plan y cobro', n: 'Pago fallido', t: 'No pudimos cobrar su plan', sub: 'Tiene 10 días con todo su plan activo. La mayoría de las veces es una tarjeta vencida.', alerta: ['warn', 'Quedan 7 días para conservar su plan.'], b: 'lineas', lineas: [['Día 0', 'Falla el cobro. Todo sigue funcionando'], ['Día 3', 'Segundo aviso'], ['Día 7', 'Quedan 3 días'], ['Día 9', 'Último aviso'], ['Día 10', 'La cuenta pasa a Gratis. No se borra nada']], btn: ['Actualizar pago', 'c2'] },
+      { id: 'c6', g: 'Plan y cobro', n: 'Bajada de plan: usuarios', t: 'Elija quién sigue activo', sub: 'Médico independiente incluye 1 médico y 1 usuario de personal. Nadie se borra: los demás quedan suspendidos.', b: 'usuarios', usuarios: [['Dra. Carmen Rosario', 'Dueña · médico', 1], ['Mariela Peña', 'Recepción', 0], ['Dr. Miguel Tavárez', 'Médico', 0], ['Julio Almonte', 'Contador', 0]], btn: ['Confirmar', 'app'] },
+      { id: 'c7', g: 'Plan y cobro', n: 'Su cuenta pasó a Gratis', t: 'Su cuenta pasó al plan Gratis', sub: 'Sus datos están completos. Esto es lo que cambió.', b: 'lineas', lineas: [['Usuarios', 'Solo entra el dueño'], ['Pacientes', '86 visibles, sin crear nuevos'], ['WhatsApp automático', 'Detenido'], ['Comprobantes fiscales', 'Apagados'], ['Documentos', 'Llevan «Hecho con medira»'], ['Expedientes', 'Ver, imprimir y exportar siguen igual']], btn: ['Recuperar mi plan', 'c2'], btn2: ['Seguir en Gratis', 'app'] },
+      { id: 'c8', g: 'Plan y cobro', n: 'Cancelar', t: '¿Por qué cancela?', sub: 'Su plan seguiría activo hasta el 25 de diciembre.', b: 'opciones', opciones: [['Es muy caro', ''], ['Me falta una función', ''], ['Cambié de sistema', ''], ['Cerré el consultorio', '']], alerta: ['info', 'Puede bajar a Médico independiente por US$34.95 al mes en vez de cancelar.'], btn: ['Cancelar mi plan', 'app'], btn2: ['Bajar de plan', 'c6'], peligro: true },
+      { id: 'c9', g: 'Plan y cobro', n: 'Comprar paquete', t: 'Compre un paquete', sub: 'Se cobra una sola vez. Dura hasta agotarse o 90 días.', b: 'opciones', opciones: [['500 mensajes de WhatsApp', '', 'US$10'], ['50 estudios con IA', '', 'US$10'], ['200 resúmenes con IA', '', 'US$10'], ['100 consultas dictadas con IA', '', 'US$10'], ['50 GB de almacenamiento', '', 'US$5/mes']], btn: ['Comprar', 'app'] },
+      // Paciente
+      { id: 'p1', g: 'Páginas del paciente', n: 'Verificar identidad', cli: 1, t: 'Confirme que es usted', sub: 'Para proteger sus datos, escriba su fecha de nacimiento.', campos: ['Fecha de nacimiento||date'], btn: ['Ver mi receta', 'p2'], nota: 'Este enlace caduca en 7 días.' },
+      { id: 'p2', g: 'Páginas del paciente', n: 'Ver receta', cli: 1, t: 'Su receta', sub: 'Ana Martínez · 25 de noviembre de 2026', b: 'doc', folio: 'N.º 0142', doc: [['Azitromicina 500 mg, tableta', '1 cada 24 horas por 3 días · Cantidad: 3 (tres)'], ['Paracetamol 500 mg, tableta', '1 cada 8 horas si hay fiebre · Cantidad: 10 (diez)']], btn: ['Descargar PDF', 'p2'] },
+      { id: 'p3', g: 'Páginas del paciente', n: 'Resumen de la consulta', cli: 1, t: 'Resumen de su consulta', sub: 'Ana Martínez · 25 de noviembre de 2026', b: 'doc', folio: 'Resumen', doc: [['Qué tiene', 'Una infección de garganta.'], ['Qué hacer', 'Tome sus medicamentos, beba líquidos y descanse.'], ['Próximo control', 'En 7 días.'], ['Vuelva antes si', 'Le cuesta respirar o tragar, o la fiebre dura más de 3 días.']], btn: ['Descargar PDF', 'p3'], btn2: ['Agendar mi control', 'p7'] },
+      { id: 'p4', g: 'Páginas del paciente', n: 'Resultados', cli: 1, t: 'Sus resultados', sub: 'Hemograma · 20 de noviembre de 2026', b: 'doc', folio: 'Estudio', doc: [['Comentario de su médico', 'Sus resultados están dentro de lo esperado. Los revisamos en su próximo control.'], ['Archivo', 'hemograma-20-nov.pdf · 1.2 MB']], btn: ['Ver resultados', 'p4'] },
+      { id: 'p5', g: 'Páginas del paciente', n: 'Enlace vencido', cli: 1, t: 'Este enlace venció', sub: 'Pida a su clínica que se lo envíe de nuevo.', btn: ['Llamar a la clínica', 'p5'] },
+      { id: 'p6', g: 'Páginas del paciente', n: 'Confirmar cita', cli: 1, t: 'Su cita', sub: '¿Puede asistir?', b: 'lineas', lineas: [['Fecha', 'Jueves 26 de noviembre'], ['Hora', '9:30 a. m.'], ['Médico', 'Dra. Carmen Rosario'], ['Lugar', 'Av. Abraham Lincoln 1001']], btn: ['Confirmo', 'p6b'], btn2: ['Necesito cambiar', 'p7'] },
+      { id: 'p6b', g: 'Páginas del paciente', n: 'Cita confirmada', cli: 1, t: 'Cita confirmada', sub: 'Jueves 26 de noviembre, 9:30 a. m. Le esperamos.', alerta: ['ok', 'Su clínica ya recibió la confirmación.'], btn: ['Agregar al calendario', 'p6b'], btn2: ['Cómo llegar', 'p6b'] },
+      { id: 'p7', g: 'Páginas del paciente', n: 'Cambiar cita', cli: 1, t: 'Elija otro horario', sub: 'Horarios libres de la Dra. Rosario.', b: 'opciones', opciones: [['Viernes 27 de noviembre', '10:30 a. m.'], ['Viernes 27 de noviembre', '3:00 p. m.'], ['Lunes 30 de noviembre', '9:00 a. m.']], btn: ['Pedir el cambio', 'p6b'] },
+      { id: 'p8', g: 'Páginas del paciente', n: 'Ficha de ingreso', cli: 1, t: 'Complete su ficha antes de llegar', sub: 'Así su médico le atiende más rápido.', campos: ['Nombre completo|Ana Martínez', 'Cédula o pasaporte|', 'Teléfono (WhatsApp)|809-555-0142|tel', 'Alergias||text|Por ejemplo: penicilina', 'Medicamentos que toma|', 'Seguro médico (ARS) y afiliado|'], check: 'Acepto recibir mensajes de esta clínica por WhatsApp', btn: ['Enviar mi ficha', 'p6b'] },
+      { id: 'p9', g: 'Páginas del paciente', n: 'Firmar consentimiento', cli: 1, t: 'Consentimiento de fotos clínicas', sub: 'Autorizo que se guarden fotos para mi expediente. El uso en publicidad es opcional y se autoriza aparte.', b: 'firma', check: 'También autorizo el uso en publicidad de la clínica', btn: ['Firmar y recibir copia', 'p6b'] },
+      { id: 'p10', g: 'Páginas del paciente', n: 'Encuesta', cli: 1, t: '¿Cómo fue su consulta?', sub: 'Su opinión ayuda a su clínica.', b: 'estrellas', campos: ['Comentario (opcional)|'], btn: ['Enviar', 'p12'], nota: 'No recibir más encuestas.' },
+      { id: 'p11', g: 'Páginas del paciente', n: 'Verificar documento por QR', cli: 1, t: 'Verificación de documento', sub: 'Receta N.º 0142', b: 'estado' },
+      { id: 'p12', g: 'Páginas del paciente', n: 'Darse de baja', cli: 1, t: 'No recibirá más mensajes', sub: 'Dejará de recibir encuestas y felicitaciones de esta clínica. Los avisos de sus citas siguen llegando.', btn: ['Confirmar', 'p12'], btn2: ['Seguir recibiendo', 'p6b'] },
+      // Reserva en línea, portal y telemedicina
+      { id: 'b1', g: 'Reserva en línea', n: 'Fecha y hora', cli: 1, paso: [1, 3], t: 'Reserve su cita', sub: 'Dra. Carmen Rosario · Medicina general · Consulta RD$2,500', b: 'opciones', seg: ['tipoCita', 'Tipo de cita', ['Primera vez', 'Control']], opciones: [['Jueves 26 de noviembre', '9:30 a. m.'], ['Jueves 26 de noviembre', '2:00 p. m.'], ['Viernes 27 de noviembre', '10:30 a. m.'], ['Lunes 30 de noviembre', '9:00 a. m.']], btn: ['Continuar', 'b2'] },
+      { id: 'b2', g: 'Reserva en línea', n: 'Sus datos', cli: 1, paso: [2, 3], t: 'Sus datos', sub: 'Para confirmarle la cita.', campos: ['Nombre completo||text||Ana Martínez', 'Teléfono (WhatsApp)||tel||809-555-0142', 'Motivo (opcional)|'], check: 'Acepto recibir la confirmación por WhatsApp', btn: ['Confirmar cita', 'b3'], btn2: ['Cambiar fecha u hora', 'b1'], nota: 'Sin pago en línea. Paga en el consultorio.' },
+      { id: 'b3', g: 'Reserva en línea', n: 'Cita confirmada', cli: 1, paso: [3, 3], t: 'Cita confirmada', sub: 'Le enviamos la confirmación por WhatsApp.', alerta: ['ok', 'Su cita quedó reservada.'], b: 'lineas', lineas: [['Paciente', g('b2|Nombre completo', '') || 'Sin nombre'], ['Tipo', (S.sel.tipoCita ?? 0) ? 'Control' : 'Primera vez'], ['Lugar', 'Av. Abraham Lincoln 1001'], ['Código', 'MD-4821']], btn: ['Añadir al calendario', 'b3'], btn2: ['Necesito cambiar o cancelar', 'p7'] },
+      { id: 'o1', g: 'Portal del paciente (fase 2)', n: 'Entrar al portal', cli: 1, t: 'Entre a su portal', sub: 'Le enviamos un código a su WhatsApp o correo. No necesita contraseña.', campos: ['Teléfono o correo||text||809-555-0142'], btn: ['Enviar código', 'o2'] },
+      { id: 'o2', g: 'Portal del paciente (fase 2)', n: 'Código de acceso', cli: 1, t: 'Escriba su código', sub: 'Vence en 10 minutos.', b: 'codigo', btn: ['Entrar', 'o3'], btn2: ['Enviar otro código', 'o2'] },
+      { id: 'o3', g: 'Portal del paciente (fase 2)', n: 'Inicio del portal', cli: 1, t: 'Hola, Ana', sub: 'Sus citas, recetas y resultados en un solo lugar.', b: 'lineas', lineas: [['Próxima cita', 'Jue 26 nov, 9:30 a. m.'], ['Recetas', '2'], ['Resultados', '1 nuevo'], ['Saldo pendiente', 'RD$1,000']], btn: ['Ver mi próxima cita', 'p6'], btn2: ['Pagar saldo', 'o4'] },
+      { id: 'o4', g: 'Portal del paciente (fase 2)', n: 'Pagar saldo', cli: 1, t: 'Pagar saldo', sub: 'Pago seguro con tarjeta.', b: 'lineas', lineas: [['Consulta del 12 de octubre', 'RD$1,000'], ['Total', 'RD$1,000']], btn: ['Pagar RD$1,000', 'o5'], btn2: ['Volver', 'o3'] },
+      { id: 'o5', g: 'Portal del paciente (fase 2)', n: 'Pago recibido', cli: 1, t: 'Recibimos su pago', sub: 'Le enviamos el recibo por WhatsApp y correo.', alerta: ['ok', 'Saldo pendiente: RD$0'], btn: ['Volver al portal', 'o3'] },
+      { id: 't1', g: 'Telemedicina (fase 2)', n: 'Sala de espera', cli: 1, t: 'Su videoconsulta', sub: 'Su médico le dará paso cuando esté listo.', b: 'lineas', lineas: [['Médico', 'Dra. Carmen Rosario'], ['Hora', '4:00 p. m.'], ['Cámara y micrófono', 'Permitidos'], ['Pago previo', 'RD$2,500 · recibido']], btn: ['Entrar a la videoconsulta', 't1'], nota: 'Si se corta la llamada, vuelva a abrir este mismo enlace.' },
+    ];
+    const hash = (window.location.hash || '').slice(1);
+    const id = S.id ?? (P.some((q) => q.id === hash) ? hash : null) ?? this.props.pantallaInicial ?? 'r0';
+    const x = P.find((p) => p.id === id) || P[0];
+    const setF = (k) => (e) => this.setState({ f: { ...this.state.f, [k]: e.target.value }, err: '' });
+    const selSt = (on) => (on ? { bg: '#1c1917', fg: '#ffffff', bd: '#1c1917', sub: '#d6d3d1' } : { bg: '#ffffff', fg: '#1c1917', bd: '#d6d3d1', sub: '#57534e' });
+    const sel = S.sel[x.id] ?? x.def ?? 0, chk = !!S.chk[x.id];
+    const segSel = x.seg ? S.sel[x.seg[0]] ?? 0 : 0;
+    const TONO = { warn: '#b45309', info: '#57534e', ok: '#15803d' };
+    const EST = [['Válida', '#15803d', 'Documento válido', 'Emitido por Dra. Carmen Rosario el 25/11/2026. Esta página no muestra datos clínicos.'], ['Reemplazada', '#b45309', 'Documento reemplazado', 'El médico emitió una versión más reciente el 26/11/2026.'], ['Anulada', '#1c1917', 'Documento anulado', 'Este documento fue anulado por el médico y no es válido.']];
+    const ei = S.sel.estado ?? 0, star = S.sel.star ?? 0;
+    const bloqueado = (x.exige && !chk) || x.inactivo;
+    const p = {
+      n: x.n, t: x.t, sub: x.sub, clinica: !!x.cli, marca: !x.cli, fondo: x.cli ? '#f0eeec' : '#fafaf7', ancho: x.cli ? '390px' : '440px',
+      conPaso: !!x.paso, pasoTxt: x.paso ? 'Paso ' + x.paso[0] + ' de ' + x.paso[1] : '', barras: x.paso ? Array.from({ length: x.paso[1] }, (_, i) => (i < x.paso[0] ? '#0f766e' : '#e7e5e4')) : [],
+      conAlerta: !!S.err || !!x.alerta, alerta: S.err || (x.alerta ? x.alerta[1] : ''), alertaC: S.err ? TONO.warn : x.alerta ? TONO[x.alerta[0]] : '#57534e',
+      conSeg: !!x.seg, segL: x.seg ? x.seg[1] : '', seg: x.seg ? x.seg[2].map((t, i) => ({ t, pick: () => this.setState({ sel: { ...this.state.sel, [x.seg[0]]: i } }), bg: segSel === i ? '#ffffff' : 'transparent', fg: segSel === i ? '#1c1917' : '#57534e' })) : [],
+      b: { campos: !!x.campos, codigo: x.b === 'codigo' || !!x.codigo, opciones: x.b === 'opciones', lineas: x.b === 'lineas', doc: x.b === 'doc', qr: x.b === 'qr', respaldo: x.b === 'respaldo', usuarios: x.b === 'usuarios', estrellas: x.b === 'estrellas', firma: x.b === 'firma', estado: x.b === 'estado', espera: x.b === 'espera' },
+      campos: (x.campos || []).map((raw) => { const [l, v, type, hint, ph] = raw.split('|'); const k = x.id + '|' + l; return { l, val: S.f[k] ?? v ?? '', set: setF(k), type: type || 'text', hint: hint || '', ph: ph || '' }; }),
+      opciones: (x.opciones || []).map(([t, d, v], i) => ({ t, d, v: v || '', pick: () => this.setState({ sel: { ...this.state.sel, [x.id]: i } }), ...selSt(sel === i) })),
+      lineas: (x.lineas || []).map(([l, v], i) => ({ l, v, sep: i ? '#f0eeec' : 'transparent' })), doc: (x.doc || []).map(([a, b]) => ({ a, b })), docFolio: x.folio || '',
+      respaldo: ['4827-1930', '7719-0264', '3350-8812', '9046-2271', '1583-6609', '6672-4418', '2905-7730', '8134-5592', '5461-0087', '7028-3346'],
+      usuarios: (x.usuarios || []).map(([n, r, fijo], i) => { const k = x.id + '|' + i, on = fijo ? true : (S.off[k] ?? i === 1); return { n, r, fijo: !!fijo, sep: i ? '#f0eeec' : 'transparent', bg: on ? '#0f766e' : '#d6d3d1', j: on ? 'flex-end' : 'flex-start', toggle: () => this.setState({ off: { ...this.state.off, [k]: !on } }) }; }),
+      estrellas: [1, 2, 3, 4, 5].map((n) => ({ n, pick: () => this.setState({ sel: { ...this.state.sel, star: n } }), ...selSt(n <= star) })),
+      estados: EST.map(([t], i) => ({ t, pick: () => this.setState({ sel: { ...this.state.sel, estado: i } }), bg: ei === i ? '#ffffff' : 'transparent', fg: ei === i ? '#1c1917' : '#57534e' })), est: { bg: EST[ei][1], t: EST[ei][2], d: EST[ei][3] },
+      conCheck: !!x.check, check: x.check || '', checkBd: chk ? '#0f766e' : '#a8a29e', checkBg: chk ? '#0f766e' : '#ffffff', checkMark: chk ? '✓' : '', toggleCheck: () => this.setState({ chk: { ...this.state.chk, [x.id]: !chk } }),
+      conBtn: !!x.btn, btn: x.btn ? x.btn[0] : '', run: () => { if (!x.btn || bloqueado) return; const err = VAL[x.id] ? VAL[x.id]() : ''; if (err) this.setState({ err }); else ir(x.btn[1])(); }, btnBg: bloqueado ? '#a8a29e' : x.peligro ? '#1c1917' : '#0f766e',
+      conBtn2: !!x.btn2, btn2: x.btn2 ? x.btn2[0] : '', run2: x.btn2 ? ir(x.btn2[1]) : () => {}, conNota: !!x.nota, nota: x.nota || '',
+    };
+    const gs = [...new Set(P.map((q) => q.g))];
+    return {
+      p, movil, escritorio: !movil, total: P.length, actual: x.id, elegir: (e) => ir(e.target.value)(), todas: P.map((q) => ({ id: q.id, n: q.g + ' · ' + q.n })),
+      grupos: gs.map((g) => ({ g, items: P.filter((q) => q.g === g).map((q) => ({ n: q.n, pick: ir(q.id), bg: q.id === x.id ? '#f0eeec' : 'transparent', fg: q.id === x.id ? '#1c1917' : '#44403c', w: q.id === x.id ? 600 : 400 })) })),
+      railMax: movil ? '100%' : '280px', railPos: movil ? 'static' : 'sticky', railH: movil ? 'none' : '100vh', mainH: movil ? '0' : '100vh',
+      codigo: S.codigo, setCodigo: (e) => this.setState({ codigo: e.target.value.replace(/\D/g, '').slice(0, 6) }),
+      firmar: () => this.setState({ firmado: !S.firmado }), firma: S.firmado ? { t: 'Firmado · toque para borrar', bd: '#15803d', fg: '#15803d' } : { t: 'Firme aquí con el dedo', bd: '#a8a29e', fg: '#57534e' },
+    };
+  }
+}
+</script>
+</body>
+</html>

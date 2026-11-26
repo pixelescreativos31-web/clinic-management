@@ -6,25 +6,36 @@
 
 function fmt(amount: number, currency: string): string {
   try {
-    return new Intl.NumberFormat('en', {
+    return new Intl.NumberFormat('es-DO', {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
     }).format(amount)
   } catch {
-    return `${currency} ${amount.toLocaleString('en')}`
+    return `${currency} ${amount.toLocaleString('es-DO')}`
   }
 }
 
 export function RevenueChart({
   data,
   currency,
+  period = 'en los últimos 14 días',
 }: {
   data: { label: string; amount: number }[]
   currency: string
+  /** Trailing caption phrase, e.g. "en los últimos 14 días". */
+  period?: string
 }) {
   const max = Math.max(1, ...data.map((d) => d.amount))
   const total = data.reduce((s, d) => s + d.amount, 0)
+  // A month (~30 bars) doesn't fit 30 labels on a phone: tighten the gaps and
+  // label the first day plus every fifth.
+  const dense = data.length > 16
+  const gap = dense ? 'gap-[2px] sm:gap-1' : 'gap-[6px] sm:gap-2'
+  const showLabel = (i: number) => !dense || i === 0 || (i + 1) % 5 === 0
+  // Keep edge tooltips inside the card instead of centring them past its border.
+  const tipAlign = (i: number) =>
+    i < 2 ? 'start-0' : i > data.length - 3 ? 'end-0' : 'start-1/2 -translate-x-1/2'
 
   return (
     <div>
@@ -33,47 +44,47 @@ export function RevenueChart({
         {[0, 25, 50, 75].map((p) => (
           <div
             key={p}
-            className="absolute inset-x-0 border-t border-dashed border-border/70"
+            className="absolute inset-x-0 border-t border-[#f0eeec]"
             style={{ bottom: `${p}%` }}
           >
             {p > 0 && (
-              <span className="tabular absolute -top-2 end-0 text-[10px] text-faint">
+              <span className="tabular absolute -top-2 end-0 text-[11px] text-[#57534e]">
                 {fmt(Math.round((max * p) / 100), currency)}
               </span>
             )}
           </div>
         ))}
 
-        <div className="absolute inset-0 flex items-end gap-[6px] sm:gap-2">
+        <div className={`absolute inset-0 flex items-end ${gap}`}>
           {data.map((d, i) => {
             const isLast = i === data.length - 1
             const h = d.amount === 0 ? 0 : Math.max(4, (d.amount / max) * 100)
             return (
-              <div key={`${d.label}-${i}`} className="group relative flex h-full flex-1 items-end">
+              <div key={`${d.label}-${i}`} className="group relative flex h-full min-w-0 flex-1 items-end">
                 {/* hover tooltip */}
-                <div className="pointer-events-none invisible absolute -top-1 start-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-card px-2.5 py-1.5 text-center opacity-0 shadow-[var(--shadow-overlay)] transition-opacity duration-100 group-hover:visible group-hover:opacity-100">
-                  <div className="tabular text-sm font-semibold leading-none">
+                <div className={`pointer-events-none invisible absolute -top-1 z-10 -translate-y-full ${tipAlign(i)} rounded-lg bg-[#1c1917] px-2.5 py-1.5 text-center text-white opacity-0 transition-opacity duration-100 group-hover:visible group-hover:opacity-100`}>
+                  <div className="tabular text-sm font-semibold leading-none whitespace-nowrap">
                     {fmt(d.amount, currency)}
                   </div>
-                  <div className="mt-1 text-[10px] whitespace-nowrap text-muted-foreground">
+                  <div className="mt-1 text-[11px] whitespace-nowrap text-[#d6d3d1]">
                     {d.label}
                   </div>
                 </div>
                 {/* hover hit-area wash */}
-                <div className="absolute inset-y-0 -inset-x-[3px] rounded-md transition-colors group-hover:bg-secondary/50" />
+                <div className="absolute inset-y-0 -inset-x-[3px] rounded-md transition-colors group-hover:bg-[#f0eeec]/70" />
                 <div
-                  className={`relative w-full rounded-t-[5px] transition-colors duration-150 ${
+                  className={`relative w-full rounded-t-[6px] transition-colors duration-150 ${
                     isLast
-                      ? 'bg-primary'
+                      ? 'bg-[#0f766e]'
                       : d.amount === 0
                         ? 'bg-transparent'
-                        : 'bg-primary/30 group-hover:bg-primary/55'
+                        : 'bg-[#0f766e]/35 group-hover:bg-[#0f766e]/60'
                   }`}
                   style={{ height: `${h}%` }}
                 />
                 {/* zero-day baseline tick */}
                 {d.amount === 0 && (
-                  <div className="absolute inset-x-[20%] bottom-0 h-[3px] rounded-full bg-border" />
+                  <div className="absolute inset-x-[20%] bottom-0 h-[3px] rounded-full bg-[#e7e5e4]" />
                 )}
               </div>
             )
@@ -82,20 +93,20 @@ export function RevenueChart({
       </div>
 
       {/* x-axis labels */}
-      <div className="mt-2 flex gap-[6px] border-t border-border pt-2 sm:gap-2">
+      <div className={`mt-2 flex border-t border-[#e7e5e4] pt-2 ${gap}`}>
         {data.map((d, i) => (
           <span
             key={`${d.label}-${i}`}
-            className={`tabular flex-1 text-center text-[10px] ${
-              i === data.length - 1 ? 'font-semibold text-primary' : 'text-faint'
+            className={`tabular min-w-0 flex-1 overflow-visible text-center text-[11px] whitespace-nowrap ${
+              i === data.length - 1 ? 'font-semibold text-[#1c1917]' : 'text-[#57534e]'
             }`}
           >
-            {d.label.split(' ')[0]}
+            {showLabel(i) ? d.label.split(' ')[0] : ''}
           </span>
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-faint">{fmt(total, currency)} collected in the last 14 days</p>
+      <p className="tabular mt-3 text-[13px] text-[#57534e]">{fmt(total, currency)} cobrados {period}</p>
     </div>
   )
 }

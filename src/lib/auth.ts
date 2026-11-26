@@ -5,14 +5,18 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import type { Tenant, User } from '@/payload-types'
 import { getTenantID } from '@/access'
+import { twoFactorGate, twoFactorRequirement, type TwoFactorGate } from '@/lib/twoFactorPolicy'
+import { ensureTwoFactorGrace } from '@/lib/twoFactorServer'
 
 export async function getPayloadClient() {
   return getPayload({ config: await config })
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const payload = await getPayloadClient()
+  // Read the request headers first: it marks the route dynamic, so `next build`
+  // never tries to prerender it (and boot Payload without a secret/DB).
   const headers = await nextHeaders()
+  const payload = await getPayloadClient()
   const { user } = await payload.auth({ headers })
   return (user as User) ?? null
 }
@@ -20,13 +24,20 @@ export async function getCurrentUser(): Promise<User | null> {
 export type Session = {
   user: User
   tenant: Tenant | null
+  /** Two-step verification state for this user (spec §10). */
+  twoFactor: TwoFactorGate
 }
 
 /**
  * Loads the logged-in tenant user and their clinic. Redirects to /login when not
  * authenticated. SuperAdmins belong in /super, not the tenant dashboard.
+ *
+ * Two-step verification gate: a user who must use 2FA, has not enrolled and is past
+ * the clinic's grace period is sent to /dashboard/security — every page and server
+ * action stops here, so no clinical data is rendered or changed until they enroll.
+ * Only the layout, the security page and its actions pass `twoFactorEnrollment`.
  */
-export async function requireDashboardSession(): Promise<Session> {
+export async function requireDashboardSession(opts: { twoFactorEnrollment?: boolean } = {}): Promise<Session> {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
   if (user.role === 'superAdmin') redirect('/super')
@@ -42,7 +53,13 @@ export async function requireDashboardSession(): Promise<Session> {
       overrideAccess: true,
     })
   }
-  return { user, tenant }
+  // Clinics that predate 2FA get their 14-day grace started the first time.
+  if (twoFactorRequirement(user, tenant) && user.twoFactorEnabled !== true) {
+    tenant = await ensureTwoFactorGrace(payload, tenant)
+  }
+  const twoFactor = twoFactorGate(user, tenant)
+  if (twoFactor.kind === 'enroll' && !opts.twoFactorEnrollment) redirect('/dashboard/security')
+  return { user, tenant, twoFactor }
 }
 
 /** Require one of the given roles, else redirect to the dashboard home. */

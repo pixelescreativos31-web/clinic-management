@@ -1,24 +1,24 @@
+// Pacientes — design_handoff_medira list: search, 60px rows with initials,
+// record number / phone and the allergy badge (red only for allergies).
+
 import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
-import { btnPrimary, Card, EmptyState, PageTitle, Avatar, Th, Td, inputClass } from '@/components/primitives'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import { IconPlus, IconSearch } from '@/components/icons'
+import { AppHeader, AppContent } from '@/components/AppHeader'
 import { PageSizeSelect } from '@/components/PageSizeSelect'
+import { avatarTint, initialsOf } from '@/lib/apptStatus'
 import { ageFromDOB } from '@/lib/format'
+import { GENDER_LABELS } from '@/lib/constants'
 import type { Patient } from '@/payload-types'
 import type { Where } from 'payload'
 
 const DEFAULT_PAGE_SIZE = 10
 const PAGE_SIZES = [10, 25, 50]
+
+const HEADER_BTN =
+  'inline-flex h-9 items-center rounded-[8px] bg-[#0f766e] px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-[#115e59] hover:text-white'
+const PAGE_BTN =
+  'tabular inline-flex h-9 min-w-9 items-center justify-center rounded-[8px] border px-2.5 text-[13px] font-medium transition-colors'
 
 const pageHref = (q: string, p: number, limit: number) =>
   `/dashboard/patients?q=${encodeURIComponent(q)}&page=${p}&limit=${limit}`
@@ -52,7 +52,14 @@ export default async function PatientsPage({
 
   const where: Where = { tenant: { equals: tenantID } }
   if (q) {
-    where.or = [{ name: { like: q } }, { phone: { like: q } }, { mrn: { like: q } }]
+    const digits = q.replace(/[^0-9]/g, '')
+    where.or = [
+      { name: { like: q } },
+      { phone: { like: q } },
+      { mrn: { like: q } },
+      // Cédulas are stored digits-only, so "001-1234567-8" still matches.
+      ...(digits.length >= 4 ? [{ documentNumber: { like: digits } }] : []),
+    ]
   }
 
   const res = await payload.find({
@@ -68,122 +75,132 @@ export default async function PatientsPage({
   const age = (p: Patient) => p.ageYears ?? (p.dateOfBirth ? ageFromDOB(p.dateOfBirth) : null)
 
   return (
-    <div>
-      <PageTitle
-        subtitle={`${res.totalDocs} registered`}
-        action={
-          <Link href="/dashboard/patients/new" className={btnPrimary}>
-            <IconPlus size={15} />
-            New patient
+    <>
+      <AppHeader
+        title="Pacientes"
+        subtitle={`${res.totalDocs} ${res.totalDocs === 1 ? 'paciente registrado' : 'pacientes registrados'}`}
+        actions={
+          <Link href="/dashboard/patients/new" className={HEADER_BTN}>
+            Nuevo paciente
           </Link>
         }
-      >
-        Patients
-      </PageTitle>
-
-      <form className="mb-4">
-        <div className="relative max-w-md">
-          <IconSearch size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-faint" />
+      />
+      <AppContent>
+        <form className="flex flex-wrap gap-2" role="search">
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search by name, phone or MRN…"
-            className={`${inputClass} ps-9`}
+            placeholder="Buscar por nombre, teléfono, cédula o expediente"
+            aria-label="Buscar paciente"
+            className="h-11 min-w-0 flex-[1_1_240px] rounded-[10px] border border-[#d6d3d1] bg-white px-3.5 text-base text-[#1c1917] outline-none transition-colors placeholder:text-[#57534e] focus:border-[#0f766e] md:text-[15px]"
           />
-        </div>
-      </form>
+          <button
+            type="submit"
+            className="h-11 rounded-[10px] border border-[#d6d3d1] bg-white px-4 text-sm font-medium text-[#1c1917] transition-colors hover:bg-[#fafaf7]"
+          >
+            Buscar
+          </button>
+        </form>
 
-      <Card className="overflow-hidden">
-        {patients.length === 0 ? (
-          <EmptyState
-            message={q ? `No patients match "${q}".` : 'No patients yet.'}
-            actionHref="/dashboard/patients/new"
-            actionLabel="Register new patient"
-          />
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-canvas/50">
-                <Th>Patient</Th>
-                <Th>MRN</Th>
-                <Th className="hidden sm:table-cell">Phone</Th>
-                <Th className="hidden md:table-cell">Age / Gender</Th>
-                <Th className="hidden lg:table-cell">Allergies</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {patients.map((p) => (
-                <tr key={p.id} className="group transition-colors hover:bg-canvas/60">
-                  <Td>
-                    <Link href={`/dashboard/patients/${p.id}`} className="flex items-center gap-3">
-                      <Avatar name={p.name} size="sm" />
-                      <span className="font-medium group-hover:text-primary">{p.name}</span>
-                    </Link>
-                  </Td>
-                  <Td>
-                    <span className="tabular rounded bg-canvas px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-                      {p.mrn}
+        <div className="mt-3 overflow-hidden rounded-[12px] border border-[#e7e5e4] bg-white">
+          {patients.length === 0 ? (
+            <div className="px-4 py-8 text-center text-[15px] text-[#57534e]">
+              {q ? `Ningún paciente coincide con «${q}».` : 'Todavía no hay pacientes.'}{' '}
+              <Link href="/dashboard/patients/new" className="font-medium text-[#0f766e] hover:text-[#115e59]">
+                Registrar paciente
+              </Link>
+            </div>
+          ) : (
+            patients.map((p) => {
+              const tint = avatarTint(p.name)
+              const a = age(p)
+              return (
+                <Link
+                  key={p.id}
+                  href={`/dashboard/patients/${p.id}`}
+                  className="grid min-h-[60px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 border-t border-[#f0eeec] px-4 py-2.5 text-[#1c1917] first:border-t-0 hover:bg-[#fafaf7] hover:text-[#1c1917]"
+                >
+                  <span
+                    className="flex size-10 items-center justify-center rounded-full text-[13px] font-semibold"
+                    style={{ background: tint.bg, color: tint.fg }}
+                    aria-hidden
+                  >
+                    {initialsOf(p.name)}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="truncate text-[15px] font-semibold">{p.name}</span>
+                      {p.allergies && (
+                        <span
+                          className="max-w-full truncate rounded-md bg-[#b91c1c] px-[7px] py-px text-xs font-semibold text-white"
+                          title={`Alergias: ${p.allergies}`}
+                        >
+                          Alergia: {p.allergies.length > 24 ? `${p.allergies.slice(0, 24)}…` : p.allergies}
+                        </span>
+                      )}
                     </span>
-                  </Td>
-                  <Td className="tabular hidden text-muted-foreground sm:table-cell">{p.phone}</Td>
-                  <Td className="hidden capitalize text-muted-foreground md:table-cell">
-                    {age(p) != null ? `${age(p)}y` : '—'} · {p.gender}
-                  </Td>
-                  <Td className="hidden lg:table-cell">
-                    {p.allergies ? (
-                      <span className="rounded-full bg-red-soft px-2 py-0.5 text-xs font-medium text-red">
-                        {p.allergies.length > 24 ? `${p.allergies.slice(0, 24)}…` : p.allergies}
-                      </span>
-                    ) : (
-                      <span className="text-faint">—</span>
-                    )}
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
+                    <span className="tabular block truncate text-[13px] text-[#57534e]">
+                      {[
+                        p.phone,
+                        a != null ? `${a} ${a === 1 ? 'año' : 'años'}` : null,
+                        p.gender ? GENDER_LABELS[p.gender] : 'Sexo por completar',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </span>
+                  <span className="font-mono text-xs text-[#57534e]">{p.mrn}</span>
+                </Link>
+              )
+            })
+          )}
+        </div>
 
-      {res.totalDocs > DEFAULT_PAGE_SIZE && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <PageSizeSelect value={limit} basePath="/dashboard/patients" />
-            <span className="tabular text-xs">
-              Page {res.page} of {res.totalPages}
-            </span>
-          </div>
-          {res.totalPages > 1 && (
-            <Pagination className="mx-0 w-auto justify-end">
-              <PaginationContent>
+        {res.totalDocs > DEFAULT_PAGE_SIZE && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] text-[#57534e]">
+            <div className="flex flex-wrap items-center gap-4">
+              <PageSizeSelect value={limit} basePath="/dashboard/patients" />
+              <span className="tabular">
+                Página {res.page} de {res.totalPages}
+              </span>
+            </div>
+            {res.totalPages > 1 && (
+              <nav aria-label="Paginación" className="flex flex-wrap items-center gap-1.5">
                 {res.hasPrevPage && (
-                  <PaginationItem>
-                    <PaginationPrevious href={pageHref(q, page - 1, limit)} />
-                  </PaginationItem>
+                  <Link href={pageHref(q, page - 1, limit)} className={`${PAGE_BTN} border-[#d6d3d1] bg-white text-[#1c1917] hover:bg-[#fafaf7]`}>
+                    Anterior
+                  </Link>
                 )}
                 {pageNumbers(page, res.totalPages).map((p, i) =>
                   p === '…' ? (
-                    <PaginationItem key={`e${i}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
+                    <span key={`e${i}`} className="px-1 text-[#57534e]">
+                      …
+                    </span>
                   ) : (
-                    <PaginationItem key={p}>
-                      <PaginationLink href={pageHref(q, p, limit)} isActive={p === page}>
-                        {p}
-                      </PaginationLink>
-                    </PaginationItem>
+                    <Link
+                      key={p}
+                      href={pageHref(q, p, limit)}
+                      aria-current={p === page ? 'page' : undefined}
+                      className={`${PAGE_BTN} ${
+                        p === page
+                          ? 'border-[#1c1917] bg-[#1c1917] text-white hover:text-white'
+                          : 'border-[#d6d3d1] bg-white text-[#1c1917] hover:bg-[#fafaf7]'
+                      }`}
+                    >
+                      {p}
+                    </Link>
                   ),
                 )}
                 {res.hasNextPage && (
-                  <PaginationItem>
-                    <PaginationNext href={pageHref(q, page + 1, limit)} />
-                  </PaginationItem>
+                  <Link href={pageHref(q, page + 1, limit)} className={`${PAGE_BTN} border-[#d6d3d1] bg-white text-[#1c1917] hover:bg-[#fafaf7]`}>
+                    Siguiente
+                  </Link>
                 )}
-              </PaginationContent>
-            </Pagination>
-          )}
-        </div>
-      )}
-    </div>
+              </nav>
+            )}
+          </div>
+        )}
+      </AppContent>
+    </>
   )
 }

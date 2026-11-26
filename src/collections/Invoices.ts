@@ -20,6 +20,12 @@ const relID = (value: unknown): string | null => {
   return String(value)
 }
 
+const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
+  unpaid: 'Pendiente',
+  partial: 'Parcial',
+  paid: 'Pagada',
+}
+
 /** Round to 2 dp to keep money math free of float dust. */
 const money = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100
 
@@ -38,6 +44,7 @@ const lineSignature = (items: LineItem[] | undefined): string =>
  */
 export const Invoices: CollectionConfig = {
   slug: 'invoices',
+  labels: { singular: 'Factura', plural: 'Facturas' },
   admin: {
     useAsTitle: 'invoiceNumber',
     defaultColumns: ['invoiceNumber', 'patient', 'totalAmount', 'paymentStatus'],
@@ -57,12 +64,12 @@ export const Invoices: CollectionConfig = {
 
         // --- void guard: a voided invoice is frozen (superAdmin may still correct) ---
         if (operation === 'update' && originalDoc?.voided === true && !isSuperAdmin(req.user)) {
-          throw new APIError("This invoice has been voided and can't be changed.", 403, {
+          throw new APIError('Esta factura fue anulada y no se puede modificar.', 403, {
             code: ERROR_CODES.INVOICE_VOIDED,
           })
         }
         if (data.voided === true && !data.voidReason && !originalDoc?.voidReason) {
-          throw new APIError('A reason is required to void an invoice.', 400, {
+          throw new APIError('Debe indicar un motivo para anular la factura.', 400, {
             code: ERROR_CODES.VALIDATION,
           })
         }
@@ -71,7 +78,7 @@ export const Invoices: CollectionConfig = {
         if (operation === 'create') {
           const tenantID = data.tenant ? String(data.tenant) : getTenantID(req.user)
           if (!tenantID) {
-            throw new APIError('Cannot create an invoice without a clinic.', 400, {
+            throw new APIError('No se puede crear una factura sin un consultorio.', 400, {
               code: ERROR_CODES.VALIDATION,
             })
           }
@@ -86,7 +93,7 @@ export const Invoices: CollectionConfig = {
             req,
             overrideAccess: true,
           })
-          data.invoiceNumber = `INV-${String(existing.totalDocs + 1).padStart(4, '0')}`
+          data.invoiceNumber = `FAC-${String(existing.totalDocs + 1).padStart(4, '0')}`
 
           if (req.user) data.createdBy = req.user.id
 
@@ -97,6 +104,28 @@ export const Invoices: CollectionConfig = {
               .catch(() => null)
             if (visit) data.patient = relID(visit.patient)
           }
+
+          // Same-clinic guard: the linked visit and patient must belong to this
+          // invoice's clinic (ids come from the client; forceTenant only pins the
+          // invoice itself).
+          const visitRef = relID(data.visit)
+          if (visitRef) {
+            const v = await req.payload
+              .findByID({ collection: 'visits', id: visitRef, depth: 0, req, overrideAccess: true })
+              .catch(() => null)
+            if (!v || relID(v.tenant) !== tenantID) {
+              throw new APIError('Consulta no encontrada.', 400, { code: ERROR_CODES.VALIDATION })
+            }
+          }
+          const patientRef = relID(data.patient)
+          if (patientRef) {
+            const p = await req.payload
+              .findByID({ collection: 'patients', id: patientRef, depth: 0, req, overrideAccess: true })
+              .catch(() => null)
+            if (!p || relID(p.tenant) !== tenantID) {
+              throw new APIError('Paciente no encontrado.', 400, { code: ERROR_CODES.VALIDATION })
+            }
+          }
         }
 
         // --- line items: lock after a payment, then (re)compute amounts + total ---
@@ -104,7 +133,7 @@ export const Invoices: CollectionConfig = {
           const hadPayments = ((originalDoc?.payments as Payment[] | undefined)?.length ?? 0) > 0
           if (hadPayments && lineSignature(data.lineItems as LineItem[]) !== lineSignature(originalDoc?.lineItems as LineItem[])) {
             throw new APIError(
-              "Line items can't be changed after a payment. Void the invoice and create a new one.",
+              'Los conceptos no se pueden modificar después de registrar un pago. Anule la factura y cree una nueva.',
               403,
               { code: ERROR_CODES.INVOICE_LOCKED },
             )
@@ -137,7 +166,7 @@ export const Invoices: CollectionConfig = {
         // --- overpayment guard ---
         if (data.amountPaid > data.totalAmount + 1e-9) {
           throw new APIError(
-            `Payment exceeds the remaining balance (${data.totalAmount}).`,
+            `El pago supera el saldo pendiente (${data.totalAmount}).`,
             400,
             { code: ERROR_CODES.PAYMENT_EXCEEDS_BALANCE },
           )
@@ -158,6 +187,7 @@ export const Invoices: CollectionConfig = {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
+      label: 'Consultorio',
       required: true,
       index: true,
       access: { update: () => false },
@@ -165,75 +195,84 @@ export const Invoices: CollectionConfig = {
     {
       name: 'invoiceNumber',
       type: 'text',
-      label: 'Invoice number',
+      label: 'Número de factura',
       access: { update: () => false },
-      admin: { readOnly: true, description: 'Auto-assigned per clinic (INV-0001).' },
+      admin: { readOnly: true, description: 'Asignado automáticamente por consultorio (FAC-0001).' },
     },
     {
       name: 'visit',
       type: 'relationship',
       relationTo: 'visits',
+      label: 'Consulta',
       access: { update: () => false },
       filterOptions: ({ user }) => {
         const tenantID = getTenantID(user as never)
         return tenantID ? ({ tenant: { equals: tenantID } } as never) : true
       },
     },
-    { name: 'patient', type: 'relationship', relationTo: 'patients', required: true },
+    { name: 'patient', type: 'relationship', relationTo: 'patients', label: 'Paciente', required: true },
     {
       name: 'currency',
       type: 'text',
+      label: 'Moneda',
       access: { update: () => false },
-      admin: { readOnly: true, description: 'Snapshotted from the clinic at create time.' },
+      admin: { readOnly: true, description: 'Tomada de la configuración del consultorio al crear la factura.' },
     },
     {
       name: 'lineItems',
       type: 'array',
       minRows: 1,
       required: true,
-      labels: { singular: 'Line item', plural: 'Line items' },
+      label: 'Conceptos',
+      labels: { singular: 'Concepto', plural: 'Conceptos' },
       fields: [
-        { name: 'description', type: 'text', required: true },
-        { name: 'quantity', type: 'number', required: true, defaultValue: 1, min: 1 },
-        { name: 'unitAmount', type: 'number', required: true, min: 0, label: 'Unit amount' },
+        { name: 'description', type: 'text', label: 'Descripción', required: true },
+        { name: 'quantity', type: 'number', label: 'Cantidad', required: true, defaultValue: 1, min: 1 },
+        { name: 'unitAmount', type: 'number', required: true, min: 0, label: 'Precio unitario' },
         {
           name: 'amount',
           type: 'number',
+          label: 'Monto',
           access: { update: () => false },
-          admin: { readOnly: true, description: 'quantity × unit amount.' },
+          admin: { readOnly: true, description: 'Cantidad × precio unitario.' },
         },
       ],
     },
     {
       name: 'totalAmount',
       type: 'number',
+      label: 'Total',
       access: { update: () => false },
       admin: { readOnly: true },
     },
     {
       name: 'payments',
       type: 'array',
-      labels: { singular: 'Payment', plural: 'Payments' },
+      label: 'Pagos',
+      labels: { singular: 'Pago', plural: 'Pagos' },
       fields: [
         {
           name: 'amount',
           type: 'number',
+          label: 'Monto',
           required: true,
           min: 0,
           validate: (value: number | null | undefined) =>
-            value != null && value > 0 ? true : 'A payment must be greater than zero.',
+            value != null && value > 0 ? true : 'El pago debe ser mayor que cero.',
         },
         {
           name: 'method',
           type: 'select',
+          label: 'Método de pago',
           required: true,
           defaultValue: 'cash',
           options: PAYMENT_METHODS.map((m) => ({ label: m.label, value: m.value })),
         },
-        { name: 'receivedAt', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+        { name: 'receivedAt', type: 'date', label: 'Fecha de recepción', admin: { date: { pickerAppearance: 'dayAndTime' } } },
         {
           name: 'receivedBy',
           type: 'relationship',
+          label: 'Recibido por',
           relationTo: 'users',
           access: { update: () => false },
           admin: { readOnly: true },
@@ -243,36 +282,42 @@ export const Invoices: CollectionConfig = {
     {
       name: 'amountPaid',
       type: 'number',
+      label: 'Monto pagado',
       access: { update: () => false },
       admin: { readOnly: true },
     },
     {
       name: 'balanceDue',
       type: 'number',
+      label: 'Saldo pendiente',
       access: { update: () => false },
       admin: { readOnly: true },
     },
     {
       name: 'paymentStatus',
       type: 'select',
-      options: INVOICE_STATUSES.map((s) => ({ label: s, value: s })),
+      label: 'Estado de pago',
+      options: INVOICE_STATUSES.map((s) => ({ label: INVOICE_STATUS_LABELS[s], value: s })),
       access: { update: () => false },
       admin: { readOnly: true },
     },
     {
       name: 'voided',
       type: 'checkbox',
+      label: 'Anulada',
       defaultValue: false,
       access: { update: superAdminOrOwnerField }, // only owner/superAdmin may void
     },
     {
       name: 'voidReason',
       type: 'text',
+      label: 'Motivo de anulación',
       admin: { condition: (data) => data?.voided === true },
     },
     {
       name: 'createdBy',
       type: 'relationship',
+      label: 'Creada por',
       relationTo: 'users',
       access: { update: () => false },
       admin: { readOnly: true },

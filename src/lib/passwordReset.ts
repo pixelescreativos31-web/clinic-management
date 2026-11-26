@@ -6,8 +6,9 @@
 
 import type { Payload } from 'payload'
 import { APIError } from 'payload'
-import { ERROR_CODES } from './constants'
+import { ERROR_CODES, MIN_PASSWORD_LENGTH } from './constants'
 import { appBaseUrl, sendEmail, type SendEmail } from './email'
+import { APP_NAME } from './brand'
 
 export type ResetRequestSummary = {
   sent: boolean
@@ -42,7 +43,7 @@ export async function requestPasswordReset(
   const link = `${appBaseUrl()}/reset-password?token=${encodeURIComponent(token)}`
   const res = await send({
     to: email,
-    subject: 'Reset your matab password',
+    subject: `Restablezca su contraseña de ${APP_NAME}`,
     html: resetHtml(link),
   })
   if (res.ok) return { sent: true }
@@ -60,12 +61,12 @@ export async function confirmPasswordReset(
   password: string,
 ): Promise<void> {
   if (!token) {
-    throw new APIError('This reset link is invalid or has expired.', 400, {
+    throw new APIError('Este enlace para restablecer la contraseña no es válido o ya venció.', 400, {
       code: ERROR_CODES.RESET_TOKEN_INVALID,
     })
   }
-  if ((password ?? '').length < 8) {
-    throw new APIError('Password must be at least 8 characters.', 400, {
+  if ((password ?? '').length < MIN_PASSWORD_LENGTH) {
+    throw new APIError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`, 400, {
       code: ERROR_CODES.VALIDATION,
     })
   }
@@ -74,27 +75,30 @@ export async function confirmPasswordReset(
       collection: 'users',
       data: { token, password },
       overrideAccess: true, // there is no logged-in user; the token IS the credential
+      // The session token Payload signs here is discarded: the user logs in next,
+      // with their 2FA code if they have one (see src/hooks/twoFactor.ts).
+      context: { twoFactor: { passwordReset: true } },
     })
   } catch {
-    throw new APIError('This reset link is invalid or has expired.', 400, {
+    throw new APIError('Este enlace para restablecer la contraseña no es válido o ya venció.', 400, {
       code: ERROR_CODES.RESET_TOKEN_INVALID,
     })
   }
 }
 
 function resetHtml(link: string): string {
-  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c2422;max-width:520px">
-    <h2 style="margin:0 0 2px;font-size:18px">Reset your password</h2>
-    <p style="margin:0 0 16px;color:#4b5f5a;font-size:14px">
-      Someone (hopefully you) asked to reset the password for this matab account.
+  return `<div style="font-family:Segoe UI,system-ui,sans-serif;color:#1c1917;max-width:520px">
+    <h2 style="margin:0 0 2px;font-size:18px">Restablezca su contraseña</h2>
+    <p style="margin:0 0 16px;color:#44403c;font-size:14px">
+      Alguien (esperamos que usted) solicitó restablecer la contraseña de esta cuenta de ${APP_NAME}.
     </p>
     <p style="margin:0 0 18px">
       <a href="${link}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px">
-        Choose a new password
+        Elegir una nueva contraseña
       </a>
     </p>
     <p style="margin:0;font-size:12px;color:#8aa19b">
-      The link works once and expires in 1 hour. If you didn't ask for this, ignore this email — your password stays as it is.
+      El enlace funciona una sola vez y vence en 1 hora. Si usted no lo solicitó, ignore este correo: su contraseña seguirá igual.
     </p>
   </div>`
 }

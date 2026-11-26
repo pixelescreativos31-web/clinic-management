@@ -30,8 +30,8 @@ describe('backlog — signup decision emails', () => {
     signupClinic(payload, {
       clinicName: 'Decision Test Clinic',
       phone: '+92512345678',
-      currency: 'PKR',
-      timezone: 'Asia/Karachi',
+      currency: 'DOP',
+      timezone: 'America/Santo_Domingo',
       ownerName: 'Sara Ahmed',
       email,
       password: 'password123',
@@ -45,7 +45,7 @@ describe('backlog — signup decision emails', () => {
     expect(summary.sent).toBe(true)
     expect(sent).toHaveLength(1)
     expect(sent[0]!.to).toBe('approve-me@decision.test')
-    expect(sent[0]!.subject).toContain('approved')
+    expect(sent[0]!.subject).toContain('aprobado')
     expect(sent[0]!.html).toContain('/login?email=approve-me%40decision.test')
   })
 
@@ -56,7 +56,7 @@ describe('backlog — signup decision emails', () => {
     const summary = await notifySignupDecision(payload, tenant, 'rejected', capture)
     expect(summary.sent).toBe(true)
     expect(sent[0]!.to).toBe('reject-me@decision.test')
-    expect(sent[0]!.subject).not.toContain('approved')
+    expect(sent[0]!.subject).not.toContain('aprobado')
     expect(sent[0]!.html).not.toContain('/login')
   })
 

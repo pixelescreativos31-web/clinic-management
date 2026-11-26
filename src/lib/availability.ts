@@ -30,9 +30,10 @@ export function windowOf(doctor: { availableFrom?: string | null; availableTo?: 
 }
 
 /** Pretty "9:00 am – 5:00 pm" for a window (24h input). */
-export function formatWindow(win: DoctorWindow): string {
+export function formatWindow(win: DoctorWindow, timeFormat?: '12h' | '24h'): string {
   const fmt = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number)
+    if (timeFormat === '24h') return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
     const ampm = h < 12 ? 'am' : 'pm'
     const hr = h % 12 === 0 ? 12 : h % 12
     return `${hr}:${String(m).padStart(2, '0')} ${ampm}`
@@ -94,21 +95,21 @@ export function checkAvailability(
   const type = (doctor.availabilityType || 'regular') as AvailabilityTag
 
   if (type === 'onCall') {
-    return { bookable: true, inFinder: true, tag: 'onCall', reason: 'On call' }
+    return { bookable: true, inFinder: true, tag: 'onCall', reason: 'De guardia' }
   }
   if (type === 'byAppointment') {
-    return { bookable: true, inFinder: false, tag: 'byAppointment', reason: 'By appointment' }
+    return { bookable: true, inFinder: false, tag: 'byAppointment', reason: 'Previa cita' }
   }
 
   // regular: must be on an available weekday AND inside the daily window.
   const days = doctor.availableDays?.length ? doctor.availableDays : ALL_DAYS
   const day = weekdayInTz(start, tz)
   if (!days.includes(day)) {
-    return { bookable: false, inFinder: false, tag: 'regular', reason: `Not available on this day` }
+    return { bookable: false, inFinder: false, tag: 'regular', reason: 'No disponible este día' }
   }
   const win = windowOf(doctor)
   if (!isWithinWindow(start, end, win, tz)) {
-    return { bookable: false, inFinder: false, tag: 'regular', reason: `Available ${formatWindow(win)}` }
+    return { bookable: false, inFinder: false, tag: 'regular', reason: `Disponible de ${formatWindow(win).replace(' – ', ' a ')}` }
   }
   return { bookable: true, inFinder: true, tag: 'regular', reason: formatWindow(win) }
 }

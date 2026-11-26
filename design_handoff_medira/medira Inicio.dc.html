@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:#fafaf7;color:#1c1917;font-family:Geist,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:#0f766e;text-decoration:none}
+a:hover{color:#115e59}
+*{box-sizing:border-box}
+button:focus-visible,a:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
+</style>
+</helmet>
+<div data-screen-label="Inicio" style="min-height:100vh;overflow-x:hidden;background:#fafaf7">
+
+<header style="position:sticky;top:0;z-index:40;background:#042f2e;color:#ffffff">
+  <div style="max-width:1160px;margin:0 auto;height:60px;padding:0 20px;display:flex;align-items:center;gap:16px">
+    <a href="#top" style="flex:none;font-size:22px;font-weight:600;letter-spacing:-.04em;color:#ffffff">medira</a>
+    <nav style="flex:1 1 0;min-width:0;height:40px;overflow:hidden;display:{{ navDisplay }};flex-wrap:wrap;justify-content:center;gap:0 4px">
+      <a href="#especialidades" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Especialidades</a>
+      <a href="#dia" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Producto</a>
+      <a href="#seguridad" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Seguridad</a>
+      <a href="#planes" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Precios</a>
+      <a href="#faq" style="padding:9px 12px;font-size:15px;color:#d5e5e2;line-height:22px" style-hover="color:#ffffff">Preguntas</a>
+    </nav>
+    <sc-if value="{{ movil }}" hint-placeholder-val="{{ false }}"><span style="flex:1"></span></sc-if>
+    <sc-if value="{{ escritorio }}" hint-placeholder-val="{{ true }}"><a href="medira Flujos.dc.html#e1" style="flex:none;padding:9px 12px;font-size:15px;color:#ffffff">Entrar</a></sc-if>
+    <a href="medira Flujos.dc.html" style="flex:none;padding:9px 16px;border-radius:10px;background:#ffffff;color:#042f2e;font-size:15px;font-weight:500" style-hover="background:#e7e5e4">Empezar gratis</a>
+    <sc-if value="{{ movil }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toggleMenu }}" style="flex:none;height:44px;padding:0 4px 0 8px;border:0;background:none;color:#ffffff;font:500 15px Geist,sans-serif;cursor:pointer">{{ menuTxt }}</button></sc-if>
+  </div>
+  <sc-if value="{{ menuAbierto }}" hint-placeholder-val="{{ false }}">
+    <nav onClick="{{ toggleMenu }}" style="display:flex;flex-direction:column;padding:4px 20px 16px;border-top:1px solid #134e4a">
+      <a href="#especialidades" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Especialidades</a>
+      <a href="#dia" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Producto</a>
+      <a href="#seguridad" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Seguridad</a>
+      <a href="#planes" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Precios</a>
+      <a href="#faq" style="padding:14px 0;border-bottom:1px solid #134e4a;font-size:17px;color:#ffffff">Preguntas</a>
+      <a href="medira Flujos.dc.html#e1" style="padding:14px 0;font-size:17px;color:#ffffff">Entrar</a>
+    </nav>
+  </sc-if>
+</header>
+
+<section id="top" style="background:#042f2e;color:#ffffff">
+  <div style="max-width:1160px;margin:0 auto;padding:clamp(36px,6vw,80px) 20px 0;text-align:center">
+    <h1 style="margin:0 auto;max-width:780px;font-weight:500;font-size:clamp(34px,5.6vw,64px);line-height:1.04;letter-spacing:-.04em;text-wrap:balance">Gestión médica inteligente.</h1>
+    <p style="margin:20px auto 0;max-width:540px;font-size:18px;line-height:1.55;color:#b6d4cf;text-wrap:pretty">Historia clínica en la nube para médicos y clínicas. Se adapta a su especialidad, se aprende rápido y cobra por lo que se usa.</p>
+    <div style="margin-top:28px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px">
+      <a href="#planes" style="padding:13px 22px;border-radius:10px;background:#ffffff;color:#042f2e;font-weight:500" style-hover="background:#e7e5e4">Probar 3 días gratis</a>
+      <a href="medira Flujos.dc.html" style="padding:13px 22px;border-radius:10px;border:1px solid #2b6b65;color:#ffffff;font-weight:500" style-hover="border-color:#ffffff">Empezar gratis, sin tarjeta</a>
+    </div>
+
+    <div id="especialidades" style="position:relative;margin:clamp(36px,5vw,64px) 0 -120px;text-align:left;color:#1c1917;background:#fafaf7;border:1px solid #d6d3d1;border-radius:14px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(4,47,46,.55);scroll-margin-top:76px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;background:#ffffff;border-bottom:1px solid #e7e5e4">
+        <div style="flex:1 1 220px;display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border:1px solid #e7e5e4;border-radius:10px;background:#fafaf7;font-size:14px;color:#57534e;min-width:0">
+          <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;color:#1c1917">{{ buscador }}</span>
+          <span style="flex:none;padding:1px 6px;border:1px solid #d6d3d1;border-radius:6px;background:#ffffff;font-family:'Geist Mono',monospace;font-size:12px">⌘K</span>
+        </div>
+        <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#f0eeec">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+            <button onClick="{{ t.pick }}" style="height:34px;padding:0 12px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font:500 14px Geist,sans-serif;cursor:pointer;transition:background .15s,color .15s">{{ t.nombre }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#f0eeec">
+          <sc-for list="{{ densidades }}" as="t" hint-placeholder-count="2">
+            <button onClick="{{ t.pick }}" style="height:34px;padding:0 12px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.fg }};font:500 14px Geist,sans-serif;cursor:pointer;transition:background .15s,color .15s">{{ t.nombre }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;padding:12px">
+        <div style="flex:1.5 1 340px;min-width:0;display:flex;flex-direction:column;gap:12px">
+          <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:{{ dens.pad }} 18px;border-bottom:1px solid #f0eeec">
+              <div>
+                <div style="font-size:12px;color:#57534e">En consulta</div>
+                <div style="font-size:18px;font-weight:600;letter-spacing:-.02em">{{ f.paciente }}</div>
+                <div style="font-size:13px;color:#57534e">{{ f.sub }}</div>
+              </div>
+              <span style="padding:4px 10px;border-radius:6px;background:#b91c1c;color:#ffffff;font-size:12px;font-weight:600">{{ f.alerta }}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:#f0eeec">
+              <sc-for list="{{ f.campos }}" as="c" hint-placeholder-count="6">
+                <div style="background:#ffffff;padding:{{ dens.cell }} 18px">
+                  <div style="font-size:12px;color:#57534e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.l }}</div>
+                  <div style="margin-top:2px;font-size:18px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ c.v }} <span style="font-size:12px;font-weight:400;letter-spacing:0;color:#57534e">{{ c.u }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="padding:{{ dens.pad }} 18px;border-top:1px solid #f0eeec">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;font-size:12px;color:#57534e">
+                <span>{{ f.notaL }}</span>
+                <span style="padding:1px 8px;border:1px solid #b45309;border-radius:6px;color:#b45309;font-weight:500">Generado por IA · revisar</span>
+              </div>
+              <div style="margin-top:6px;font-size:15px;line-height:1.55">{{ dictado }}</div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-top:1px solid #f0eeec;background:#fafaf7">
+              <span style="padding:9px 16px;border-radius:10px;background:#0f766e;color:#ffffff;font-size:14px;font-weight:500">Guardar consulta</span>
+              <span style="padding:9px 16px;border-radius:10px;border:1px solid #d6d3d1;background:#ffffff;font-size:14px;font-weight:500">{{ f.doc }}</span>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:12px">
+          <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:{{ dens.pad }} 16px">
+              <span style="font-weight:600">Agenda de hoy</span>
+              <span style="font-size:13px;color:#57534e;font-variant-numeric:tabular-nums">{{ atendidos }} de 5 atendidos</span>
+            </div>
+            <sc-for list="{{ citas }}" as="c" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:{{ dens.row }} 16px;border-top:1px solid #f0eeec;font-size:14px">
+                <span style="color:#57534e;font-variant-numeric:tabular-nums">{{ c.hora }}</span>
+                <span style="min-width:0">
+                  <span style="display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.nombre }}</span>
+                  <sc-if value="{{ comoda }}" hint-placeholder-val="{{ true }}"><span style="display:block;font-size:12px;color:#57534e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.nota }}</span></sc-if>
+                </span>
+                <span style="padding:3px 8px;border-radius:6px;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:600;transition:background .2s,color .2s,border-color .2s">{{ c.estado }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">
+            <div style="flex:1 1 130px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:{{ dens.pad }} 16px">
+              <div style="font-size:12px;color:#57534e">Caja del día</div>
+              <div style="margin-top:2px;font-size:22px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ caja }}</div>
+            </div>
+            <div style="flex:1 1 130px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:{{ dens.pad }} 16px">
+              <div style="font-size:12px;color:#57534e">WhatsApp del mes</div>
+              <div style="margin-top:2px;font-size:22px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ wsp }} <span style="font-size:13px;font-weight:400;letter-spacing:0;color:#57534e">de 500</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="dia" style="max-width:1160px;margin:0 auto;padding:calc(120px + clamp(48px,6vw,80px)) 20px 0;scroll-margin-top:0">
+  <div style="max-width:620px">
+    <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em;text-wrap:balance">Cambie la especialidad. Cambia la consulta. No cambie de sistema.</h2>
+    <p style="margin:14px 0 0;font-size:17px;color:#57534e;text-wrap:pretty">Listas hoy: General, Nutrición y Estética. Oftalmología, Odontología, Gineco-obstetricia y Pediatría llegan pronto y mientras tanto usan la ficha general.</p>
+  </div>
+  <div style="margin-top:32px;display:flex;flex-wrap:wrap;gap:12px">
+    <div style="flex:2 1 440px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;transition:border-color .15s" style-hover="border-color:#a8a29e">
+      <div><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">La agenda se confirma sola</div><div style="margin-top:2px;font-size:15px;color:#57534e">El paciente responde por WhatsApp y la cita se actualiza. Pruebe los botones.</div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+        <div style="flex:1 1 280px;max-width:400px">
+          <div style="padding:12px 14px;border-radius:12px 12px 12px 2px;background:#f0eeec;font-size:14px;line-height:1.45">Hola Ana, le recordamos su cita mañana a las <strong>9:30 a. m.</strong> con la Dra. Rosario.</div>
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button onClick="{{ waOk }}" style="flex:1 1 auto;white-space:nowrap;padding:0 14px;height:44px;border-radius:10px;border:1px solid {{ wa.okBd }};background:{{ wa.okBg }};color:{{ wa.okFg }};font:500 14px Geist,sans-serif;cursor:pointer;transition:background .15s,color .15s">Confirmo</button>
+            <button onClick="{{ waCambio }}" style="flex:1 1 auto;white-space:nowrap;padding:0 14px;height:44px;border-radius:10px;border:1px solid {{ wa.cBd }};background:{{ wa.cBg }};color:{{ wa.cFg }};font:500 14px Geist,sans-serif;cursor:pointer;transition:background .15s,color .15s">Necesito cambiar</button>
+          </div>
+        </div>
+        <div style="flex:1 1 260px;padding:12px 14px;border:1px solid #e7e5e4;border-radius:10px;font-size:14px">
+          <div style="font-size:12px;color:#57534e">En la agenda</div>
+          <div style="margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px"><span style="font-weight:500;white-space:nowrap">Ana Martínez · 9:30</span><span style="padding:3px 8px;border-radius:6px;border:1px solid {{ wa.bd }};background:{{ wa.bg }};color:{{ wa.fg }};font-size:12px;font-weight:600;transition:background .2s,color .2s">{{ wa.estado }}</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;transition:border-color .15s" style-hover="border-color:#a8a29e">
+      <div><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">Todo a un atajo</div><div style="margin-top:2px;font-size:15px;color:#57534e">Busque pacientes y acciones sin salir de la consulta.</div></div>
+      <div style="border:1px solid #e7e5e4;border-radius:10px;overflow:hidden;font-size:14px">
+        <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #f0eeec"><span style="flex:1;min-width:0">{{ paleta }}</span><span style="padding:1px 6px;border:1px solid #d6d3d1;border-radius:6px;font-family:'Geist Mono',monospace;font-size:12px;color:#57534e">⌘K</span></div>
+        <div style="padding:9px 14px;background:#f0eeec;display:flex;justify-content:space-between;gap:8px"><span style="font-weight:500">Ana Martínez</span><span style="color:#57534e">Exp. 0318</span></div>
+        <div style="padding:9px 14px;display:flex;justify-content:space-between;gap:8px"><span>Nueva cita</span><span style="color:#57534e">Acción</span></div>
+        <div style="padding:9px 14px;display:flex;justify-content:space-between;gap:8px"><span>Cobrar consulta</span><span style="color:#57534e">Acción</span></div>
+      </div>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;transition:border-color .15s" style-hover="border-color:#a8a29e">
+      <div><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">La receta sale firmada</div><div style="margin-top:2px;font-size:15px;color:#57534e">PDF con membrete, firma, sello, folio y código QR.</div></div>
+      <div style="border:1px solid #e7e5e4;border-radius:10px;padding:14px;font-size:14px">
+        <div style="display:flex;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #1c1917"><span style="font-weight:600">Dra. Carmen Rosario</span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#57534e">N.º 0142</span></div>
+        <div style="padding:9px 0;border-bottom:1px solid #f0eeec"><div style="font-weight:500">Azitromicina 500 mg, tableta</div><div style="font-size:13px;color:#57534e">1 cada 24 horas por 3 días · 3 (tres)</div></div>
+        <div style="padding:9px 0"><div style="font-weight:500">Paracetamol 500 mg, tableta</div><div style="font-size:13px;color:#57534e">1 cada 8 horas si hay fiebre · 10 (diez)</div></div>
+        <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="padding:3px 8px;border-radius:6px;background:#15803d;color:#ffffff;font-size:12px;font-weight:600">Firmada</span><span style="font-size:13px;color:#57534e">Enviada por enlace seguro</span></div>
+      </div>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;transition:border-color .15s" style-hover="border-color:#a8a29e">
+      <div><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">Claro con el dinero</div><div style="margin-top:2px;font-size:15px;color:#57534e">Usted siempre ve cuánto ha usado de su plan.</div></div>
+      <div style="display:flex;flex-direction:column;gap:14px;font-size:14px">
+        <sc-for list="{{ cuotas }}" as="q" hint-placeholder-count="3">
+          <div>
+            <div style="display:flex;justify-content:space-between;gap:12px"><span>{{ q.l }}</span><span style="color:{{ q.fg }};font-weight:500;font-variant-numeric:tabular-nums">{{ q.v }}</span></div>
+            <div style="margin-top:6px;height:6px;border-radius:3px;background:#f0eeec;overflow:hidden"><div style="height:100%;width:{{ q.pct }};border-radius:3px;background:{{ q.bar }};transition:width .2s ease"></div></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:2 1 440px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;transition:border-color .15s" style-hover="border-color:#a8a29e">
+      <div><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">Se cobra desde la cita y la caja cierra cuadrada</div><div style="margin-top:2px;font-size:15px;color:#57534e">Efectivo, tarjeta, transferencia o cobertura de ARS. Al cerrar, lo esperado contra lo contado.</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:#e7e5e4;border:1px solid #e7e5e4;border-radius:10px;overflow:hidden">
+        <sc-for list="{{ cobro }}" as="c" hint-placeholder-count="4">
+          <div style="background:#ffffff;padding:12px 14px">
+            <div style="font-size:12px;color:#57534e">{{ c.l }}</div>
+            <div style="margin-top:2px;font-size:18px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:{{ c.fg }}">{{ c.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="seguridad" style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px 0;scroll-margin-top:60px">
+  <div style="max-width:620px">
+    <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em;text-wrap:balance">Seguro por defecto</h2>
+    <p style="margin:14px 0 0;font-size:17px;color:#57534e;text-wrap:pretty">Son datos de salud. La verificación en dos pasos, la auditoría y el cifrado vienen activos sin configurar nada.</p>
+  </div>
+  <div style="margin-top:32px;display:flex;flex-wrap:wrap;gap:12px">
+    <div style="flex:1 1 300px;min-width:0;background:#042f2e;color:#ffffff;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:20px">
+      <div><div style="font-size:17px;font-weight:600;letter-spacing:-.01em">Verificación en dos pasos</div><div style="margin-top:2px;font-size:15px;color:#b6d4cf">Con app autenticadora y 10 códigos de respaldo. Obligatoria para dueños.</div></div>
+      <div style="display:flex;gap:6px">
+        <sc-for list="{{ codigo }}" as="d" hint-placeholder-count="6">
+          <div style="flex:1;max-width:48px;height:54px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid {{ d.bd }};background:#0b3b39;font-family:'Geist Mono',monospace;font-size:22px;transition:border-color .15s">{{ d.n }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:2 1 440px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:16px 22px"><span style="font-size:17px;font-weight:600;letter-spacing:-.01em">Registro de actividad</span><span style="font-size:13px;color:#57534e">No se puede editar ni borrar</span></div>
+      <sc-for list="{{ registro }}" as="r" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;padding:11px 22px;border-top:1px solid #f0eeec;font-size:14px">
+          <span style="font-family:'Geist Mono',monospace;font-size:13px;color:#0f766e">{{ r.h }}</span>
+          <span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:500">{{ r.quien }}</span> {{ r.que }} <span style="color:#57534e">· {{ r.donde }}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    <sc-for list="{{ seguridad }}" as="s" hint-placeholder-count="4">
+      <div style="flex:1 1 190px;min-width:0;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:18px 20px">
+        <div style="font-weight:600">{{ s.t }}</div>
+        <div style="margin-top:2px;font-size:15px;color:#57534e">{{ s.d }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="planes" style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px 0;scroll-margin-top:60px">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px">
+    <div>
+      <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">Elija su plan</h2>
+      <p style="margin:14px 0 0;max-width:480px;font-size:17px;color:#57534e;text-wrap:pretty">Los planes de pago empiezan con 3 días gratis. El plan Gratis no pide tarjeta.</p>
+    </div>
+    <div style="position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:10px;background:#f0eeec">
+      <span style="position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:8px;background:#1c1917;transform:translateX({{ pillX }});transition:transform .2s ease"></span>
+      <button onClick="{{ setMensual }}" style="position:relative;height:40px;padding:0 18px;border:0;background:none;color:{{ mensualFg }};font:500 15px Geist,sans-serif;cursor:pointer;transition:color .2s">Mensual</button>
+      <button onClick="{{ setAnual }}" style="position:relative;height:40px;padding:0 18px;border:0;background:none;color:{{ anualFg }};font:500 15px Geist,sans-serif;cursor:pointer;transition:color .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px">Anual <span style="padding:2px 8px;border-radius:6px;background:#0f766e;color:#ffffff;font-size:12px;font-weight:600">2 meses gratis</span></button>
+    </div>
+  </div>
+  <div style="margin:{{ pl.m }};padding:{{ pl.p }};display:{{ pl.display }};overflow-x:{{ pl.ox }};scroll-snap-type:x mandatory;scrollbar-width:none;grid-template-columns:{{ pl.cols }};gap:12px;align-items:stretch">
+    <sc-for list="{{ planes }}" as="p" hint-placeholder-count="4">
+      <div style="flex:{{ pl.flex }};scroll-snap-align:center;display:flex;flex-direction:column;padding:22px 20px 20px;border-radius:12px;border:1px solid {{ p.border }};background:{{ p.bg }};color:{{ p.fg }};transition:transform .2s ease" style-hover="transform:translateY(-3px)">
+        <div style="font-size:15px;font-weight:600;white-space:nowrap">{{ p.nombre }}</div>
+        <div style="margin-top:10px;display:flex;align-items:baseline;gap:4px">
+          <span style="font-size:15px;font-weight:500;color:{{ p.muted }}">{{ p.moneda }}</span>
+          <span style="font-size:{{ p.size }};font-weight:500;line-height:1;letter-spacing:-.05em;font-variant-numeric:tabular-nums">{{ p.monto }}</span>
+        </div>
+        <div style="margin-top:8px;min-height:40px;font-size:13px;line-height:1.5;color:{{ p.muted }};text-wrap:balance">{{ p.unidad }}</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;font-size:14px;flex:1">
+          <sc-for list="{{ p.items }}" as="it" hint-placeholder-count="3">
+            <div style="padding:10px 0;border-top:1px solid {{ p.rule }}">{{ it }}</div>
+          </sc-for>
+        </div>
+        <a href="medira Precios.dc.html" style="margin-top:18px;display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;font-size:15px;font-weight:500;background:{{ p.btnBg }};color:{{ p.btnFg }};border:1px solid {{ p.btnBorder }}">{{ p.cta }}</a>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 32px;padding:18px 20px;border:1px solid #e7e5e4;border-radius:12px;background:#ffffff;color:#1c1917;text-align:left">
+    <div style="flex:none">
+      <div style="font-size:15px;font-weight:600">Hospital</div>
+      <div style="font-size:13px;color:#57534e">Cotizado · contrato institucional</div>
+    </div>
+    <div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:4px 24px;font-size:14px">
+      <sc-for list="{{ hospitalItems }}" as="it" hint-placeholder-count="3"><span style="white-space:nowrap">{{ it }}</span></sc-for>
+    </div>
+    <a href="medira Sitio.dc.html#hospitales" style="flex:none;display:flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:10px;border:1px solid #d6d3d1;color:#1c1917;font-size:15px;font-weight:500" style-hover="border-color:#1c1917">Pedir demo</a>
+  </div>
+  <p style="margin:16px 0 0;font-size:14px;color:#57534e">Precios en dólares. <a href="medira Precios.dc.html" style="font-weight:500">Ver la comparación completa</a></p>
+</section>
+
+<section id="faq" style="max-width:1160px;margin:0 auto;padding:clamp(56px,7vw,96px) 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px 56px;align-items:start;scroll-margin-top:60px">
+  <div>
+    <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">Antes de empezar</h2>
+    <p style="margin:14px 0 0;font-size:17px;color:#57534e">¿Otra duda? Escríbanos a <a href="mailto:soporte@medira.do" style="font-weight:500">soporte@medira.do</a>.</p>
+  </div>
+  <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden">
+    <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="6">
+      <div style="border-top:1px solid {{ q.sep }}">
+        <button onClick="{{ q.toggle }}" style="width:100%;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;border:0;background:none;text-align:left;font:500 16px Geist,sans-serif;color:#1c1917;cursor:pointer" style-hover="background:#fafaf7">
+          {{ q.q }}<span style="flex:none;font-size:13px;font-weight:500;color:#0f766e">{{ q.accion }}</span>
+        </button>
+        <sc-if value="{{ q.abierta }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0;padding:0 20px 18px;max-width:560px;font-size:15px;line-height:1.6;color:#57534e">{{ q.a }}</p>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="max-width:1160px;margin:0 auto;padding:0 20px clamp(56px,7vw,96px)">
+  <div style="border-radius:14px;background:#042f2e;color:#ffffff;padding:clamp(28px,5vw,56px);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px">
+    <div style="max-width:520px">
+      <h2 style="margin:0;font-weight:500;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.03em">Atienda su primera consulta hoy</h2>
+      <p style="margin:10px 0 0;font-size:17px;color:#b6d4cf">Del registro a la primera consulta en menos de 10 minutos.</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <a href="medira Flujos.dc.html" style="padding:13px 22px;border-radius:10px;background:#ffffff;color:#042f2e;font-weight:500" style-hover="background:#e7e5e4">Crear cuenta</a>
+      <a href="medira Sitio.dc.html#hospitales" style="padding:13px 22px;border-radius:10px;border:1px solid #2b6b65;color:#ffffff;font-weight:500" style-hover="border-color:#ffffff">Hospitales: pedir demo</a>
+    </div>
+  </div>
+</section>
+
+<footer style="border-top:1px solid #e7e5e4">
+  <div style="max-width:1160px;margin:0 auto;padding:24px 20px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 32px;font-size:14px">
+    <span style="font-size:18px;font-weight:600;letter-spacing:-.04em">medira.do</span>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 24px">
+      <a href="medira Precios.dc.html" style="color:#57534e" style-hover="color:#1c1917">Precios</a>
+      <a href="medira Sitio.dc.html#ayuda" style="color:#57534e" style-hover="color:#1c1917">Centro de ayuda</a>
+      <a href="medira Sitio.dc.html#estado" style="color:#57534e" style-hover="color:#1c1917">Estado del servicio</a>
+      <a href="medira Sitio.dc.html#terminos" style="color:#57534e" style-hover="color:#1c1917">Términos</a>
+      <a href="medira Sitio.dc.html#seguridad" style="color:#57534e" style-hover="color:#1c1917">Privacidad</a>
+    </div>
+    <span style="color:#57534e">© 2026 Pixeles Creativos</span>
+  </div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;especialidadInicial&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;General&quot;,&quot;Nutrición&quot;,&quot;Estética&quot;],&quot;default&quot;:&quot;General&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;densidad&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Cómoda&quot;,&quot;Compacta&quot;],&quot;default&quot;:&quot;Cómoda&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;animaciones&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { esp: null, dens: null, anual: false, movil: false, estrecho: false, menu: false, tick: 0, wa: null, faq: 0 };
+  LINEAS = {
+    General: ['Refiere fiebre y dolor de garganta desde hace tres días. Amígdalas hiperémicas, sin exudado.', 'Diagnóstico: faringoamigdalitis aguda. Control en 7 días.'],
+    'Nutrición': ['Control 4 del programa. Bajó 1.8 kg desde el último control y cumple el plan de alimentación.', 'Evaluación: sobrepeso en descenso. Próximo control en 15 días.'],
+    'Estética': ['Sesión 4 de 10 en abdomen. Sin molestias tras la sesión anterior.', 'Indicaciones: hidratación y evitar sol directo durante 48 horas.'],
+  };
+  BUSCAR = ['Buscar paciente o acción', 'ana mar', 'nueva cita', 'cobrar consulta'];
+  PALETA = ['ana mar', 'nueva cita', 'cobrar'];
+  Typer = ({ lines, speed = 38, hold = 2200, animar = true }) => {
+    const [s, set] = React.useState({ i: 0, n: 0 });
+    React.useEffect(() => {
+      if (!animar) return;
+      const full = lines[s.i % lines.length];
+      const t = setTimeout(() => set(s.n < full.length ? { i: s.i, n: s.n + 1 } : { i: s.i + 1, n: 0 }), s.n < full.length ? speed : hold);
+      return () => clearTimeout(t);
+    }, [s, lines, animar]);
+    const full = lines[s.i % lines.length];
+    const largo = lines.reduce((a, b) => (b.length > a.length ? b : a), '');
+    return React.createElement('span', { style: { display: 'grid' } },
+      React.createElement('span', { 'aria-hidden': true, style: { gridArea: '1 / 1', visibility: 'hidden' } }, largo + ' |'),
+      React.createElement('span', { style: { gridArea: '1 / 1' } }, animar ? full.slice(0, s.n) : full,
+        animar && React.createElement('span', { style: { display: 'inline-block', width: 2, height: '1em', marginLeft: 2, background: '#0f766e', verticalAlign: '-0.12em' } })));
+  };
+  componentDidMount() {
+    this._mq = () => { const movil = window.innerWidth < 760, estrecho = window.innerWidth < 1120; if (movil !== this.state.movil || estrecho !== this.state.estrecho) this.setState({ movil, estrecho, menu: false }); };
+    this._mq(); window.addEventListener('resize', this._mq);
+    if (window.ResizeObserver) { this._ro = new ResizeObserver(this._mq); this._ro.observe(document.documentElement); }
+    requestAnimationFrame(this._mq); this._mqT = setTimeout(this._mq, 400);
+    this._t = setInterval(() => { if (this.animar()) this.setState((s) => ({ tick: s.tick + 1 })); }, 2200);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._mq); if (this._ro) this._ro.disconnect(); clearTimeout(this._mqT); clearInterval(this._t); }
+  animar() { return (this.props.animaciones ?? true) && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  renderVals() {
+    const { movil, tick } = this.state;
+    const animar = this.animar();
+    const fichas = {
+      General: { paciente: 'Ana Martínez', sub: '34 años · Exp. 0318', alerta: 'Alergia: penicilina', notaL: 'Nota de la consulta', doc: 'Firmar receta',
+        campos: [['Presión arterial', '118/76', 'mmHg'], ['Frecuencia', '88', 'lpm'], ['Temperatura', '38.4', '°C'], ['SpO₂', '98', '%'], ['Peso', '62.0', 'kg'], ['IMC', '23.1', '']] },
+      'Nutrición': { paciente: 'Luis García', sub: '41 años · Exp. 0291', alerta: 'Alergia: mariscos', notaL: 'Nota del control', doc: 'Plan de alimentación',
+        campos: [['Peso actual', '86.4', 'kg'], ['Peso habitual', '92.0', 'kg'], ['Meta', '78.0', 'kg'], ['Talla', '1.74', 'm'], ['IMC', '28.5', ''], ['Cintura', '96', 'cm']] },
+      'Estética': { paciente: 'Carla Díaz', sub: '29 años · Exp. 0340', alerta: 'Alergia: látex', notaL: 'Nota de sesión', doc: 'Indicaciones',
+        campos: [['Zona', 'Abdomen', ''], ['Tratamiento', 'Reductivo', ''], ['Terapeuta', 'M. Peña', ''], ['Restantes', '6', 'sesiones'], ['Fotos', 'Frente, perfil', ''], ['Consentimiento', 'Firmado', '']] },
+    };
+    const esp = this.state.esp ?? this.props.especialidadInicial ?? 'General';
+    const src = fichas[esp] ?? fichas.General;
+    const f = { ...src, campos: src.campos.map(([l, v, u]) => ({ l, v, u })) };
+    const seg = (on) => ({ bg: on ? '#ffffff' : 'transparent', fg: on ? '#1c1917' : '#57534e' });
+    const tabs = Object.keys(fichas).map((nombre) => ({ nombre, pick: () => this.setState({ esp: nombre }), ...seg(esp === nombre) }));
+    const densidad = this.state.dens ?? this.props.densidad ?? 'Cómoda';
+    const comoda = densidad !== 'Compacta';
+    const densidades = ['Cómoda', 'Compacta'].map((nombre) => ({ nombre, pick: () => this.setState({ dens: nombre }), ...seg(densidad === nombre) }));
+    const dens = comoda ? { pad: '14px', cell: '12px', row: '10px' } : { pad: '9px', cell: '7px', row: '6px' };
+    const E = {
+      Programada: ['#ffffff', '#57534e', '#d6d3d1'], Confirmada: ['#ffffff', '#0f766e', '#0f766e'], 'En sala': ['#1d4ed8', '#ffffff', '#1d4ed8'],
+      'En consulta': ['#0f766e', '#ffffff', '#0f766e'], Atendido: ['#f0eeec', '#57534e', '#f0eeec'], 'Pidió cambiar': ['#ffffff', '#b45309', '#b45309'],
+    };
+    const step = tick % 4;
+    const rows = [
+      ['8:30', 'José Rodríguez', 'Control · hipertensión', ['Atendido', 'Atendido', 'Atendido', 'Atendido']],
+      ['9:00', 'Ana Martínez', 'Fiebre y dolor de garganta', ['En sala', 'En consulta', 'En consulta', 'Atendido']],
+      ['9:30', 'Luis García', 'Control 4 · programa de peso', ['Confirmada', 'En sala', 'En sala', 'En consulta']],
+      ['10:00', 'María Peña', 'Sin cita · T-03', ['Programada', 'Programada', 'En sala', 'En sala']],
+      ['10:30', 'Carla Díaz', 'Sesión 4 de 10', ['Programada', 'Confirmada', 'Confirmada', 'Confirmada']],
+    ];
+    const citas = rows.map(([hora, nombre, nota, est]) => ({ hora, nombre, nota, estado: est[step], bg: E[est[step]][0], fg: E[est[step]][1], bd: E[est[step]][2] }));
+    const atendidos = citas.filter((c) => c.estado === 'Atendido').length;
+    const waE = this.state.wa === 'ok' ? 'Confirmada' : this.state.wa === 'cambio' ? 'Pidió cambiar' : 'Programada';
+    const btn = (on) => on ? ['#1c1917', '#ffffff', '#1c1917'] : ['#ffffff', '#1c1917', '#d6d3d1'];
+    const [okBg, okFg, okBd] = btn(this.state.wa === 'ok'), [cBg, cFg, cBd] = btn(this.state.wa === 'cambio');
+    const wa = { estado: waE, bg: E[waE][0], fg: E[waE][1], bd: E[waE][2], okBg, okFg, okBd, cBg, cFg, cBd };
+    const cuotas = [['WhatsApp automático', 312 + step * 3, 500, ''], ['Consultas dictadas con IA', 41 + step, 100, ''], ['Estudios con IA', 51, 60, 'Aviso al 80%']].map(([l, n, max, aviso]) => ({
+      l, v: n + ' de ' + max + (aviso ? ' · ' + aviso : ''), pct: Math.round((n / max) * 100) + '%', bar: aviso ? '#b45309' : '#0f766e', fg: aviso ? '#b45309' : '#1c1917' }));
+    const cobro = [['Consulta', 'RD$2,500', ''], ['Cubre la ARS', 'RD$1,800', ''], ['Paga el paciente', 'RD$700', ''], ['Diferencia de caja', 'RD$0', '#15803d']].map(([l, v, fg]) => ({ l, v, fg: fg || '#1c1917' }));
+    const code = '482913', nDig = animar ? tick % 8 : 6;
+    const codigo = code.split('').map((n, i) => ({ n: i < nDig ? n : '', bd: i === Math.min(nDig, 5) && nDig < 6 ? '#2dd4bf' : '#1f5b57' }));
+    const LOG = [
+      ['09:00', 'Dra. Rosario', 'abrió el expediente 0318', 'Santo Domingo'], ['09:12', 'Dra. Rosario', 'firmó la receta 0142', 'Santo Domingo'],
+      ['09:13', 'Dra. Rosario', 'envió la receta por enlace seguro', 'Santo Domingo'], ['09:15', 'M. Peña (recepción)', 'registró un cobro', 'Santo Domingo'],
+      ['09:31', 'Dra. Rosario', 'abrió el expediente 0291', 'Santo Domingo'], ['14:20', 'J. Almonte (contador)', 'exportó el informe de caja', 'Santiago'],
+    ];
+    const registro = [0, 1, 2, 3].map((i) => LOG[(tick + i) % LOG.length]).map(([h, quien, que, donde]) => ({ h, quien, que, donde }));
+    const seguridad = [['Cifrado', 'En tránsito y en reposo, también en los respaldos.'], ['Aislamiento', 'Ningún otro médico de la plataforma puede ver sus pacientes.'],
+      ['Respaldo diario', 'Cifrado, en otra ubicación y guardado 30 días.'], ['Ley 172-13', 'La IA no guarda ni entrena con datos de pacientes.']].map(([t, d]) => ({ t, d }));
+    const anual = this.state.anual;
+    const planes = [
+      { nombre: 'Gratis', m: 0, unidad: 'Para siempre, sin tarjeta', cta: 'Empezar gratis', items: ['1 médico (el dueño)', '50 pacientes en total', 'WhatsApp con enlace manual'] },
+      { nombre: 'Médico independiente', m: 34.95, sufM: 'al mes', sufA: 'al año', cta: 'Probar 3 días gratis', hot: true, items: ['1 médico y su asistente', 'Pacientes ilimitados', '500 WhatsApp automáticos/mes'] },
+      { nombre: 'Consultorio', m: 49.95, sufM: 'al mes', sufA: 'al año', cta: 'Probar 3 días gratis', items: ['Hasta 3 médicos', 'Personal ilimitado', 'Comprobantes fiscales y ARS'] },
+      { nombre: 'Clínica privada', m: 14.95, sufM: 'por médico al mes, mínimo 4', sufA: 'por médico al año, mínimo 4', cta: 'Probar 3 días gratis', items: ['Los médicos que pague', 'Varias sucursales y cajas', 'Soporte prioritario'] },
+      { nombre: 'Hospital', cotizado: true, unidad: 'Contrato institucional', cta: 'Pedir demo', items: ['Cuotas por contrato', 'Exportación a su ERP', 'Gerente de cuenta'] },
+    ].map((p) => {
+      const hot = !!p.hot;
+      return {
+        nombre: p.nombre, cta: p.cta, items: p.items,
+        moneda: p.cotizado ? '' : 'US$', monto: p.cotizado ? 'Cotizado' : p.m ? (anual ? p.m * 10 : p.m).toFixed(2) : '0', size: p.cotizado ? '28px' : '36px',
+        unidad: p.unidad ?? (anual ? p.sufA + ' · equivale a US$' + (p.m * 10 / 12).toFixed(2) + '/mes' : p.sufM),
+        bg: hot ? '#042f2e' : '#ffffff', fg: hot ? '#ffffff' : '#1c1917', border: hot ? '#042f2e' : '#e7e5e4',
+        muted: hot ? '#b6d4cf' : '#57534e', rule: hot ? '#134e4a' : '#f0eeec',
+        btnBg: hot ? '#ffffff' : p.m ? '#1c1917' : 'transparent', btnFg: hot ? '#042f2e' : p.m ? '#ffffff' : '#1c1917',
+        btnBorder: hot ? '#ffffff' : p.m ? '#1c1917' : '#d6d3d1',
+      };
+    });
+    const faqs = [
+      ['¿Necesito instalar algo?', 'No. medira funciona en el navegador de su computadora, tableta o celular. Crea su cuenta y empieza a usarlo el mismo día.'],
+      ['¿Mis pacientes pueden verse desde otro consultorio?', 'Nunca. Cada consultorio tiene sus datos completamente separados; ni siquiera otro médico de la plataforma puede ver sus pacientes.'],
+      ['¿Qué pasa si llego al límite de mi plan?', 'La atención nunca se bloquea. Solo se frena la acción que cuesta dinero, como un WhatsApp o un estudio con IA. Ver y editar expedientes funciona siempre.'],
+      ['¿Qué pasa si no pago?', 'Recibe avisos durante 10 días con todo su plan activo. Si sigue sin pagar, la cuenta baja a Gratis. Sus datos nunca se borran.'],
+      ['¿Puedo cancelar cuando quiera?', 'Sí. Si cancela durante la prueba no se cobra nada. Ver, imprimir y exportar sus expedientes sigue funcionando siempre.'],
+    ].map(([q, a], i) => {
+      const abierta = this.state.faq === i;
+      return { q, a, abierta, accion: abierta ? 'Cerrar' : 'Ver', sep: i ? '#f0eeec' : 'transparent', toggle: () => this.setState({ faq: abierta ? -1 : i }) };
+    });
+    const T = this.Typer;
+    return {
+      movil, escritorio: !movil, navDisplay: movil ? 'none' : 'flex', menuAbierto: movil && this.state.menu, menuTxt: this.state.menu ? 'Cerrar' : 'Menú',
+      toggleMenu: () => this.setState((s) => ({ menu: !s.menu })),
+      f, tabs, densidades, dens, comoda, citas, atendidos, wa, cuotas, cobro, codigo, registro, seguridad, planes: planes.slice(0, 4), hospitalItems: planes[4].items, faqs,
+      caja: 'RD$' + (14500 + step * 2500).toLocaleString('en-US'), wsp: 312 + step * 3,
+      dictado: React.createElement(T, { key: esp, lines: this.LINEAS[esp] ?? this.LINEAS.General, animar }),
+      buscador: React.createElement(T, { lines: this.BUSCAR, speed: 70, hold: 1800, animar }),
+      paleta: React.createElement(T, { lines: this.PALETA, speed: 90, hold: 1600, animar }),
+      waOk: () => this.setState({ wa: 'ok' }), waCambio: () => this.setState({ wa: 'cambio' }),
+      pl: movil ? { display: 'flex', ox: 'auto', m: '28px -20px 0', p: '4px 20px 8px', flex: '0 0 80%', cols: 'none' } : { display: 'grid', cols: this.state.estrecho ? 'repeat(2,minmax(0,1fr))' : 'repeat(4,minmax(0,1fr))', ox: 'visible', m: '32px 0 0', p: '0', flex: 'initial' },
+      setMensual: () => this.setState({ anual: false }), setAnual: () => this.setState({ anual: true }),
+      pillX: anual ? '100%' : '0%', mensualFg: anual ? '#57534e' : '#ffffff', anualFg: anual ? '#ffffff' : '#57534e',
+    };
+  }
+}
+</script>
+</body>
+</html>

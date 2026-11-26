@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#fafaf7;color:#1c1917;font-family:Geist,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:#0f766e;text-decoration:none}
+a:hover{color:#115e59}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="max-width:1160px;margin:0 auto;padding:clamp(24px,4vw,56px) 20px 80px">
+  <div style="font-size:22px;font-weight:600;letter-spacing:-.04em">medira</div>
+  <h1 style="margin:8px 0 0;font-weight:500;font-size:clamp(30px,4.4vw,48px);line-height:1.05;letter-spacing:-.04em">Sistema de diseño</h1>
+  <p style="margin:12px 0 0;max-width:600px;font-size:17px;color:#57534e">Clinical Calm: minimalismo cálido, mucha información sin saturar. Rejilla de 8 px, bordes de 1 px, radios de 8 a 12 px, movimiento de 150 a 200 ms.</p>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Color</h2>
+  <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">
+    <sc-for list="{{ colores }}" as="c" hint-placeholder-count="14">
+      <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow:hidden"><div style="height:64px;background:{{ c.hex }};border-bottom:1px solid #e7e5e4"></div><div style="padding:10px 12px"><div style="font-size:14px;font-weight:600">{{ c.n }}</div><div style="font-family:'Geist Mono',monospace;font-size:12px;color:#57534e">{{ c.hex }}</div><div style="font-size:12px;color:#57534e">{{ c.uso }}</div></div></div>
+    </sc-for>
+  </div>
+  <p style="margin:12px 0 0;max-width:640px;font-size:14px;color:#57534e">El rojo se usa solo para alertas clínicas reales (alergias, valores críticos). Las acciones destructivas y los estados negativos no clínicos usan tinta o ámbar.</p>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Tipografía</h2>
+  <div style="margin-top:14px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:8px 20px">
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;padding:14px 0;border-bottom:1px solid #f0eeec"><span style="flex:0 0 150px;font-size:13px;color:#57534e">Título de página · 500</span><span style="font-size:clamp(30px,4.4vw,48px);font-weight:500;line-height:1.05;letter-spacing:-.04em">Gestión médica inteligente.</span></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;padding:14px 0;border-bottom:1px solid #f0eeec"><span style="flex:0 0 150px;font-size:13px;color:#57534e">Sección · 22/600</span><span style="font-size:22px;font-weight:600;letter-spacing:-.03em">Agenda de hoy</span></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;padding:14px 0;border-bottom:1px solid #f0eeec"><span style="flex:0 0 150px;font-size:13px;color:#57534e">Texto · 15–16/400</span><span style="font-size:16px">Fiebre y dolor de garganta desde hace tres días.</span></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;padding:14px 0;border-bottom:1px solid #f0eeec"><span style="flex:0 0 150px;font-size:13px;color:#57534e">Etiqueta · 12–13/500</span><span style="font-size:13px;font-weight:500;color:#57534e">Presión arterial</span></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;padding:14px 0;border-bottom:1px solid #f0eeec"><span style="flex:0 0 150px;font-size:13px;color:#57534e">Cifras · tabulares</span><span style="font-size:24px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums">118/76 <span style="font-size:13px;font-weight:400;letter-spacing:0;color:#57534e">mmHg</span> · 38.4 <span style="font-size:13px;font-weight:400;letter-spacing:0;color:#57534e">°C</span> · RD$2,500</span></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;padding:14px 0"><span style="flex:0 0 150px;font-size:13px;color:#57534e">Mono · folios y códigos</span><span style="font-family:'Geist Mono',monospace;font-size:14px">N.º 0142 · E320000000912 · ⌘K</span></div>
+  </div>
+  <p style="margin:12px 0 0;font-size:14px;color:#57534e">Geist para todo; Geist Mono para folios, códigos y atajos. Nada clínico por debajo de 13 px. Campos de 16 px en teléfono.</p>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Botones</h2>
+  <div style="margin-top:14px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <button style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#0f766e;color:#ffffff;font:500 15px Geist,sans-serif;cursor:pointer" style-hover="background:#115e59">Guardar consulta</button>
+    <button style="height:44px;padding:0 18px;border:1px solid #d6d3d1;border-radius:10px;background:#ffffff;color:#1c1917;font:500 15px Geist,sans-serif;cursor:pointer" style-hover="border-color:#1c1917">Expediente</button>
+    <button style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#1c1917;color:#ffffff;font:500 15px Geist,sans-serif;cursor:pointer">Cancelar mi plan</button>
+    <button style="height:44px;padding:0 14px;border:0;background:none;color:#0f766e;font:500 15px Geist,sans-serif;cursor:pointer">Ver agenda</button>
+    <button style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#a8a29e;color:#ffffff;font:500 15px Geist,sans-serif">Inactivo</button>
+  </div>
+  <p style="margin:12px 0 0;font-size:14px;color:#57534e">Principal, secundario, peligro (tinta, no rojo), enlace e inactivo. Alto mínimo de 44 px. Verbos claros: «Guardar consulta», no «Aceptar».</p>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Campos</h2>
+  <div style="margin-top:14px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px;align-items:start">
+    <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">Nombre completo<input defaultValue="Ana Martínez" style="height:44px;padding:0 12px;border:1px solid #d6d3d1;border-radius:10px;font:400 15px Geist,sans-serif;color:#1c1917"></label>
+    <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">Alergias<input defaultValue="Penicilina" style="height:44px;padding:0 12px;border:1px solid #b91c1c;border-radius:10px;font:400 15px Geist,sans-serif;color:#1c1917"><span style="font-size:12px;font-weight:400;color:#57534e">Se muestran en rojo en el expediente y al recetar.</span></label>
+    <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500;color:#44403c">Código de dos pasos<input defaultValue="482913" style="height:52px;padding:0 12px;border:1px solid #d6d3d1;border-radius:10px;font:400 24px 'Geist Mono',monospace;letter-spacing:.4em;text-align:center;color:#1c1917;min-width:0"></label>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:500;color:#44403c">Interruptor y opciones<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px"><span style="width:48px;height:28px;padding:3px;border-radius:14px;background:#0f766e;display:flex;justify-content:flex-end"><span style="width:22px;height:22px;border-radius:50%;background:#ffffff"></span></span><span style="height:40px;padding:0 14px;border-radius:10px;background:#1c1917;color:#ffffff;font-size:14px;display:flex;align-items:center">15 días</span><span style="height:40px;padding:0 14px;border:1px solid #d6d3d1;border-radius:10px;color:#1c1917;font-size:14px;display:flex;align-items:center">1 mes</span></div></div>
+  </div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Insignias de estado</h2>
+  <div style="margin-top:14px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:20px;display:flex;flex-wrap:wrap;gap:8px">
+    <sc-for list="{{ insignias }}" as="c" hint-placeholder-count="12"><span style="padding:3px 9px;border-radius:6px;border:1px {{ c.st }} {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;font-weight:600">{{ c.t }}</span></sc-for>
+  </div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Banners, cuotas y candado de plan</h2>
+  <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1.4 1 360px;min-width:0;display:flex;flex-direction:column;gap:8px">
+      <div style="padding:10px 14px;border-radius:10px;background:#f0eeec;font-size:14px">Prueba: quedan 2 días. El primer cobro es el 28 de noviembre.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid #b45309;color:#b45309;font-size:14px;font-weight:500">Va por el 85% de estudios con IA este mes.</div>
+      <div style="padding:10px 14px;border-radius:10px;background:#b45309;color:#ffffff;font-size:14px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px">No pudimos cobrar su plan. Quedan 7 días.<span style="padding:5px 10px;border-radius:8px;background:#ffffff;color:#1c1917;font-size:13px;font-weight:600">Actualizar pago</span></div>
+      <div style="padding:10px 14px;border-radius:10px;background:#1c1917;color:#ffffff;font-size:14px">La cuenta está en el plan Gratis.</div>
+      <div style="padding:10px 14px;border-radius:10px;background:#b91c1c;color:#ffffff;font-size:14px;font-weight:500">Alergia registrada: penicilina. Revise antes de firmar.</div>
+      <div style="padding:10px 14px;border-radius:10px;border:1px solid #b45309;font-size:14px"><div style="font-size:12px;font-weight:500;color:#b45309">Generado por IA · revisar</div>Faringoamigdalitis aguda (J03.9).</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <div style="background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:16px 18px;font-size:14px">
+        <div style="display:flex;justify-content:space-between;gap:12px"><span>WhatsApp automático</span><span style="font-weight:500;font-variant-numeric:tabular-nums">312 de 500</span></div><div style="margin-top:6px;height:6px;border-radius:3px;background:#f0eeec;overflow:hidden"><div style="height:100%;width:62%;background:#0f766e"></div></div>
+        <div style="margin-top:14px;display:flex;justify-content:space-between;gap:12px"><span>Estudios con IA</span><span style="font-weight:500;color:#b45309;font-variant-numeric:tabular-nums">51 de 60 · Aviso al 80%</span></div><div style="margin-top:6px;height:6px;border-radius:3px;background:#f0eeec;overflow:hidden"><div style="height:100%;width:85%;background:#b45309"></div></div>
+      </div>
+      <div style="background:#ffffff;border:1px dashed #a8a29e;border-radius:12px;padding:16px 18px;font-size:14px"><div style="font-weight:600">Invitar al equipo</div><div style="color:#57534e">Disponible en planes de pago.</div><a href="medira Precios.dc.html" style="display:inline-block;margin-top:8px;font-weight:500">Ver planes</a></div>
+      <div style="align-self:flex-start;padding:11px 18px;border-radius:10px;background:#1c1917;color:#ffffff;font-size:14px;font-weight:500">Consulta guardada</div>
+    </div>
+  </div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Plantillas de mensaje</h2>
+  <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1 1 320px;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:#57534e">Correo de medira · 600 px, un solo botón</div>
+      <div style="margin-top:8px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:24px">
+        <div style="font-size:20px;font-weight:600;letter-spacing:-.04em">medira</div>
+        <div style="margin-top:18px;font-size:20px;font-weight:600;letter-spacing:-.02em">Su prueba termina mañana</div>
+        <p style="margin:8px 0 0;color:#44403c">El 28 de noviembre cobraremos US$49.95 por el plan Consultorio. Si no desea continuar, puede cancelar hoy sin costo.</p>
+        <span style="display:inline-block;margin-top:16px;padding:12px 20px;border-radius:10px;background:#0f766e;color:#ffffff;font-weight:500">Ver mi plan</span>
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #f0eeec;font-size:12px;color:#57534e">medira.do · no-reply@medira.do · Responda a soporte@medira.do</div>
+      </div>
+    </div>
+    <div style="flex:1 1 320px;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:#57534e">Correo de la clínica al paciente · nada clínico en el cuerpo</div>
+      <div style="margin-top:8px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;padding:24px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:repeating-linear-gradient(135deg,#e7e5e4 0 6px,#f5f5f4 6px 12px)"></div><div style="font-weight:600">Consultorio Dra. Carmen Rosario</div></div>
+        <div style="margin-top:18px;font-size:20px;font-weight:600;letter-spacing:-.02em">Su receta está lista</div>
+        <p style="margin:8px 0 0;color:#44403c">Hola Ana, su médico le envió una receta. Para verla le pediremos su fecha de nacimiento. El enlace caduca en 7 días.</p>
+        <span style="display:inline-block;margin-top:16px;padding:12px 20px;border-radius:10px;background:#0f766e;color:#ffffff;font-weight:500">Ver receta</span>
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #f0eeec;font-size:12px;color:#57534e">Av. Abraham Lincoln 1001 · 809-555-0100 · Enviado con medira</div>
+      </div>
+    </div>
+    <div style="flex:1 1 280px;min-width:0">
+      <div style="font-size:13px;font-weight:600;color:#57534e">Vista previa de WhatsApp</div>
+      <div style="margin-top:8px;background:#f0eeec;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-start;max-width:280px;background:#ffffff;border-radius:12px 12px 12px 2px;padding:10px 12px;font-size:14px"><div style="font-size:12px;font-weight:600;color:#0f766e">Consultorio Dra. Carmen Rosario</div>Hola Ana, le recordamos su cita mañana a las <strong>9:30 a. m.</strong> con la Dra. Rosario.<div style="margin-top:8px;display:flex;gap:6px"><span style="flex:1;padding:8px;border:1px solid #d6d3d1;border-radius:8px;text-align:center;font-size:13px;font-weight:500">Confirmo</span><span style="flex:1;padding:8px;border:1px solid #d6d3d1;border-radius:8px;text-align:center;font-size:13px;font-weight:500">Necesito cambiar</span></div></div>
+        <div style="align-self:flex-start;max-width:280px;background:#ffffff;border-radius:12px 12px 12px 2px;padding:10px 12px;font-size:14px">Su receta está lista. Por seguridad, el enlace pide su fecha de nacimiento.<div style="margin-top:8px;padding:8px;border:1px solid #d6d3d1;border-radius:8px;text-align:center;font-size:13px;font-weight:500">Ver receta</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Mensajes de WhatsApp</h2>
+  <p style="margin:8px 0 0;max-width:640px;font-size:14px;color:#57534e">Doce plantillas. Nada clínico en el texto: diagnósticos, recetas y resultados van detrás de un enlace seguro. No se envían entre las 9:00 p. m. y las 7:00 a. m.</p>
+  <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:10px">
+    <sc-for list="{{ mensajes }}" as="m" hint-placeholder-count="12">
+      <div style="background:#f0eeec;border-radius:12px;padding:12px"><div style="font-size:12px;color:#57534e">{{ m.cuando }}</div><div style="margin-top:6px;background:#ffffff;border-radius:12px 12px 12px 2px;padding:10px 12px;font-size:14px"><div style="font-weight:600">{{ m.n }}</div>{{ m.txt }}<div style="margin-top:8px;padding:7px;border:1px solid #d6d3d1;border-radius:8px;text-align:center;font-size:13px;font-weight:500">{{ m.btn }}</div></div></div>
+    </sc-for>
+  </div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Correos</h2>
+  <p style="margin:8px 0 0;max-width:640px;font-size:14px;color:#57534e">Todos usan la plantilla de arriba: 600 px, un solo botón, asunto de menos de 50 caracteres, trato de «usted». Los de seguridad y cobro no se pueden desactivar.</p>
+  <div style="margin-top:14px;background:#ffffff;border:1px solid #e7e5e4;border-radius:12px;overflow-x:auto"><div style="min-width:720px">
+    <div style="display:grid;grid-template-columns:1.6fr .9fr 1.6fr 1.1fr;background:#fafaf7;font-size:12px;font-weight:600;color:#57534e"><div style="padding:10px 14px">Correo</div><div style="padding:10px 14px">Para</div><div style="padding:10px 14px">Cuándo</div><div style="padding:10px 14px">Botón</div></div>
+    <sc-for list="{{ correos }}" as="g" hint-placeholder-count="5">
+      <div style="padding:14px 14px 8px;border-top:1px solid #e7e5e4;font-size:14px;font-weight:600">{{ g.g }}</div>
+      <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:1.6fr .9fr 1.6fr 1.1fr;border-top:1px solid #f0eeec;font-size:14px"><div style="padding:10px 14px;font-weight:500">{{ c.n }}</div><div style="padding:10px 14px;color:#57534e">{{ c.para }}</div><div style="padding:10px 14px;color:#57534e">{{ c.cuando }}</div><div style="padding:10px 14px">{{ c.btn }}</div></div></sc-for>
+    </sc-for>
+  </div></div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Plantillas de PDF</h2>
+  <p style="margin:8px 0 0;max-width:640px;font-size:14px;color:#57534e">Mismo membrete en receta, resumen y recibo. En blanco y negro se ven igual. «Hecho con medira» solo en el plan Gratis.</p>
+  <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div style="flex:1 1 300px;min-width:0;background:#ffffff;border:1px solid #d6d3d1;border-radius:8px;padding:22px;font-size:14px">
+      <div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:2px solid #1c1917"><div><div style="font-size:16px;font-weight:600">Consultorio Dra. Carmen Rosario</div><div style="font-size:12px;color:#57534e">Medicina general · Exequátur 000-00 · 809-555-0100</div></div><div style="text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#57534e;white-space:nowrap">Resumen<br>25/11/2026</div></div>
+      <div style="margin-top:10px;font-size:13px">Ana Martínez · 34 años · Exp. 0318</div>
+      <div style="margin-top:14px;font-size:18px;font-weight:600;letter-spacing:-.02em">Resumen de su consulta</div>
+      <div style="padding:9px 0;border-top:1px solid #f0eeec;margin-top:9px"><div style="font-weight:500">Qué tiene</div><div style="font-size:13px;color:#57534e">Una infección de garganta.</div></div>
+      <div style="padding:9px 0;border-top:1px solid #f0eeec"><div style="font-weight:500">Qué hacer</div><div style="font-size:13px;color:#57534e">Tome sus medicamentos, beba líquidos y descanse.</div></div>
+      <div style="padding:9px 0;border-top:1px solid #f0eeec"><div style="font-weight:500">Vuelva antes si</div><div style="font-size:13px;color:#57534e">Le cuesta respirar o tragar, o la fiebre dura más de 3 días.</div></div>
+      <div style="margin-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px"><div style="width:48px;height:48px;background:repeating-linear-gradient(135deg,#1c1917 0 3px,#ffffff 3px 6px)"></div><div style="padding-top:4px;border-top:1px solid #1c1917;min-width:150px;text-align:center;font-size:12px;color:#57534e">Firma y sello</div></div>
+      <div style="margin-top:10px;font-size:11px;color:#78716c">Página 1 de 1 · Media carta</div>
+    </div>
+    <div style="flex:1 1 300px;min-width:0;background:#ffffff;border:1px solid #d6d3d1;border-radius:8px;padding:22px;font-size:14px">
+      <div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:2px solid #1c1917"><div><div style="font-size:16px;font-weight:600">Consultorio Dra. Carmen Rosario</div><div style="font-size:12px;color:#57534e">RNC 1-31-00000-1 · Av. Abraham Lincoln 1001</div></div><div style="text-align:right;font-family:'Geist Mono',monospace;font-size:11px;color:#57534e;white-space:nowrap">Recibo 0913<br>25/11/2026</div></div>
+      <div style="margin-top:10px;font-size:13px">Ana Martínez · Exp. 0318 · ARS Humano 55-102938</div>
+      <div style="margin-top:14px;font-size:18px;font-weight:600;letter-spacing:-.02em">Recibo de pago</div>
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #f0eeec;margin-top:9px"><span>Consulta general</span><span style="font-variant-numeric:tabular-nums">RD$2,500</span></div>
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #f0eeec"><span>Cubre la ARS · AUT-778123</span><span style="font-variant-numeric:tabular-nums">−RD$1,000</span></div>
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #1c1917;font-weight:600"><span>Pagado · tarjeta</span><span style="font-variant-numeric:tabular-nums">RD$1,500</span></div>
+      <div style="margin-top:10px;font-family:'Geist Mono',monospace;font-size:12px;color:#57534e">e-CF E320000000913 · Consumidor final</div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:10px;font-size:12px;color:#57534e"><div style="width:48px;height:48px;background:repeating-linear-gradient(135deg,#1c1917 0 3px,#ffffff 3px 6px)"></div>Verifique este recibo con el código QR.</div>
+    </div>
+  </div>
+
+  <h2 style="margin:48px 0 0;font-size:20px;font-weight:600;letter-spacing:-.02em">Pantallas</h2>
+  <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px">
+    <sc-for list="{{ archivos }}" as="a" hint-placeholder-count="6"><a href="{{ a.href }}" style="padding:12px 16px;border:1px solid #e7e5e4;border-radius:10px;background:#ffffff;color:#1c1917;font-weight:500" style-hover="border-color:#1c1917">{{ a.t }}</a></sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const colores = [['Fondo', '#fafaf7', 'Página'], ['Superficie', '#ffffff', 'Tarjetas'], ['Hundido', '#f0eeec', 'Controles, vacío'], ['Borde', '#e7e5e4', 'Tarjetas'], ['Borde fuerte', '#d6d3d1', 'Campos'], ['Texto secundario', '#57534e', 'Etiquetas'], ['Tinta', '#1c1917', 'Texto, peligro'], ['Primario', '#0f766e', 'Acciones'], ['Primario oscuro', '#115e59', 'Hover'], ['Profundo', '#042f2e', 'Hero, destacado'], ['Confirmado', '#15803d', 'Estado'], ['Aviso', '#b45309', 'Estado, IA'], ['Información', '#1d4ed8', 'En sala'], ['Alerta clínica', '#b91c1c', 'Solo alergias y críticos']].map(([n, hex, uso]) => ({ n, hex, uso }));
+    const I = [['Programada', '#ffffff', '#57534e', '#d6d3d1'], ['Confirmada', '#ffffff', '#15803d', '#15803d'], ['En sala', '#1d4ed8', '#ffffff', '#1d4ed8'], ['En consulta', '#0f766e', '#ffffff', '#0f766e'], ['Atendido', '#f0eeec', '#57534e', '#f0eeec'], ['No asistió', '#1c1917', '#ffffff', '#1c1917'], ['Borrador con IA', '#ffffff', '#b45309', '#b45309'], ['Firmado', '#ffffff', '#15803d', '#15803d'], ['Anulada', '#1c1917', '#ffffff', '#1c1917'], ['En prueba', '#f0eeec', '#1c1917', '#f0eeec'], ['Pago fallido', '#b45309', '#ffffff', '#b45309'], ['Alergia', '#b91c1c', '#ffffff', '#b91c1c'], ['pronto', '#ffffff', '#57534e', '#a8a29e', 'dashed'], ['Ejemplo', '#ffffff', '#57534e', '#a8a29e', 'dashed']];
+    const mensajes = [['Cita agendada', 'Al crear la cita', 'Su cita quedó para el jueves 26 a las 9:30 a. m.', 'Agregar al calendario'], ['Recordatorio', '5 días y 1 día antes', 'Le recordamos su cita mañana a las 9:30 a. m.', 'Confirmo · Necesito cambiar'], ['Recordatorio del día', '2 horas antes, si no confirmó', 'Su cita es hoy a las 9:30 a. m.', 'Cómo llegar'], ['Cita cambiada o cancelada', 'Al cambiarla', 'Su cita cambió de hora.', 'Ver nueva hora'], ['Receta lista', 'Al firmar la receta', 'Su médico le envió una receta.', 'Ver receta'], ['Resumen de su consulta', 'Al cerrar la consulta', 'Su médico le envió el resumen de hoy.', 'Ver resumen'], ['Resultados disponibles', 'Al marcarlos para el paciente', 'Sus resultados ya están disponibles.', 'Ver resultados'], ['Control pendiente', 'En la fecha de seguimiento', 'Le toca su control.', 'Agendar'], ['Recibo de pago', 'Al cobrar', 'Gracias por su pago.', 'Ver recibo'], ['Saldo pendiente', 'Manual o programado', 'Tiene un saldo pendiente con la clínica.', 'Ver detalle'], ['Encuesta corta', '1 día después, si se activa', '¿Cómo fue su consulta?', '1 a 5 estrellas'], ['Consentimiento para firmar', 'Antes de un procedimiento', 'Lea y firme su consentimiento.', 'Leer y firmar']].map(([n, cuando, txt, btn]) => ({ n, cuando, txt, btn }));
+    const correos = [
+      ['Cuenta y acceso', [['Confirme su correo', 'Quien se registra', 'Al registrarse', 'Código de 6 dígitos'], ['Bienvenida', 'Dueño', 'Al verificar', 'Ir a mi panel'], ['Restablecer contraseña', 'Usuario', 'Al pedirlo', 'Crear contraseña nueva'], ['Su contraseña cambió', 'Usuario', 'Al cambiarla', '¿No fue usted?'], ['Invitación al equipo', 'Invitado', 'Al invitar', 'Aceptar invitación'], ['Nuevo inicio de sesión', 'Usuario', 'Dispositivo o país nuevo', '¿No fue usted?'], ['2FA activada o desactivada', 'Usuario y dueño', 'Al cambiarla', 'Revisar seguridad'], ['Se usó un código de respaldo', 'Usuario', 'Al usarlo', 'Generar nuevos códigos']]],
+      ['Prueba y suscripción', [['Su prueba de 3 días comenzó', 'Dueño', 'Al aprobar el pago', 'Ir a mi panel'], ['Su prueba termina mañana', 'Dueño', 'Día 2 de la prueba', 'Ver mi plan'], ['Recibo de pago', 'Dueño', 'Cada cobro', 'Descargar recibo'], ['No pudimos cobrar su plan', 'Dueño', 'Días 0, 3, 7 y 9 del impago', 'Actualizar pago'], ['Su cuenta pasó a Gratis', 'Dueño', 'Día 10 del impago', 'Recuperar mi plan'], ['Recupere su plan', 'Dueño', 'Días 17 y 40', 'Recuperar mi plan'], ['Plan cambiado', 'Dueño', 'Al subir o bajar', 'Ver mi plan'], ['Cancelación confirmada', 'Dueño', 'Al cancelar', 'Reactivar']]],
+      ['Uso y límites', [['Va por el 80% de una cuota', 'Dueño', 'Una vez por mes y recurso', 'Ver mi plan'], ['Llegó al límite', 'Dueño', 'Al llegar al 100%', 'Comprar paquete'], ['Tiene 40 de 50 pacientes', 'Dueño', 'Plan Gratis', 'Ver planes'], ['Paquete comprado', 'Dueño', 'Al comprar un extra', 'Ver recibo']]],
+      ['Trabajo diario', [['Su agenda de hoy', 'Cada médico', 'Cada mañana', 'Ver agenda'], ['Resumen semanal', 'Dueño', 'Lunes 7:00 a. m.', 'Ver informes'], ['Consultas sin cerrar', 'Médico', 'Al final del día', 'Cerrar consultas'], ['El paciente canceló o pidió cambiar', 'Recepción y médico', 'Al responder el paciente', 'Ver agenda'], ['Estudio interpretado con IA listo', 'Médico', 'Al terminar el análisis', 'Revisar estudio'], ['Cierre de caja', 'Dueño', 'Al cerrar la caja', 'Ver cierre'], ['Informe contable del mes', 'Dueño y contador', 'Día 1 de cada mes', 'Ver informe'], ['Comprobante rechazado por la DGII', 'Dueño y contador', 'Al recibir el rechazo', 'Ver comprobante']]],
+      ['De la clínica al paciente', [['Cita agendada', 'Paciente', 'Al crearla', 'Agregar al calendario'], ['Complete su ficha antes de llegar', 'Paciente', 'Primera cita', 'Completar ficha'], ['Su receta', 'Paciente', 'Al firmarla', 'Ver receta'], ['Resumen de su consulta', 'Paciente', 'Al cerrar la consulta', 'Ver resumen'], ['Resultados disponibles', 'Paciente', 'Al marcarlos', 'Ver resultados'], ['Recibo o factura', 'Paciente', 'Al cobrar', 'Ver recibo'], ['Su copia del expediente', 'Paciente', 'Cuando la pide', 'Descargar']]],
+    ].map(([g, items]) => ({ g, items: items.map(([n, para, cuando, btn]) => ({ n, para, cuando, btn })) }));
+    return {
+      mensajes, correos, colores, insignias: I.map(([t, bg, fg, bd, st]) => ({ t, bg, fg, bd, st: st || 'solid' })),
+      archivos: [['Inicio', 'medira Inicio.dc.html'], ['Precios', 'medira Precios.dc.html'], ['Seguridad, especialidad y hospitales', 'medira Sitio.dc.html'], ['Registro, acceso, cobro y paciente', 'medira Flujos.dc.html'], ['Aplicación', 'medira App.dc.html']].map(([t, href]) => ({ t, href })),
+    };
+  }
+}
+</script>
+</body>
+</html>

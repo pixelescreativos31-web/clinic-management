@@ -49,6 +49,26 @@ export const visitsWriteAccess: Access = ({ req: { user } }) => {
 }
 
 /**
+ * Visits create: clinical roles plus therapists. What a therapist may write is
+ * narrowed by the Visits `therapistGuard` hook (massage sheets only).
+ */
+export const visitsCreateAccess: Access = (args) => {
+  const { user } = args.req
+  if (user?.role === 'therapist') return Boolean(getTenantID(user))
+  return visitsWriteAccess(args)
+}
+
+/** Visits update: clinical roles; therapists only their clinic's massage sheets. */
+export const visitsUpdateAccess: Access = (args) => {
+  const { user } = args.req
+  if (user?.role === 'therapist') {
+    const tenantID = getTenantID(user)
+    return tenantID ? { and: [{ tenant: { equals: tenantID } }, { format: { equals: 'massage' } }] } : false
+  }
+  return visitsWriteAccess(args)
+}
+
+/**
  * Tenants collection read: superAdmin sees all; a tenant user may read only their
  * own tenant doc (for clinic name / settings in the UI).
  */
@@ -109,6 +129,18 @@ export const auditReadAccess: Access = ({ req: { user } }) => {
 /** Field-level: only superAdmin or owner may write this field (e.g. role, active). */
 export const superAdminOrOwnerField: FieldAccess = ({ req: { user } }) =>
   isSuperAdmin(user) || user?.role === 'owner'
+
+/**
+ * Field-level read for the clinical narrative (history, exam, private notes):
+ * clinical roles only. Receptionists/assistants can still read the visit itself
+ * (date, diagnosis, prescription) so they can print and bill.
+ */
+export const clinicalReadField: FieldAccess = ({ req: { user } }) =>
+  isSuperAdmin(user) || user?.role === 'doctor' || user?.role === 'owner'
+
+/** Field-level read/write for massage session sheets: clinical roles + therapists. */
+export const massageField: FieldAccess = ({ req: { user } }) =>
+  isSuperAdmin(user) || user?.role === 'doctor' || user?.role === 'owner' || user?.role === 'therapist'
 
 /** Field-level: only superAdmin. */
 export const superAdminField: FieldAccess = ({ req: { user } }) => isSuperAdmin(user)

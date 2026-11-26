@@ -18,13 +18,13 @@ export function PageSizeSelect({ value, basePath }: { value: number; basePath: s
   }
 
   return (
-    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-      Rows per page
+    <label className="flex items-center gap-2 text-[13px] text-[#57534e]">
+      Filas por página
       <AppSelect
         value={String(value)}
         onChange={change}
         options={PAGE_SIZES.map((n) => ({ value: String(n), label: String(n) }))}
-        className="h-8 w-[72px] text-xs"
+        className="tabular h-9 w-[76px] rounded-[8px] border-[#d6d3d1] bg-white text-[13px]"
       />
     </label>
   )

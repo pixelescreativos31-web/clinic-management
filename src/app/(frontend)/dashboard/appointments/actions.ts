@@ -1,14 +1,17 @@
 'use server'
 
+import { regionalOf } from '@/lib/regional'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
 import { wallTimeToUTC } from '@/lib/reports'
 import { computeEnd, findConflict } from '@/lib/booking'
-import { checkAvailability, formatWindow, windowOf, type AvailabilityTag } from '@/lib/availability'
+import { checkAvailability, formatWindow, hhmmToMinutes, weekdayInTz, windowOf, type AvailabilityTag } from '@/lib/availability'
 import { DEFAULT_TIMEZONE } from '@/lib/constants'
 import type { Tenant, User } from '@/payload-types'
+import { isPractitioner } from '@/lib/practice'
+import { practitionerWhere } from '@/lib/practice'
 
 async function actorTenant() {
   const user = await getCurrentUser()
@@ -44,7 +47,7 @@ export async function availableDoctorsAt(
 
   const docs = await payload.find({
     collection: 'users',
-    where: { tenant: { equals: tenantID }, role: { equals: 'doctor' }, active: { equals: true } },
+    where: { and: [practitionerWhere(String(tenantID)), { active: { equals: true } }] },
     limit: 50,
     sort: 'name',
     overrideAccess: true,
@@ -69,7 +72,7 @@ export async function availableDoctorsAt(
       id: String(d.id),
       name: d.name,
       tag: a.tag,
-      note: a.tag === 'onCall' ? 'On call' : a.reason || formatWindow(windowOf(d)),
+      note: a.tag === 'onCall' ? 'De guardia' : a.reason || formatWindow(windowOf(d), regionalOf(tenant).timeFormat),
       free,
     })
   }
@@ -80,7 +83,7 @@ export async function bookAppointment(
   formData: FormData,
 ): Promise<ActionResult<{ id: string; token?: string }>> {
   const ctx = await actorTenant()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { user, payload, tenant } = ctx
 
   const patient = String(formData.get('patient') || '')
@@ -92,7 +95,7 @@ export async function bookAppointment(
   const isWalkIn = formData.get('isWalkIn') === 'on'
 
   if (!patient || !doctorID || !date || !time) {
-    return { ok: false, code: 'VALIDATION', message: 'Patient, doctor, date and time are required.' }
+    return { ok: false, code: 'VALIDATION', message: 'Paciente, médico, fecha y hora son obligatorios.' }
   }
 
   const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
@@ -102,16 +105,18 @@ export async function bookAppointment(
   // Enforce the doctor's availability (regular doctors are blocked off-window).
   try {
     const doctor = (await payload.findByID({ collection: 'users', id: doctorID, depth: 0, overrideAccess: true })) as User
+    // Never reveal (or book) another clinic's doctor: treat a foreign id as unknown.
+    if (getTenantID(doctor as never) !== ctx.tenantID || !isPractitioner(doctor)) throw new Error('foreign doctor')
     const avail = checkAvailability(doctor, start, end, tz)
     if (!avail.bookable) {
       return {
         ok: false,
         code: 'VALIDATION',
-        message: `${doctor.name} can't be booked then — ${avail.reason}.`,
+        message: `No se puede agendar con ${doctor.name} en ese horario: ${avail.reason}.`,
       }
     }
   } catch {
-    return { ok: false, code: 'VALIDATION', message: 'Could not verify the doctor.' }
+    return { ok: false, code: 'VALIDATION', message: 'No se pudo verificar el médico.' }
   }
 
   try {
@@ -142,7 +147,7 @@ export async function updateAppointmentStatus(
   cancellationReason?: string,
 ): Promise<ActionResult<{ id: string }>> {
   const ctx = await actorTenant()
-  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: "You don't have permission to do that." }
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
   const { user, payload } = ctx
 
   try {
@@ -159,4 +164,141 @@ export async function updateAppointmentStatus(
   } catch (err) {
     return { ok: false, ...toActionError(err) }
   }
+}
+
+/**
+ * "Atender ahora": start a consultation for a patient straight from their file,
+ * without booking first (the everyday flow of an independent doctor). Creates a
+ * checked-in walk-in appointment with the acting practitioner — or, when an
+ * assistant/owner who doesn't practise starts it, with the practice's only active
+ * doctor — and returns its id so the UI can open the visit form.
+ */
+export async function startConsultation(
+  patientId: string,
+): Promise<ActionResult<{ appointmentId: string }>> {
+  const ctx = await actorTenant()
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
+  const { user, payload, tenantID, tenant } = ctx
+
+  let doctorID: string | null = isPractitioner(user) ? String(user.id) : null
+  if (!doctorID) {
+    const docs = await payload.find({
+      collection: 'users',
+      where: { and: [practitionerWhere(String(tenantID)), { active: { equals: true } }] },
+      limit: 2,
+      depth: 0,
+      overrideAccess: true,
+    })
+    if (docs.totalDocs !== 1) {
+      return {
+        ok: false,
+        code: 'VALIDATION',
+        message: 'Hay varios médicos: agende la cita desde la agenda para elegir con quién.',
+      }
+    }
+    doctorID = String(docs.docs[0].id)
+  }
+
+  try {
+    const appt = await payload.create({
+      collection: 'appointments',
+      user,
+      overrideAccess: false,
+      data: {
+        patient: patientId,
+        doctor: doctorID,
+        start: new Date().toISOString(),
+        durationMins: tenant?.settings?.appointmentDurationMins || 20,
+        reason: 'Consulta sin cita previa',
+        isWalkIn: true,
+        status: 'checked-in',
+      } as never,
+    })
+    revalidatePath('/dashboard/appointments')
+    return { ok: true, data: { appointmentId: String(appt.id) } }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}
+
+/** Close an online "extra / emergency" request once staff has handled or declined it. */
+export async function resolveBookingRequest(
+  id: string,
+  status: 'handled' | 'dismissed',
+): Promise<ActionResult<null>> {
+  const ctx = await actorTenant()
+  if (!ctx) return { ok: false, code: 'FORBIDDEN', message: 'No tiene permiso para realizar esta acción.' }
+  try {
+    await ctx.payload.update({
+      collection: 'bookingRequests',
+      id,
+      user: ctx.user,
+      overrideAccess: false,
+      data: { status: status === 'handled' ? 'handled' : 'dismissed' },
+    })
+    revalidatePath('/dashboard/appointments')
+    revalidatePath('/dashboard')
+    return { ok: true, data: null }
+  } catch (err) {
+    return { ok: false, ...toActionError(err) }
+  }
+}
+
+/**
+ * Free start times ("HH:mm") for a doctor on a date, for the quick «Nueva cita»
+ * sheet. Uses the clinic's default duration as the grid, the doctor's window
+ * (or the clinic's hours for on-call / by-appointment doctors) and skips times
+ * already past today. The booking action re-checks everything on save.
+ */
+export async function staffFreeSlots(doctorId: string, date: string): Promise<string[]> {
+  const ctx = await actorTenant()
+  if (!ctx || !doctorId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
+  const { payload, tenant, tenantID } = ctx
+  const tz = tenant?.settings?.timezone || DEFAULT_TIMEZONE
+  const dur = tenant?.settings?.appointmentDurationMins || 15
+
+  const doctor = (await payload
+    .findByID({ collection: 'users', id: doctorId, depth: 0, overrideAccess: true })
+    .catch(() => null)) as User | null
+  if (!doctor || getTenantID(doctor as never) !== tenantID || !isPractitioner(doctor)) return []
+
+  const noon = wallTimeToUTC(tz, date, '12:00')
+  const regular = (doctor.availabilityType ?? 'regular') === 'regular'
+  if (regular) {
+    const days = (doctor.availableDays as string[] | null | undefined) ?? []
+    if (days.length && !days.includes(weekdayInTz(noon, tz))) return []
+  }
+  const win = regular ? windowOf(doctor) : { from: tenant?.settings?.openTime || '08:00', to: tenant?.settings?.closeTime || '18:00' }
+  const fromMin = hhmmToMinutes(win.from)
+  const toMin = hhmmToMinutes(win.to)
+
+  const dayStart = wallTimeToUTC(tz, date, '00:00')
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3600_000)
+  const taken = await payload.find({
+    collection: 'appointments',
+    where: {
+      tenant: { equals: tenantID },
+      doctor: { equals: doctorId },
+      status: { in: ['scheduled', 'checked-in'] },
+      isWalkIn: { not_equals: true },
+      and: [{ start: { less_than: dayEnd.toISOString() } }, { end: { greater_than: dayStart.toISOString() } }],
+    },
+    limit: 500,
+    depth: 0,
+    overrideAccess: true,
+    pagination: false,
+  })
+  const busy = taken.docs.map((a) => [new Date(a.start).getTime(), new Date(a.end ?? a.start).getTime()] as const)
+  const now = Date.now()
+
+  const out: string[] = []
+  for (let m = fromMin; m + dur <= toMin; m += dur) {
+    const hhmm = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+    const start = wallTimeToUTC(tz, date, hhmm).getTime()
+    const end = start + dur * 60_000
+    if (start < now) continue
+    if (busy.some(([s, e]) => start < e && end > s)) continue
+    out.push(hhmm)
+  }
+  return out
 }

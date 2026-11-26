@@ -113,7 +113,7 @@ describe('v3 — plan limits', () => {
   // ---- Test 4: downgrade over-limit ----
 
   it('downgrade over-limit keeps existing data editable but blocks new creates', async () => {
-    await setPlan(f.a.tenant.id, 'clinic') // 5-doctor plan
+    await setPlan(f.a.tenant.id, 'clinic') // 3-doctor plan
     await addDoctor(f.a.tenant.id) // 2 active
     await addDoctor(f.a.tenant.id) // 3 active
     await setPlan(f.a.tenant.id, 'free') // downgrade — now over the 1-doctor limit
@@ -131,13 +131,61 @@ describe('v3 — plan limits', () => {
     await rejectsWithCode(addDoctor(f.a.tenant.id), ERROR_CODES.PLAN_LIMIT)
   })
 
+  // ---- Counter-flows: taking a doctor seat by UPDATE, not create ----
+
+  const updateUser = (id: string | number, data: Record<string, unknown>) =>
+    payload.update({ collection: 'users', id, data: data as never, overrideAccess: true })
+
+  it('promoting a receptionist to doctor at the cap is refused; below the cap it works', async () => {
+    await setPlan(f.a.tenant.id, 'free') // 1 doctor, already taken
+    await rejectsWithCode(updateUser(f.a.receptionist.id, { role: 'doctor' }), ERROR_CODES.PLAN_LIMIT)
+    expect((await payload.findByID({ collection: 'users', id: f.a.receptionist.id, overrideAccess: true })).role).toBe('receptionist')
+    await setPlan(f.a.tenant.id, 'clinic')
+    expect((await updateUser(f.a.receptionist.id, { role: 'doctor' })).role).toBe('doctor')
+  })
+
+  it('an owner who starts seeing patients takes a seat: refused at the cap', async () => {
+    await setPlan(f.a.tenant.id, 'free')
+    await rejectsWithCode(updateUser(f.a.owner.id, { practitioner: true }), ERROR_CODES.PLAN_LIMIT)
+    // Freeing the seat lets the owner practise.
+    await updateUser(f.a.doctor.id, { active: false })
+    expect((await updateUser(f.a.owner.id, { practitioner: true })).practitioner).toBe(true)
+  })
+
+  it('reactivating a doctor at the cap is refused', async () => {
+    await setPlan(f.a.tenant.id, 'free')
+    await updateUser(f.a.doctor.id, { active: false })
+    await addDoctor(f.a.tenant.id) // takes the only seat
+    await rejectsWithCode(updateUser(f.a.doctor.id, { active: true }), ERROR_CODES.PLAN_LIMIT)
+  })
+
+  it('a doctor already in a seat can always be edited, even over the cap', async () => {
+    await setPlan(f.a.tenant.id, 'clinic')
+    await addDoctor(f.a.tenant.id)
+    await setPlan(f.a.tenant.id, 'free') // 2 doctors on a 1-doctor plan
+    expect((await updateUser(f.a.doctor.id, { name: 'Sigue igual', active: true })).name).toBe('Sigue igual')
+  })
+
+  it('an owner who does not see patients cannot open a consultation (an unpaid doctor otherwise)', async () => {
+    await setPlan(f.a.tenant.id, 'free')
+    const appt = await payload.create({
+      collection: 'appointments',
+      overrideAccess: true,
+      data: { tenant: f.a.tenant.id, patient: f.a.patient.id, doctor: f.a.doctor.id, start: new Date(Date.UTC(2034, 1, 3, 14)).toISOString(), durationMins: 20, status: 'checked-in', isWalkIn: true } as never,
+    })
+    await rejectsWithCode(
+      payload.create({ collection: 'visits', overrideAccess: false, user: f.a.owner as never, data: { appointment: appt.id, chiefComplaint: 'Control', diagnosis: 'Dx' } as never }),
+      ERROR_CODES.FORBIDDEN,
+    )
+  })
+
   it('clinic plan admits doctors up to its higher ceiling', async () => {
-    await setPlan(f.a.tenant.id, 'clinic') // limit 5, one already present
-    for (let i = 0; i < 4; i++) {
+    await setPlan(f.a.tenant.id, 'clinic') // limit 3, one already present
+    for (let i = 0; i < 2; i++) {
       const d = await addDoctor(f.a.tenant.id)
       expect(d.id).toBeTruthy()
     }
-    // 6th active doctor exceeds the clinic ceiling.
+    // 4th active doctor exceeds the clinic ceiling.
     await rejectsWithCode(addDoctor(f.a.tenant.id), ERROR_CODES.PLAN_LIMIT)
   })
 })

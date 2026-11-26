@@ -1,8 +1,11 @@
 'use client'
 
+import { useRegional } from './RegionalProvider'
+import type { TimeFormat } from '@/lib/regional'
 import { AppSelect } from './AppSelect'
 
-const label = (h: number, m: number) => {
+const label = (h: number, m: number, fmt: TimeFormat) => {
+  if (fmt === '24h') return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   const ampm = h < 12 ? 'am' : 'pm'
   const hr = h % 12 === 0 ? 12 : h % 12
   return `${hr}:${String(m).padStart(2, '0')} ${ampm}`
@@ -27,6 +30,7 @@ export function TimePicker({
   stepMins?: number
   className?: string
 }) {
+  const { timeFormat } = useRegional()
   const [oh, om] = openTime.split(':').map(Number)
   const [ch, cm] = closeTime.split(':').map(Number)
   const start = (oh || 0) * 60 + (om || 0)
@@ -38,13 +42,13 @@ export function TimePicker({
     const m = t % 60
     options.push({
       value: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
-      label: label(h, m),
+      label: label(h, m, timeFormat),
     })
   }
   // Keep an out-of-grid value (e.g. from data) selectable rather than blanking it.
   if (value && !options.some((o) => o.value === value)) {
     const [vh, vm] = value.split(':').map(Number)
-    options.push({ value, label: label(vh || 0, vm || 0) })
+    options.push({ value, label: label(vh || 0, vm || 0, timeFormat) })
     options.sort((a, b) => a.value.localeCompare(b.value))
   }
 
@@ -53,7 +57,7 @@ export function TimePicker({
       value={value}
       onChange={onChange}
       options={options}
-      placeholder="Pick a time"
+      placeholder="Elija una hora"
       className={className}
     />
   )

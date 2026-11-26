@@ -15,11 +15,11 @@ export function BarChart({ data }: { data: { label: string; count: number }[] })
         {[0, 25, 50, 75].map((p) => (
           <div
             key={p}
-            className="absolute inset-x-0 border-t border-dashed border-border/70"
+            className="absolute inset-x-0 border-t border-[#f0eeec]"
             style={{ bottom: `${p}%` }}
           >
             {p > 0 && (
-              <span className="tabular absolute -top-2 end-0 text-[10px] text-faint">
+              <span className="tabular absolute -top-2 end-0 text-[11px] text-[#57534e]">
                 {Math.round((max * p) / 100)}
               </span>
             )}
@@ -33,27 +33,27 @@ export function BarChart({ data }: { data: { label: string; count: number }[] })
             return (
               <div key={`${d.label}-${i}`} className="group relative flex h-full flex-1 items-end">
                 {/* hover tooltip */}
-                <div className="pointer-events-none invisible absolute -top-1 start-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-card px-2.5 py-1.5 text-center opacity-0 shadow-[var(--shadow-overlay)] transition-opacity duration-100 group-hover:visible group-hover:opacity-100">
+                <div className="pointer-events-none invisible absolute -top-1 start-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-lg bg-[#1c1917] px-2.5 py-1.5 text-center text-white opacity-0 transition-opacity duration-100 group-hover:visible group-hover:opacity-100">
                   <div className="tabular text-sm font-semibold leading-none">{d.count}</div>
-                  <div className="mt-1 text-[10px] whitespace-nowrap text-muted-foreground">
+                  <div className="mt-1 text-[11px] whitespace-nowrap text-[#d6d3d1]">
                     {d.label}
                   </div>
                 </div>
                 {/* hover hit-area wash */}
-                <div className="absolute inset-y-0 -inset-x-[3px] rounded-md transition-colors group-hover:bg-secondary/50" />
+                <div className="absolute inset-y-0 -inset-x-[3px] rounded-md transition-colors group-hover:bg-[#f0eeec]/70" />
                 <div
-                  className={`relative w-full rounded-t-[5px] transition-colors duration-150 ${
+                  className={`relative w-full rounded-t-[6px] transition-colors duration-150 ${
                     isLast
-                      ? 'bg-primary'
+                      ? 'bg-[#0f766e]'
                       : d.count === 0
                         ? 'bg-transparent'
-                        : 'bg-primary/30 group-hover:bg-primary/55'
+                        : 'bg-[#0f766e]/35 group-hover:bg-[#0f766e]/60'
                   }`}
                   style={{ height: `${h}%` }}
                 />
                 {/* zero-day baseline tick */}
                 {d.count === 0 && (
-                  <div className="absolute inset-x-[20%] bottom-0 h-[3px] rounded-full bg-border" />
+                  <div className="absolute inset-x-[20%] bottom-0 h-[3px] rounded-full bg-[#e7e5e4]" />
                 )}
               </div>
             )
@@ -62,12 +62,12 @@ export function BarChart({ data }: { data: { label: string; count: number }[] })
       </div>
 
       {/* x-axis labels */}
-      <div className="mt-2 flex gap-[6px] border-t border-border pt-2 sm:gap-2">
+      <div className="mt-2 flex gap-[6px] border-t border-[#e7e5e4] pt-2 sm:gap-2">
         {data.map((d, i) => (
           <span
             key={`${d.label}-${i}`}
-            className={`tabular flex-1 text-center text-[10px] ${
-              i === data.length - 1 ? 'font-semibold text-primary' : 'text-faint'
+            className={`tabular flex-1 text-center text-[11px] ${
+              i === data.length - 1 ? 'font-semibold text-[#1c1917]' : 'text-[#57534e]'
             }`}
           >
             {d.label.split(' ')[0]}
@@ -75,8 +75,8 @@ export function BarChart({ data }: { data: { label: string; count: number }[] })
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-faint">
-        {total} appointment{total === 1 ? '' : 's'} in the last 14 days
+      <p className="tabular mt-3 text-[13px] text-[#57534e]">
+        {total} {total === 1 ? 'cita' : 'citas'} en los últimos 14 días
       </p>
     </div>
   )

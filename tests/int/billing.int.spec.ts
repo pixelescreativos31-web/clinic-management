@@ -105,15 +105,15 @@ describe('v2 — visits & invoices', () => {
     expect(inv.amountPaid).toBe(0)
     expect(inv.balanceDue).toBe(2000)
     expect(inv.paymentStatus).toBe('unpaid')
-    expect(inv.invoiceNumber).toMatch(/^INV-\d{4}$/)
+    expect(inv.invoiceNumber).toMatch(/^FAC-\d{4}$/)
     expect((inv.lineItems as { amount: number }[])[1].amount).toBe(500)
   })
 
-  it('auto-numbers invoices per clinic (INV-0001, INV-0002)', async () => {
+  it('auto-numbers invoices per clinic (FAC-0001, FAC-0002)', async () => {
     const a = await newInvoice()
     const b = await newInvoice()
-    expect(a.invoiceNumber).toBe('INV-0001')
-    expect(b.invoiceNumber).toBe('INV-0002')
+    expect(a.invoiceNumber).toBe('FAC-0001')
+    expect(b.invoiceNumber).toBe('FAC-0002')
   })
 
   it('moves status unpaid → partial → paid as payments are recorded', async () => {
@@ -209,7 +209,7 @@ describe('v2 — visits & invoices', () => {
 
   it('snapshots the clinic currency and keeps it after a later currency change', async () => {
     const inv = await newInvoice()
-    expect(inv.currency).toBe('PKR')
+    expect(inv.currency).toBe('DOP')
 
     await payload.update({
       collection: 'tenants',
@@ -219,7 +219,7 @@ describe('v2 — visits & invoices', () => {
     })
 
     const reread = await payload.findByID({ collection: 'invoices', id: inv.id, overrideAccess: true })
-    expect(reread.currency).toBe('PKR') // historical amount keeps its original currency
+    expect(reread.currency).toBe('DOP') // historical amount keeps its original currency
   })
 
   // ---------------- Invoices: tenant isolation ----------------

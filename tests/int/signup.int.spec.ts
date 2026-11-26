@@ -22,12 +22,12 @@ describe('v3 — self-serve signup', () => {
     n += 1
     return {
       clinicName: 'City Care Clinic',
-      phone: '+92512345678',
-      city: 'Rawalpindi',
-      country: 'Pakistan',
-      currency: 'PKR',
-      timezone: 'Asia/Karachi',
-      ownerName: 'Sara Ahmed',
+      phone: '+18095551234',
+      city: 'Santo Domingo',
+      country: 'República Dominicana',
+      currency: 'DOP',
+      timezone: 'America/Santo_Domingo',
+      ownerName: 'Carmen Rosario',
       email: `owner-${n}@signup.test`,
       password: 'password123',
       ...over,
@@ -49,8 +49,28 @@ describe('v3 — self-serve signup', () => {
 
   // ---- Test 1: success path builds everything ----
 
+  it('creates an independent practice whose owner is the doctor', async () => {
+    const res = await signupClinic(payload, input({ specialty: 'Medicina interna', licenseNumber: '123-45' }))
+    const tenant = await payload.findByID({ collection: 'tenants', id: res.tenantId, overrideAccess: true })
+    expect(tenant.practiceType).toBe('individual')
+
+    const owner = await payload.findByID({ collection: 'users', id: res.ownerId, overrideAccess: true })
+    expect(owner.role).toBe('owner')
+    expect(owner.practitioner).toBe(true)
+    expect(owner.licenseNumber).toBe('123-45')
+
+    const [doctors, patients, appts] = await Promise.all([
+      payload.count({ collection: 'users', where: { tenant: { equals: res.tenantId }, role: { equals: 'doctor' } }, overrideAccess: true }),
+      payload.count({ collection: 'patients', where: { tenant: { equals: res.tenantId } }, overrideAccess: true }),
+      payload.count({ collection: 'appointments', where: { tenant: { equals: res.tenantId }, doctor: { equals: res.ownerId } }, overrideAccess: true }),
+    ])
+    expect(doctors.totalDocs).toBe(0) // no sample doctor — the owner practises
+    expect(patients.totalDocs).toBe(3)
+    expect(appts.totalDocs).toBe(2) // sample appointments are booked with the owner
+  })
+
   it('creates a free self-serve clinic, an owner, and sample data', async () => {
-    const res = await signupClinic(payload, input())
+    const res = await signupClinic(payload, input({ practiceType: 'clinic' }))
     expect(res.tenantId).toBeTruthy()
     expect(res.slug).toBe('city-care-clinic')
 
