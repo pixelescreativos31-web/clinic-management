@@ -5,6 +5,9 @@ import { PlanPanel } from '@/components/PlanPanel'
 import { asPlan } from '@/lib/plans'
 import { doctorWhere } from '@/lib/practice'
 import { getUsageSummary } from '@/lib/usage'
+import { getGateway } from '@/lib/billing/gateway'
+import { billingView, trialEligible } from '@/lib/billing/service'
+import { billingSummary } from '@/lib/billing/summary'
 
 export default async function PlanPage() {
   const session = await requireDashboardSession()
@@ -15,7 +18,8 @@ export default async function PlanPage() {
 
   // Same counting rules as the enforcement hook (src/hooks/planLimit.ts):
   // deactivated doctors don't count toward the cap.
-  const [doctors, patients, metered] = await Promise.all([
+  const gateway = getGateway()
+  const [doctors, patients, metered, trial, receipts] = await Promise.all([
     payload.count({
       collection: 'users',
       where: { and: [doctorWhere(String(tenant.id)), { active: { not_equals: false } }] },
@@ -28,7 +32,18 @@ export default async function PlanPage() {
     }),
     // Metered quotas (B1): current month in the clinic's timezone + storage total.
     getUsageSummary(payload, tenant.id),
+    gateway ? trialEligible(payload, String(tenant.id)) : Promise.resolve(false),
+    payload.find({
+      collection: 'billingReceipts',
+      where: { tenant: { equals: tenant.id } },
+      sort: '-paidAt',
+      limit: 24,
+      depth: 0,
+      overrideAccess: true,
+    }),
   ])
+
+  const view = billingView(tenant as never)
 
   return (
     <>
@@ -43,6 +58,21 @@ export default async function PlanPage() {
           doctorCount={doctors.totalDocs}
           patientCount={patients.totalDocs}
           metered={{ period: metered.period, used: metered.used, packs: metered.packs, packList: metered.packList }}
+          billing={{
+            online: Boolean(gateway),
+            view,
+            summary: billingSummary(view),
+            trial,
+            manageUrl: gateway?.manageUrl() ?? null,
+            receipts: receipts.docs.map((r) => ({
+              id: String(r.id),
+              number: r.number,
+              paidAt: r.paidAt,
+              concept: r.concept,
+              totalUsd: r.totalUsd,
+              status: r.status,
+            })),
+          }}
           pendingRequest={
             tenant.upgradeRequest?.requestedPlan
               ? {

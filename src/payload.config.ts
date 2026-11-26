@@ -19,6 +19,7 @@ import { BookingRequests } from './collections/BookingRequests'
 import { Programs, ProgressPhotos } from './collections/Programs'
 import { UsageCounters } from './collections/UsageCounters'
 import { QuotaPacks } from './collections/QuotaPacks'
+import { BillingEvents, BillingReceipts, TrialClaims } from './collections/Billing'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -38,7 +39,7 @@ export default buildConfig({
     supportedLanguages: { es, en },
     fallbackLanguage: 'es',
   },
-  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests, Programs, ProgressPhotos, UsageCounters, QuotaPacks],
+  collections: [Tenants, Users, Patients, Appointments, Visits, Invoices, AuditLogs, BookingRequests, Programs, ProgressPhotos, UsageCounters, QuotaPacks, BillingEvents, BillingReceipts, TrialClaims],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

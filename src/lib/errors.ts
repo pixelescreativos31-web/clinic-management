@@ -11,6 +11,8 @@ const MESSAGES: Record<string, string> = {
     'Su consultorio está pendiente de aprobación. Podrá iniciar sesión cuando sea aprobado.',
   [ERROR_CODES.PLAN_LIMIT]: 'Alcanzó el límite de su plan. Solicite una mejora de plan para agregar más.',
   [ERROR_CODES.USER_INACTIVE]: 'Su cuenta fue desactivada. Contacte al titular del consultorio.',
+  [ERROR_CODES.PLAN_SUSPENDED]: 'La cuenta de la clínica está en el plan Gratis. Avise al Titular de la clínica.',
+  [ERROR_CODES.BILLING_UNAVAILABLE]: 'El pago en línea todavía no está disponible. Escríbanos y le ayudamos.',
   [ERROR_CODES.FORBIDDEN]: 'No tiene permiso para realizar esta acción.',
   [ERROR_CODES.VALIDATION]: 'Revise el formulario e intente de nuevo.',
   // v2 — clinical loop

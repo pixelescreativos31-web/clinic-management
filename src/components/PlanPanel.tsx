@@ -34,7 +34,131 @@ import {
   type Plan,
 } from '@/lib/plans'
 import { SUPPORT_EMAIL } from '@/lib/brand'
-import { requestUpgrade } from '@/app/(frontend)/dashboard/plan/actions'
+import { buyPack, cancelMySubscription, requestUpgrade, startSubscription } from '@/app/(frontend)/dashboard/plan/actions'
+import { TRIAL_DAYS, intervalPriceLabel, isPaidPlan, type Interval } from '@/lib/billing/prices'
+import type { BillingView } from '@/lib/billing/service'
+
+/** Online billing (Fase 3). `online` is false until PayPal is configured; then the manual request flow stays for quoted plans. */
+export type BillingProps = {
+  online: boolean
+  view: BillingView & { payer: string | null; pending: boolean }
+  /** This clinic can still use its free trial. */
+  trial: boolean
+  manageUrl: string | null
+  receipts: { id: string; number: string; paidAt: string; concept: string; totalUsd: number; status: string }[]
+  /** Chip and line for the plan card, formatted on the server (dates with time differ between Node and browsers). */
+  summary: { chip: string; line: string | null } | null
+}
+
+/** «Suscripción» card: PayPal account, change payment method, cancel, receipts. */
+function SubscriptionCard({ billing }: { billing: BillingProps }) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [confirming, setConfirming] = useState(false)
+  const [reason, setReason] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const v = billing.view
+  const canCancel = v.kind === 'trialing' || v.kind === 'active' || v.kind === 'past_due'
+  return (
+    <section className={`${CARD} px-[18px] py-4`} id="suscripcion">
+      <div className="font-semibold">Suscripción</div>
+      {v.kind === 'free' || v.kind === 'pending' ? (
+        <p className="mt-1 text-[13px] text-[#57534e]">
+          Pague con PayPal (tarjeta o cuenta PayPal). Los planes pagados empiezan con {TRIAL_DAYS} días de prueba gratis, una
+          vez por clínica. El plan anual cuesta 10 meses.
+        </p>
+      ) : (
+        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+          <dt className="text-[#57534e]">Método</dt>
+          <dd>PayPal{billing.view.payer ? ` · ${billing.view.payer}` : ''}</dd>
+          {(v.kind === 'trialing' || v.kind === 'active') && (
+            <>
+              <dt className="text-[#57534e]">Ciclo</dt>
+              <dd>{v.interval === 'year' ? 'Anual' : 'Mensual'}</dd>
+            </>
+          )}
+        </dl>
+      )}
+      {billing.manageUrl && (v.kind === 'past_due' || v.kind === 'active' || v.kind === 'trialing') && (
+        <a href={billing.manageUrl} target="_blank" rel="noreferrer" className={`${SMALL_BTN} mt-3`}>
+          Cambiar método de pago en PayPal
+        </a>
+      )}
+      {message && (
+        <p className="mt-3 rounded-[10px] border border-[#e7e5e4] bg-[#fafaf9] px-3 py-2 text-[13px]" role="status">
+          {message}
+        </p>
+      )}
+      {error && (
+        <p className="mt-3 text-[13px] text-[#b45309]" role="alert">
+          {error}
+        </p>
+      )}
+      {canCancel && !message && (
+        <div className="mt-3 border-t border-[#f0eeec] pt-3">
+          {confirming ? (
+            <>
+              <p className="text-[13px] text-[#44403c]">
+                {v.kind === 'trialing'
+                  ? 'Si cancela ahora no se le cobrará nada. La prueba sigue hasta su fecha y después su cuenta pasa a Gratis.'
+                  : 'Su plan sigue hasta el final del periodo pagado y después su cuenta pasa a Gratis. No se borra nada.'}
+              </p>
+              <label htmlFor="cancel-reason" className="mt-3 mb-1.5 block text-[13px] font-medium text-[#44403c]">
+                ¿Por qué cancela? (opcional)
+              </label>
+              <textarea id="cancel-reason" className={textareaClass} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  className={btnGhost}
+                  disabled={pending}
+                  onClick={() =>
+                    start(async () => {
+                      setError(null)
+                      const res = await cancelMySubscription(reason)
+                      if (res.ok) {
+                        setMessage(res.data.message)
+                        router.refresh()
+                      } else setError(res.message)
+                    })
+                  }
+                >
+                  {pending && <Spinner />}
+                  Confirmar cancelación
+                </button>
+                <button className={btnGhost} disabled={pending} onClick={() => setConfirming(false)}>
+                  Seguir con mi plan
+                </button>
+              </div>
+            </>
+          ) : (
+            <button className="text-[13px] font-medium text-[#57534e] underline underline-offset-2" onClick={() => setConfirming(true)}>
+              Cancelar suscripción
+            </button>
+          )}
+        </div>
+      )}
+      {billing.receipts.length > 0 && (
+        <div className="mt-4 border-t border-[#f0eeec] pt-3">
+          <h3 className="text-sm font-semibold">Recibos</h3>
+          <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
+            {billing.receipts.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-3" data-receipt={r.number}>
+                <a href={`/dashboard/plan/recibos/${r.id}`} className="font-medium text-[#0f766e]">
+                  {r.number}
+                </a>
+                <span className="tabular text-[#57534e]">
+                  {shortDate(r.paidAt)} · US${r.totalUsd}
+                  {r.status === 'refunded' ? ' · reembolsado' : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  )
+}
 
 const CARD = 'rounded-[12px] border border-[#e7e5e4] bg-white'
 const SMALL_BTN =
@@ -192,11 +316,22 @@ const SOURCE_LABELS: Record<string, string> = { gift: 'Regalo', admin: 'Asignado
 function PacksSection({
   plan,
   packList,
+  online,
 }: {
   plan: Plan
   packList: { id: string; resource: MeteredResource; units: number; used: number; expiresAt: string | null; source: string }[]
+  online: boolean
 }) {
+  const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   const offers = QUOTA_PACKS.filter((p) => packAllowed(plan, p.resource))
+  const buy = (resource: string) =>
+    start(async () => {
+      setError(null)
+      const res = await buyPack(resource)
+      if (res.ok) window.location.href = res.data.url
+      else setError(res.message)
+    })
   if (offers.length === 0 && packList.length === 0) return null
   return (
     <section className={`${CARD} scroll-mt-20 px-[18px] py-4`} id="paquetes">
@@ -212,11 +347,21 @@ function PacksSection({
                 {formatMetered(p.resource, p.units)} {meteredUnit(p.resource, p.units)}
               </div>
               <div className="tabular text-[13px] text-[#57534e]">US${p.priceUsd} · {PACK_VALID_DAYS} días</div>
+              {online && (
+                <button className={`${SMALL_BTN} mt-2`} disabled={pending} onClick={() => buy(p.resource)}>
+                  Comprar con PayPal
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
-      {offers.length > 0 && (
+      {error && (
+        <p className="mt-3 text-[13px] text-[#b45309]" role="alert">
+          {error}
+        </p>
+      )}
+      {offers.length > 0 && !online && (
         <p className="mt-3 text-[13px] text-[#57534e]">
           El pago con PayPal llega pronto. Mientras tanto, escriba a {SUPPORT_EMAIL} y le activamos el
           paquete.
@@ -256,6 +401,7 @@ export function PlanPanel({
   patientCount,
   metered,
   pendingRequest,
+  billing,
 }: {
   plan: Plan
   /** Tenant account state (active | pending | suspended), shown on the plan card. */
@@ -270,6 +416,7 @@ export function PlanPanel({
     packList: { id: string; resource: MeteredResource; units: number; used: number; expiresAt: string | null; source: string }[]
   }
   pendingRequest: { plan: Plan; requestedAt: string | null } | null
+  billing?: BillingProps
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -279,6 +426,20 @@ export function PlanPanel({
 
   const rank = PLANS.indexOf(plan)
   const canUpgrade = PLANS.some((p) => PLANS.indexOf(p) > rank)
+  // Online checkout only for clinics that are not on a manual plan set by medira.
+  const online = Boolean(billing?.online && billing.view.kind !== 'manual')
+  const summary = online && billing ? billing.summary : null
+  const [interval, setCycle] = useState<Interval>('month')
+  const subscribed = online && billing && ['trialing', 'active', 'past_due'].includes(billing.view.kind)
+
+  const subscribe = (target: Plan) => {
+    setError(null)
+    start(async () => {
+      const res = await startSubscription(target, interval)
+      if (res.ok) window.location.href = res.data.url
+      else setError(res.message)
+    })
+  }
 
   const submit = (target: Plan) => {
     setError(null)
@@ -306,12 +467,19 @@ export function PlanPanel({
                   {planPriceLabel(plan)} · {PLAN_LIMITS[plan].description}
                 </div>
               </div>
-              {status && (
-                <span className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-[#042f2e]">
-                  {STATE_LABELS[status] ?? status}
+              {summary ? (
+                <span className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-[#042f2e]" data-billing-state={billing?.view.kind}>
+                  {summary.chip}
                 </span>
+              ) : (
+                status && (
+                  <span className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-[#042f2e]">
+                    {STATE_LABELS[status] ?? status}
+                  </span>
+                )
               )}
             </div>
+            {summary?.line && <p className="mt-2 text-sm text-[#d7ebe7]">{summary.line}</p>}
             {canUpgrade && !pendingRequest && (
               <div className="mt-4 flex flex-wrap gap-2">
                 <a
@@ -369,12 +537,13 @@ export function PlanPanel({
             </p>
           </section>
 
-          <PacksSection plan={plan} packList={metered.packList} />
+          <PacksSection plan={plan} packList={metered.packList} online={online} />
         </div>
 
         {/* Right: pending request + request form */}
         <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-3">
-          {pendingRequest ? (
+          {online && billing && <SubscriptionCard billing={billing} />}
+          {online ? null : pendingRequest ? (
             <section className="rounded-[12px] border border-[#b45309]/40 bg-white px-[18px] py-4">
               <div className="font-semibold">
                 Mejora al plan {planLabel(pendingRequest.plan)} solicitada
@@ -400,9 +569,25 @@ export function PlanPanel({
       </div>
 
       {/* Plan cards */}
-      <h2 id="planes" className="mt-3 scroll-mt-20 text-[17px] font-semibold tracking-[-.02em]">
-        Planes
-      </h2>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 id="planes" className="scroll-mt-20 text-[17px] font-semibold tracking-[-.02em]">
+          Planes
+        </h2>
+        {online && (
+          <div className="inline-flex rounded-[10px] border border-[#d6d3d1] bg-white p-0.5 text-[13px]" role="group" aria-label="Ciclo de pago">
+            {(['month', 'year'] as const).map((i) => (
+              <button
+                key={i}
+                aria-pressed={interval === i}
+                onClick={() => setCycle(i)}
+                className={`rounded-[8px] px-3 py-1.5 font-medium ${interval === i ? 'bg-[#042f2e] text-white' : 'text-[#44403c]'}`}
+              >
+                {i === 'month' ? 'Mensual' : 'Anual · 2 meses gratis'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
         {PLANS.map((p) => {
           const limits = PLAN_LIMITS[p]
@@ -422,7 +607,7 @@ export function PlanPanel({
                 )}
               </div>
               <div className="tabular mt-1 text-[22px] font-medium tracking-[-.03em]">
-                {planPriceLabel(p)}
+                {online && isPaidPlan(p) ? intervalPriceLabel(p, interval) : planPriceLabel(p)}
               </div>
               <p className="mt-0.5 text-[13px] text-[#57534e]">{limits.description}</p>
               <ul className="mt-3 flex-1 space-y-1.5 border-t border-[#f0eeec] pt-3 text-[13px] text-[#44403c]">
@@ -434,7 +619,20 @@ export function PlanPanel({
                   <li key={r}>{quotaLine(p, r)}</li>
                 ))}
               </ul>
-              {isUpgrade && !pendingRequest && (
+              {online && isPaidPlan(p) && !(isCurrent && subscribed) && (
+                <button
+                  className={`${btnPrimary} mt-4 w-full`}
+                  disabled={pending}
+                  onClick={() => subscribe(p)}
+                  data-subscribe={p}
+                >
+                  {billing?.trial ? `Probar ${TRIAL_DAYS} días gratis` : subscribed ? 'Cambiar a este plan' : 'Suscribirme'}
+                </button>
+              )}
+              {online && isPaidPlan(p) && billing?.trial && !(isCurrent && subscribed) && (
+                <p className="mt-1.5 text-center text-xs text-[#57534e]">No se cobra nada durante la prueba.</p>
+              )}
+              {isUpgrade && !pendingRequest && !(online && isPaidPlan(p)) && (
                 <button
                   className={`${requesting === p ? btnPrimary : btnGhost} mt-4 w-full`}
                   disabled={pending}

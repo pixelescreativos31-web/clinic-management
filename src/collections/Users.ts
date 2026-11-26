@@ -55,6 +55,14 @@ export const Users: CollectionConfig = {
     // Login guard: deactivated staff and suspended clinics cannot log in.
     beforeLogin: [
       async ({ user, req }) => {
+        // Fase 3: staff of a clinic that went down to Gratis are paused, not deleted.
+        if (user.planSuspendedAt) {
+          throw new APIError(
+            'La cuenta de la clínica está en el plan Gratis. Avise al Titular de la clínica.',
+            403,
+            { code: ERROR_CODES.PLAN_SUSPENDED },
+          )
+        }
         if (user.active === false) {
           throw new APIError(
             'Su cuenta fue desactivada. Contacte al titular del consultorio.',
@@ -190,6 +198,15 @@ export const Users: CollectionConfig = {
       defaultValue: true,
       label: 'Activo',
       access: { update: superAdminOrOwnerField },
+    },
+    {
+      // Fase 3 — set when the clinic goes down to Gratis (spec §3: only the Titular
+      // keeps access); cleared automatically when the clinic pays again.
+      name: 'planSuspendedAt',
+      type: 'date',
+      label: 'Suspendido por el plan desde',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
     },
     // Email verification (BACKLOG §1.1). Everyone defaults to verified — only a
     // self-serve signup starts false (set by signupClinic with overrideAccess).

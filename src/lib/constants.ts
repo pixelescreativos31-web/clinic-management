@@ -219,6 +219,13 @@ export const AUDIT_ACTIONS = [
   { value: 'password.changed', label: 'Contraseña cambiada' },
   // Fase 2 — quota packs (spec §2).
   { value: 'quota.pack-added', label: 'Paquete de cuota agregado' },
+  // Fase 3 — subscription (spec §3).
+  { value: 'billing.subscribed', label: 'Suscripción activada' },
+  { value: 'billing.cancelled', label: 'Suscripción cancelada' },
+  { value: 'billing.payment-failed', label: 'Cobro fallido' },
+  { value: 'billing.recovered', label: 'Cobro recuperado' },
+  { value: 'billing.downgraded', label: 'Bajó al plan Gratis' },
+  { value: 'billing.pack-bought', label: 'Paquete comprado' },
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]['value']
 
@@ -229,6 +236,8 @@ export const ERROR_CODES = {
   TENANT_SUSPENDED: 'TENANT_SUSPENDED',
   TENANT_PENDING: 'TENANT_PENDING',
   USER_INACTIVE: 'USER_INACTIVE',
+  PLAN_SUSPENDED: 'PLAN_SUSPENDED',
+  BILLING_UNAVAILABLE: 'BILLING_UNAVAILABLE',
   PLAN_LIMIT: 'PLAN_LIMIT',
   // B1 — a metered action (WhatsApp, AI study…) over its plan quota. Soft cap:
   // only that action is refused; records stay editable.

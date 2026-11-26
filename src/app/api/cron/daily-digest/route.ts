@@ -8,6 +8,7 @@ import config from '@payload-config'
 import { runDailyDigest } from '@/lib/digest'
 import { purgeExpiredUnverifiedSignups } from '@/lib/verification'
 import { ERROR_CODES } from '@/lib/constants'
+import { runBillingJob, type BillingJobSummary } from '@/lib/billing/service'
 
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET
@@ -30,5 +31,14 @@ export async function GET(req: Request) {
     payload.logger?.error?.({ err }, 'unverified signup purge failed (non-fatal)')
   }
 
-  return Response.json({ ok: true, ...summary, purged })
+  // Subscriptions (spec §3): dunning calendar, downgrade to Gratis, trial reminder,
+  // win-back. Each step is claimed once, so the hourly tick is safe. Best-effort.
+  let billing: BillingJobSummary | null = null
+  try {
+    billing = await runBillingJob(payload)
+  } catch (err) {
+    payload.logger?.error?.({ err }, 'billing job failed (non-fatal)')
+  }
+
+  return Response.json({ ok: true, ...summary, purged, billing })
 }

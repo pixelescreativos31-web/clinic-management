@@ -8,6 +8,9 @@ import { Sidebar } from '@/components/Sidebar'
 import { ContentFrame } from '@/components/AppHeader'
 import { APP_NAME, SUPPORT_EMAIL } from '@/lib/brand'
 import { isIndividualPractice, isPractitioner } from '@/lib/practice'
+import { getGateway } from '@/lib/billing/gateway'
+import { billingView } from '@/lib/billing/service'
+import { BillingBanner, billingBanner } from '@/components/BillingBanner'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant, twoFactor: gate } = await requireDashboardSession({ twoFactorEnrollment: true })
@@ -20,6 +23,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <h1 className="text-lg font-semibold">La cuenta de este consultorio está suspendida</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
           Escriba a {SUPPORT_EMAIL} para reactivar su consultorio.
+        </p>
+      </main>
+    )
+  }
+
+  // Clinic moved to Gratis (spec §3): staff are paused (not deleted) until the Titular pays again.
+  if (user.planSuspendedAt) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-canvas px-4 text-center">
+        <div className="font-display text-xl font-semibold text-primary">{APP_NAME}</div>
+        <h1 className="text-lg font-semibold">La cuenta de la clínica está en el plan Gratis</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Avise al Titular de la clínica. Cuando vuelva a un plan pagado podrá entrar de nuevo; no se borró nada.
         </p>
       </main>
     )
@@ -38,6 +54,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       ? await getQuotaAlert(await getPayloadClient(), tenant.id).catch(() => null)
       : null
 
+  // Subscription notices (spec §3). Clinics on a manual plan never see them.
+  const banner = tenant ? billingBanner(billingView(tenant as never), user.role, getGateway()?.manageUrl() ?? null) : null
+
   return (
     <Sidebar
       clinicName={tenant?.name ?? 'Consultorio'}
@@ -48,6 +67,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       individual={isIndividualPractice(tenant)}
     >
       {gate.kind === 'grace' && <TwoFactorGraceStrip until={gate.until.toISOString()} daysLeft={gate.daysLeft} />}
+      {banner && <BillingBanner banner={banner} />}
       {quotaAlert && <QuotaAlertStrip alert={quotaAlert} />}
       <ContentFrame>{children}</ContentFrame>
     </Sidebar>

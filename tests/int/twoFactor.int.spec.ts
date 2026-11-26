@@ -93,7 +93,10 @@ describe('Fase 1 — verificación en dos pasos', () => {
       const enc = encryptSecret('JBSWY3DPEHPK3PXP')
       expect(enc).not.toContain('JBSWY3DPEHPK3PXP')
       expect(decryptSecret(enc)).toBe('JBSWY3DPEHPK3PXP')
-      expect(decryptSecret(enc.slice(0, -2) + 'AA')).toBeNull()
+      // Flip one character of the auth tag (always a real change, unlike overwriting with a constant).
+      const parts = enc.split('.')
+      parts[2] = (parts[2]![0] === 'A' ? 'B' : 'A') + parts[2]!.slice(1)
+      expect(decryptSecret(parts.join('.'))).toBeNull()
 
       const tok = signTrustedDevice('u1', 3, 0)
       expect(verifyTrustedDevice(tok, 'u1', 3, 1000)).toBe(true)

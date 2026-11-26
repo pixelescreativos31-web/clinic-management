@@ -75,6 +75,25 @@ Va primero porque la página la promete, no depende de ningún proveedor externo
 - **Las clínicas actuales no cambian:** sin `billing.subscriptionId` siguen con el plan que les asignó el súper admin («plan manual»). Ninguna baja a Gratis.
 - **Pruebas:** con la pasarela falsa (sin red), avisos duplicados o fuera de orden, el calendario de cobranza y la bajada a Gratis manteniendo todos los datos.
 
+**Estado (hecho):**
+
+- Para activarlo en producción hacen falta, en `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV` (`sandbox` o `live`) y `PAYPAL_PLAN_IDS`.
+  - `PAYPAL_PLAN_IDS` es un JSON con los planes creados en PayPal, por ejemplo `{"pro.month.trial":"P-…","pro.month":"P-…","pro.year.trial":"P-…",…}`.
+  - Son dos planes por plan y ciclo: uno con 3 días de prueba y otro sin prueba. El anual cuesta 10 meses.
+  - En PayPal, el webhook apunta a `/api/billing/paypal/webhook`.
+- Sin esas variables, nada cambia: se mantiene el flujo de «Solicitar mejora».
+- Para una demostración local: `BILLING_GATEWAY=fake` (pasarela falsa que aprueba sola). Esta pasarela nunca funciona con `NODE_ENV=production`.
+- Además de lo planeado:
+  - Colección `trialClaims` con hashes, para la regla de una sola prueba. También se aplica por cuenta de PayPal.
+  - `users.planSuspendedAt`: al bajar a Gratis se cierran las sesiones del personal y no pueden entrar. Al volver a pagar se reactivan.
+- El aviso fuerte de cobranza (día 3 en adelante) usa ámbar sólido, no rojo, porque el rojo es solo para alertas clínicas (`globals.css`).
+- **Pendiente:**
+  - Prorrateo al cambiar de plan. Hoy la suscripción nueva reemplaza a la anterior y PayPal no prorratea.
+  - Contratar un plan pagado desde el registro.
+  - Consola de cobros del súper admin.
+  - Cupones.
+  - Avisos de cobranza por WhatsApp (Fase 5).
+
 ### Fase 4: Consultas dictadas con IA
 
 - Botón «Dictar» en la consulta: el navegador graba con `MediaRecorder`, pide primero la casilla de consentimiento del paciente y sube el audio.

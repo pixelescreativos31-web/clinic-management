@@ -280,5 +280,66 @@ export const Tenants: CollectionConfig = {
         },
       ],
     },
+    {
+      // Fase 3 — PayPal subscription state (spec §3). Written only by
+      // src/lib/billing/service.ts (webhook, return page, daily job). A clinic with
+      // no subscriptionId is on a manual plan set by the super admin and is never
+      // touched by billing (no trial, no dunning, no downgrade).
+      name: 'billing',
+      type: 'group',
+      label: 'Suscripción',
+      access: { update: superAdminField },
+      admin: { description: 'Estado de la suscripción de PayPal. Lo actualizan los avisos de PayPal.' },
+      fields: [
+        { name: 'subscriptionId', type: 'text', label: 'Suscripción de PayPal', index: true },
+        { name: 'pendingSubscriptionId', type: 'text', label: 'Suscripción pendiente de aprobación', index: true },
+        { name: 'pendingSince', type: 'date', label: 'Pendiente desde' },
+        {
+          name: 'status',
+          type: 'select',
+          label: 'Estado',
+          defaultValue: 'none',
+          options: [
+            { label: 'Sin suscripción', value: 'none' },
+            { label: 'En prueba', value: 'trialing' },
+            { label: 'Activa', value: 'active' },
+            { label: 'Pago fallido', value: 'past_due' },
+            { label: 'Cancelada', value: 'cancelled' },
+          ],
+        },
+        { name: 'billingPlan', type: 'select', label: 'Plan pagado', options: PLANS.map((p) => ({ label: planLabel(p), value: p })) },
+        {
+          name: 'interval',
+          type: 'select',
+          label: 'Ciclo',
+          options: [
+            { label: 'Mensual', value: 'month' },
+            { label: 'Anual', value: 'year' },
+          ],
+        },
+        { name: 'quantity', type: 'number', label: 'Médicos pagados (Clínica privada)' },
+        { name: 'trialUsed', type: 'checkbox', label: 'Ya usó su prueba', defaultValue: false },
+        { name: 'trialEndsAt', type: 'date', label: 'Fin de la prueba' },
+        { name: 'trialEndingNotifiedAt', type: 'date', label: 'Aviso «su prueba termina mañana»' },
+        { name: 'currentPeriodEnd', type: 'date', label: 'Fin del periodo pagado' },
+        { name: 'pastDueSince', type: 'date', label: 'Pago fallido desde' },
+        { name: 'dunningStage', type: 'number', label: 'Avisos de cobranza enviados', defaultValue: 0 },
+        { name: 'downgradedAt', type: 'date', label: 'Bajó a Gratis el' },
+        {
+          name: 'downgradeReason',
+          type: 'select',
+          label: 'Motivo de la bajada',
+          options: [
+            { label: 'Impago', value: 'unpaid' },
+            { label: 'Cancelación', value: 'cancelled' },
+          ],
+        },
+        { name: 'downgradedFromPlan', type: 'select', label: 'Plan anterior', options: PLANS.map((p) => ({ label: planLabel(p), value: p })) },
+        { name: 'winbackStage', type: 'number', label: 'Avisos «recupere su plan» enviados', defaultValue: 0 },
+        { name: 'payerEmailMasked', type: 'text', label: 'Cuenta de PayPal' },
+        { name: 'cancelReason', type: 'text', label: 'Motivo de cancelación' },
+        { name: 'lastEventAt', type: 'date', label: 'Último aviso de PayPal aplicado' },
+      ],
+    },
   ],
 }

@@ -79,6 +79,9 @@ export interface Config {
     progressPhotos: ProgressPhoto;
     usageCounters: UsageCounter;
     quotaPacks: QuotaPack;
+    billingEvents: BillingEvent;
+    billingReceipts: BillingReceipt;
+    trialClaims: TrialClaim;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +101,9 @@ export interface Config {
     progressPhotos: ProgressPhotosSelect<false> | ProgressPhotosSelect<true>;
     usageCounters: UsageCountersSelect<false> | UsageCountersSelect<true>;
     quotaPacks: QuotaPacksSelect<false> | QuotaPacksSelect<true>;
+    billingEvents: BillingEventsSelect<false> | BillingEventsSelect<true>;
+    billingReceipts: BillingReceiptsSelect<false> | BillingReceiptsSelect<true>;
+    trialClaims: TrialClaimsSelect<false> | TrialClaimsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -217,6 +223,31 @@ export interface Tenant {
       twoFactorGraceUntil?: string | null;
     };
   };
+  /**
+   * Estado de la suscripción de PayPal. Lo actualizan los avisos de PayPal.
+   */
+  billing?: {
+    subscriptionId?: string | null;
+    pendingSubscriptionId?: string | null;
+    pendingSince?: string | null;
+    status?: ('none' | 'trialing' | 'active' | 'past_due' | 'cancelled') | null;
+    billingPlan?: ('free' | 'pro' | 'clinic' | 'plus' | 'public') | null;
+    interval?: ('month' | 'year') | null;
+    quantity?: number | null;
+    trialUsed?: boolean | null;
+    trialEndsAt?: string | null;
+    trialEndingNotifiedAt?: string | null;
+    currentPeriodEnd?: string | null;
+    pastDueSince?: string | null;
+    dunningStage?: number | null;
+    downgradedAt?: string | null;
+    downgradeReason?: ('unpaid' | 'cancelled') | null;
+    downgradedFromPlan?: ('free' | 'pro' | 'clinic' | 'plus' | 'public') | null;
+    winbackStage?: number | null;
+    payerEmailMasked?: string | null;
+    cancelReason?: string | null;
+    lastEventAt?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -234,6 +265,7 @@ export interface User {
   tenant?: (string | null) | Tenant;
   phone?: string | null;
   active?: boolean | null;
+  planSuspendedAt?: string | null;
   emailVerified?: boolean | null;
   verifyTokenHash?: string | null;
   verifyTokenExp?: string | null;
@@ -700,7 +732,13 @@ export interface AuditLog {
     | '2fa.backup-used'
     | '2fa.required-changed'
     | 'password.changed'
-    | 'quota.pack-added';
+    | 'quota.pack-added'
+    | 'billing.subscribed'
+    | 'billing.cancelled'
+    | 'billing.payment-failed'
+    | 'billing.recovered'
+    | 'billing.downgraded'
+    | 'billing.pack-bought';
   targetCollection: string;
   targetId: string;
   /**
@@ -811,6 +849,55 @@ export interface QuotaPack {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingEvents".
+ */
+export interface BillingEvent {
+  id: string;
+  eventId: string;
+  type: string;
+  eventTime?: string | null;
+  tenant?: (string | null) | Tenant;
+  resourceId?: string | null;
+  status: 'processed' | 'stale' | 'ignored' | 'rejected' | 'error';
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingReceipts".
+ */
+export interface BillingReceipt {
+  id: string;
+  number: string;
+  tenant: string | Tenant;
+  paidAt: string;
+  kind: 'plan' | 'pack';
+  concept: string;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  totalUsd: number;
+  status: 'paid' | 'refunded';
+  method?: string | null;
+  payerEmailMasked?: string | null;
+  transactionId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trialClaims".
+ */
+export interface TrialClaim {
+  id: string;
+  kind: 'email' | 'phone' | 'taxId' | 'payer';
+  valueHash: string;
+  tenant: string | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -880,6 +967,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'quotaPacks';
         value: string | QuotaPack;
+      } | null)
+    | ({
+        relationTo: 'billingEvents';
+        value: string | BillingEvent;
+      } | null)
+    | ({
+        relationTo: 'billingReceipts';
+        value: string | BillingReceipt;
+      } | null)
+    | ({
+        relationTo: 'trialClaims';
+        value: string | TrialClaim;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -967,6 +1066,30 @@ export interface TenantsSelect<T extends boolean = true> {
               twoFactorGraceUntil?: T;
             };
       };
+  billing?:
+    | T
+    | {
+        subscriptionId?: T;
+        pendingSubscriptionId?: T;
+        pendingSince?: T;
+        status?: T;
+        billingPlan?: T;
+        interval?: T;
+        quantity?: T;
+        trialUsed?: T;
+        trialEndsAt?: T;
+        trialEndingNotifiedAt?: T;
+        currentPeriodEnd?: T;
+        pastDueSince?: T;
+        dunningStage?: T;
+        downgradedAt?: T;
+        downgradeReason?: T;
+        downgradedFromPlan?: T;
+        winbackStage?: T;
+        payerEmailMasked?: T;
+        cancelReason?: T;
+        lastEventAt?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -980,6 +1103,7 @@ export interface UsersSelect<T extends boolean = true> {
   tenant?: T;
   phone?: T;
   active?: T;
+  planSuspendedAt?: T;
   emailVerified?: T;
   verifyTokenHash?: T;
   verifyTokenExp?: T;
@@ -1415,6 +1539,52 @@ export interface QuotaPacksSelect<T extends boolean = true> {
   expiresAt?: T;
   source?: T;
   note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingEvents_select".
+ */
+export interface BillingEventsSelect<T extends boolean = true> {
+  eventId?: T;
+  type?: T;
+  eventTime?: T;
+  tenant?: T;
+  resourceId?: T;
+  status?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "billingReceipts_select".
+ */
+export interface BillingReceiptsSelect<T extends boolean = true> {
+  number?: T;
+  tenant?: T;
+  paidAt?: T;
+  kind?: T;
+  concept?: T;
+  periodStart?: T;
+  periodEnd?: T;
+  totalUsd?: T;
+  status?: T;
+  method?: T;
+  payerEmailMasked?: T;
+  transactionId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trialClaims_select".
+ */
+export interface TrialClaimsSelect<T extends boolean = true> {
+  kind?: T;
+  valueHash?: T;
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }
