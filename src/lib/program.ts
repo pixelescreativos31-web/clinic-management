@@ -118,13 +118,19 @@ export function withProgress<T extends { week: number; weightKg?: number | null;
   })
 }
 
-export const fmtDelta = (kg: number | null) => {
+/** Signed change, the clinic's unit first: "−3.2 lb (−1.5 kg)". */
+export const fmtDelta = (kg: number | null, unit: 'lb' | 'kg' = 'lb') => {
   if (kg == null) return '—'
   if (kg === 0) return '0'
-  return `${kg > 0 ? '+' : '−'}${Math.abs(kg).toFixed(1)} kg (${kg > 0 ? '+' : '−'}${Math.abs(kgToLb(kg)).toFixed(1)} lb)`
+  const s = kg > 0 ? '+' : '−'
+  const lb = `${s}${Math.abs(kgToLb(kg)).toFixed(1)} lb`
+  const k = `${s}${Math.abs(kg).toFixed(1)} kg`
+  return unit === 'lb' ? `${lb} (${k})` : `${k} (${lb})`
 }
 
-export const fmtWeight = (kg?: number | null) => (kg ? `${kg.toFixed(1)} kg · ${kgToLb(kg).toFixed(1)} lb` : '—')
+/** "165.3 lb · 75.0 kg", the clinic's unit first. */
+export const fmtWeight = (kg?: number | null, unit: 'lb' | 'kg' = 'lb') =>
+  kg ? (unit === 'lb' ? `${kgToLb(kg).toFixed(1)} lb · ${kg.toFixed(1)} kg` : `${kg.toFixed(1)} kg · ${kgToLb(kg).toFixed(1)} lb`) : '—'
 
 // ---- Photos ----
 

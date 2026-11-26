@@ -3,25 +3,26 @@
 
 import { planLabel } from '@/lib/plans'
 import type { BillingView } from './service'
+import { dateTimeLabel, endSentence, type TimeFormat } from '@/lib/regional'
 
-const longDate = (iso: string, withTime = false) =>
+const longDate = (iso: string) =>
   new Date(iso).toLocaleString('es-DO', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'America/Santo_Domingo',
-    ...(withTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : {}),
   })
 
 /** Chip + line under the plan name for a billing-managed clinic. */
-export function billingSummary(view: BillingView): { chip: string; line: string | null } | null {
+export function billingSummary(view: BillingView, fmt?: TimeFormat): { chip: string; line: string | null } | null {
+  const when = (iso: string) => dateTimeLabel(iso, 'America/Santo_Domingo', fmt)
   switch (view.kind) {
     case 'pending':
       return { chip: 'Terminando su suscripción…', line: 'Esperando la confirmación de PayPal.' }
     case 'trialing':
       return {
         chip: 'En prueba',
-        line: `Prueba: quedan ${view.daysLeft} ${view.daysLeft === 1 ? 'día' : 'días'}. Primer cobro el ${longDate(view.endsAt, true)}.`,
+        line: endSentence(`Prueba: quedan ${view.daysLeft} ${view.daysLeft === 1 ? 'día' : 'días'}. Primer cobro el ${when(view.endsAt)}`),
       }
     case 'active':
       return { chip: 'Activa', line: view.renewsAt ? `Se renueva el ${longDate(view.renewsAt)}.` : null }
@@ -32,7 +33,7 @@ export function billingSummary(view: BillingView): { chip: string; line: string 
         chip: 'Cancelada',
         line: view.endsAt
           ? view.inTrial
-            ? `Su prueba sigue activa hasta el ${longDate(view.endsAt, true)}. No se le cobrará nada.`
+            ? `${endSentence(`Su prueba sigue activa hasta el ${when(view.endsAt)}`)} No se le cobrará nada.`
             : `Su plan termina el ${longDate(view.endsAt)}.`
           : null,
       }

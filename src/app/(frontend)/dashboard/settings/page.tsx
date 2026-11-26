@@ -1,3 +1,4 @@
+import { regionalOf } from '@/lib/regional'
 import { requireDashboardSession, requireRole } from '@/lib/auth'
 import { AppHeader, AppContent } from '@/components/AppHeader'
 import { SettingsForm } from '@/components/SettingsForm'
@@ -38,6 +39,7 @@ export default async function SettingsPage() {
             closeTime: t?.settings?.closeTime ?? DEFAULT_CLOSE_TIME,
             currency: t?.settings?.currency ?? DEFAULT_CURRENCY,
             timezone: t?.settings?.timezone ?? DEFAULT_TIMEZONE,
+            ...regionalOf(t),
             taxId: t?.taxId ?? '',
             practiceType: t?.practiceType === 'clinic' ? 'clinic' : 'individual',
             orgType: orgTypeOf(t),

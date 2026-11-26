@@ -8,6 +8,8 @@
 // prescription). Saving a new consultation completes the appointment and returns
 // to the agenda.
 
+import { useRegional } from './RegionalProvider'
+import { heightIn, heightToCm, weightIn, weightLabel, weightToKg } from '@/lib/regional'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Spinner } from './primitives'
@@ -155,6 +157,10 @@ export function VisitForm({
   returnHref?: string
 }) {
   const router = useRouter()
+  const { weightUnit, heightUnit } = useRegional()
+  // Weight and height are typed in the clinic's units and stored in kg / cm.
+  const shownW = (kg?: string | null) => (kg && Number(kg) > 0 ? String(weightIn(Number(kg), weightUnit)) : kg ?? '')
+  const shownH = (cm?: string | null) => (cm && Number(cm) > 0 ? String(heightIn(Number(cm), heightUnit)) : cm ?? '')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [format, setFormat] = useState<VisitFormat>(initial?.format ?? defaultFormat)
@@ -166,10 +172,10 @@ export function VisitForm({
     () =>
       initial?.program ?? {
         week: program ? String(program.suggestedWeek) : '',
-        weight: initial?.vitals.weightKg ?? '',
-        weightUnit: 'lb',
-        height: initial?.vitals.heightCm || (program?.heightCm ? String(program.heightCm) : ''),
-        heightUnit: 'cm',
+        weight: shownW(initial?.vitals.weightKg),
+        weightUnit,
+        height: shownH(initial?.vitals.heightCm || (program?.heightCm ? String(program.heightCm) : '')),
+        heightUnit,
         body: {},
       },
   )
@@ -182,8 +188,14 @@ export function VisitForm({
   const [treatmentPlan, setTreatmentPlan] = useState(initial?.treatmentPlan ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [followUp, setFollowUp] = useState(initial?.followUpDate ?? '')
-  const [vitals, setVitals] = useState<Record<VitalKey, string>>(initial?.vitals ?? EMPTY_VITALS)
-  const [nutrition, setNutrition] = useState<NutritionFormState>(initial?.nutrition ?? EMPTY_NUTRITION)
+  const [vitals, setVitals] = useState<Record<VitalKey, string>>(() => {
+    const v = initial?.vitals ?? EMPTY_VITALS
+    return { ...v, weightKg: shownW(v.weightKg), heightCm: shownH(v.heightCm) }
+  })
+  const [nutrition, setNutrition] = useState<NutritionFormState>(() => {
+    const n = initial?.nutrition ?? EMPTY_NUTRITION
+    return n.usualWeightKg ? { ...n, usualWeightKg: shownW(n.usualWeightKg) } : n
+  })
   const initialLabs = useMemo(() => parseLabs(initial?.labOrders ?? ''), [initial?.labOrders])
   const [labChips, setLabChips] = useState<string[]>(initialLabs.chips)
   const [labNote, setLabNote] = useState(initialLabs.note)
@@ -204,9 +216,20 @@ export function VisitForm({
   const setRow = (i: number, patch: Partial<PrescriptionRowInput>) => setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
 
   const num = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(',', '.')))
+  // An untouched field keeps its stored kg / cm exactly (no lb ⇄ kg rounding drift on re-save).
+  const kgOf = (s: string, stored?: string | null) => {
+    if (stored && s === shownW(stored)) return num(stored)
+    const n = num(s)
+    return n == null || !Number.isFinite(n) ? undefined : weightToKg(n, weightUnit)
+  }
+  const cmOf = (s: string, stored?: string | null) => {
+    if (stored && s === shownH(stored)) return num(stored)
+    const n = num(s)
+    return n == null || !Number.isFinite(n) ? undefined : heightToCm(n, heightUnit)
+  }
   const bmi = (() => {
-    const w = num(vitals.weightKg)
-    const h = num(vitals.heightCm)
+    const w = kgOf(vitals.weightKg)
+    const h = cmOf(vitals.heightCm)
     if (!w || !h) return null
     const v = w / (h / 100) ** 2
     return Number.isFinite(v) && v > 5 && v < 100 ? v.toFixed(1) : null
@@ -250,6 +273,8 @@ export function VisitForm({
         notes,
         vitals: {
           ...Object.fromEntries(VITALS.map((v) => [v.key, num(vitals[v.key])])),
+          weightKg: kgOf(vitals.weightKg, initial?.vitals.weightKg),
+          heightCm: cmOf(vitals.heightCm, initial?.vitals.heightCm),
           ...(isProgram ? { weightKg: formWeightKg(prog) ?? undefined, heightCm: formHeightCm(prog) ?? undefined } : {}),
         },
         prescription: rows
@@ -257,7 +282,9 @@ export function VisitForm({
           .map((r) => ({ ...r, durationDays: r.durationDays ? Number(r.durationDays) : undefined })),
         followUpDate: followUp || undefined,
         format,
-        ...(nutri ? { nutrition } : {}),
+        ...(nutri
+          ? { nutrition: nutrition.usualWeightKg ? { ...nutrition, usualWeightKg: String(kgOf(nutrition.usualWeightKg, initial?.nutrition?.usualWeightKg) ?? '') } : nutrition }
+          : {}),
         ...(isMassage ? { massage } : {}),
         ...(isProgram && program ? { programId: program.programId, programWeek: Number(prog.week), body: prog.body } : {}),
       }
@@ -374,9 +401,9 @@ export function VisitForm({
         {nutri ? (
           <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
-              <Num label="Peso actual (kg)" value={vitals.weightKg} onChange={(v) => setV('weightKg', v)} ph="64" />
-              <Num label="Peso habitual" value={nutrition.usualWeightKg ?? ''} onChange={(v) => setN('usualWeightKg', v)} ph="66" />
-              <Num label="Talla (cm)" value={vitals.heightCm} onChange={(v) => setV('heightCm', v)} ph="163" />
+              <Num label={`Peso actual (${weightUnit})`} value={vitals.weightKg} onChange={(v) => setV('weightKg', v)} ph={weightUnit === 'lb' ? '141' : '64'} />
+              <Num label={`Peso habitual (${weightUnit})`} value={nutrition.usualWeightKg ?? ''} onChange={(v) => setN('usualWeightKg', v)} ph={weightUnit === 'lb' ? '145' : '66'} />
+              <Num label={`Talla (${heightUnit})`} value={vitals.heightCm} onChange={(v) => setV('heightCm', v)} ph={heightUnit === 'in' ? '64' : '163'} />
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-[#57534e]">IMC</span>
                 <span className="tabular flex h-11 items-center rounded-[10px] bg-[#f0eeec] px-3 text-base font-medium text-[#44403c]">{bmi ?? '—'}</span>
@@ -403,10 +430,22 @@ export function VisitForm({
           <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
               {VITALS.map((v) => (
-                <Num key={v.key} label={v.label} value={vitals[v.key]} onChange={(x) => setV(v.key, x)} ph={v.ph} />
+                <Num
+                  key={v.key}
+                  label={v.key === 'weightKg' ? `Peso (${weightUnit})` : v.key === 'heightCm' ? `Talla (${heightUnit})` : v.label}
+                  value={vitals[v.key]}
+                  onChange={(x) => setV(v.key, x)}
+                  ph={v.key === 'weightKg' && weightUnit === 'lb' ? '154' : v.key === 'heightCm' && heightUnit === 'in' ? '65' : v.ph}
+                />
               ))}
             </div>
-            {bmi && <p className="tabular text-[13px] font-medium text-[#57534e]">IMC {bmi}</p>}
+            {(kgOf(vitals.weightKg) || bmi) && (
+              <p className="tabular text-[13px] font-medium text-[#57534e]">
+                {kgOf(vitals.weightKg) ? weightLabel(kgOf(vitals.weightKg), weightUnit) : ''}
+                {kgOf(vitals.weightKg) && bmi ? ' · ' : ''}
+                {bmi ? `IMC ${bmi}` : ''}
+              </p>
+            )}
           </>
         )}
       </Section>

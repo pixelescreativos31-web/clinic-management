@@ -1,3 +1,4 @@
+import { compactClock, regionalOf } from '@/lib/regional'
 import { notFound, redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
@@ -47,7 +48,7 @@ export default async function NewVisitPage({
   const header = (
     <AppHeader
       title={formatsFor(tenant, user)[0] === 'massage' && formatsFor(tenant, user).length === 1 ? 'Sesión' : 'Consulta'}
-      subtitle={`${patientName} · ${Math.floor(startMin / 60) % 12 || 12}:${String(startMin % 60).padStart(2, '0')}`}
+      subtitle={`${patientName} · ${compactClock(startMin, regionalOf(tenant).timeFormat)}`}
       backHref="/dashboard/appointments"
     />
   )

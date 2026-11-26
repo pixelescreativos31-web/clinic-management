@@ -6,6 +6,8 @@
 // Saves through the existing bookAppointment action, which re-validates the
 // doctor's availability and the double-booking guard.
 
+import { useRegional } from './RegionalProvider'
+import { compactHHMM } from '@/lib/regional'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -15,10 +17,6 @@ import { searchPatients, type PatientHit } from '@/app/(frontend)/dashboard/pati
 
 export type QuickMode = 'appt' | 'walkin'
 
-const short = (t: string) => {
-  const [h, m] = t.split(':').map(Number)
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')}`
-}
 
 export function QuickBookSheet({
   mode,
@@ -44,6 +42,8 @@ export function QuickBookSheet({
   onDone: (message: string) => void
 }) {
   const router = useRouter()
+  const { timeFormat } = useRegional()
+  const short = (t: string) => compactHHMM(t, timeFormat)
   const [doctorId, setDoctorId] = useState(defaultDoctorId)
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<PatientHit[]>([])

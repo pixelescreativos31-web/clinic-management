@@ -11,6 +11,8 @@ import { isIndividualPractice, isPractitioner } from '@/lib/practice'
 import { getGateway } from '@/lib/billing/gateway'
 import { billingView } from '@/lib/billing/service'
 import { BillingBanner, billingBanner } from '@/components/BillingBanner'
+import { RegionalProvider } from '@/components/RegionalProvider'
+import { regionalOf } from '@/lib/regional'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, tenant, twoFactor: gate } = await requireDashboardSession({ twoFactorEnrollment: true })
@@ -55,9 +57,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
       : null
 
   // Subscription notices (spec §3). Clinics on a manual plan never see them.
-  const banner = tenant ? billingBanner(billingView(tenant as never), user.role, getGateway()?.manageUrl() ?? null) : null
+  const banner = tenant ? billingBanner(billingView(tenant as never), user.role, getGateway()?.manageUrl() ?? null, regionalOf(tenant).timeFormat) : null
 
   return (
+    <RegionalProvider value={regionalOf(tenant)}>
     <Sidebar
       clinicName={tenant?.name ?? 'Consultorio'}
       clinicLogo={tenant?.logo}
@@ -71,5 +74,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {quotaAlert && <QuotaAlertStrip alert={quotaAlert} />}
       <ContentFrame>{children}</ContentFrame>
     </Sidebar>
+    </RegionalProvider>
   )
 }

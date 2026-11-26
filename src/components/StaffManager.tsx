@@ -1,5 +1,7 @@
 'use client'
 
+import { useRegional } from './RegionalProvider'
+import { sortByWeek } from '@/lib/regional'
 import { FORMAT_LABELS, type ConsultFormat } from '@/lib/profiles'
 import { specialtiesFor, specialtyByKey, type OrgType } from '@/lib/specialties'
 import { useState, useTransition } from 'react'
@@ -96,6 +98,7 @@ export function StaffManager({
     (s) => s.active && (s.role === 'doctor' || s.role === 'therapist'),
   ).length
   const [form, setForm] = useState({ ...EMPTY_FORM })
+  const { weekStart } = useRegional()
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
   const [days, setDays] = useState<string[]>([...ALL_DAYS])
   const toggleDay = (d: string) =>
@@ -364,7 +367,7 @@ export function StaffManager({
                 {form.availabilityType === 'regular' && (
                   <div className="mt-3.5 flex flex-col gap-3.5">
                     <div className="flex flex-wrap gap-1.5">
-                      {WEEKDAYS.map((d) => (
+                      {sortByWeek(WEEKDAYS, weekStart).map((d) => (
                         <button
                           key={d.value}
                           type="button"

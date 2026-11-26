@@ -30,9 +30,10 @@ export function windowOf(doctor: { availableFrom?: string | null; availableTo?: 
 }
 
 /** Pretty "9:00 am – 5:00 pm" for a window (24h input). */
-export function formatWindow(win: DoctorWindow): string {
+export function formatWindow(win: DoctorWindow, timeFormat?: '12h' | '24h'): string {
   const fmt = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number)
+    if (timeFormat === '24h') return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
     const ampm = h < 12 ? 'am' : 'pm'
     const hr = h % 12 === 0 ? 12 : h % 12
     return `${hr}:${String(m).padStart(2, '0')} ${ampm}`

@@ -19,6 +19,7 @@ import { appBaseUrl, sendEmail } from '@/lib/email'
 import { PLAN_LIMITS, QUOTA_PACKS, asPlan, isPackResource, meteredUnit, planLabel, type PackResource, type Plan } from '@/lib/plans'
 import { doctorWhere } from '@/lib/practice'
 import { isPaidPlan, priceFor } from './prices'
+import { dateTimeLabel, endSentence, regionalOf } from '@/lib/regional'
 import {
   GatewayError,
   getGateway,
@@ -151,14 +152,12 @@ async function audit(payload: Payload, tenantID: string, action: string, summary
   }
 }
 
-export const formatDate = (d: Date | string, timeZone = 'America/Santo_Domingo', withTime = false) =>
-  new Intl.DateTimeFormat('es-DO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone,
-    ...(withTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : {}),
-  }).format(new Date(d))
+export const formatDate = (d: Date | string, timeZone = 'America/Santo_Domingo') =>
+  new Intl.DateTimeFormat('es-DO', { day: 'numeric', month: 'long', year: 'numeric', timeZone }).format(new Date(d))
+
+/** Date and time in the clinic's zone and clock format (12 h by default). */
+const formatWhen = (d: Date | string, tenant: TenantDoc) =>
+  dateTimeLabel(d, tenant.settings?.timezone || 'America/Santo_Domingo', regionalOf(tenant as never).timeFormat)
 
 // ---------------------------------------------------------------- trial uniqueness
 
@@ -345,7 +344,7 @@ async function activate(payload: Payload, tenant: TenantDoc, sub: GatewaySubscri
     tenantID,
     trialEndsAt ? `Su prueba del plan ${planLabel(parsed.plan)} empezó` : `Su plan ${planLabel(parsed.plan)} está activo`,
     trialEndsAt
-      ? [`Su prueba gratis dura hasta el ${formatDate(trialEndsAt, tz, true)}. No se le cobrará nada antes; le avisaremos un día antes del primer cobro.`]
+      ? [`${endSentence(`Su prueba gratis dura hasta el ${formatWhen(trialEndsAt, tenant)}`)} No se le cobrará nada antes; le avisaremos un día antes del primer cobro.`]
       : [`Gracias. Su plan ${planLabel(parsed.plan)} ya está activo.`],
     { label: 'Ver mi plan', href: '/dashboard/plan' },
   )
@@ -364,7 +363,7 @@ export async function cancelSubscription(payload: Payload, tenantID: string, rea
   await audit(payload, tenantID, 'billing.cancelled', wasTrial ? 'Prueba cancelada por el titular' : 'Suscripción cancelada por el titular', { actor: 'titular', reason })
   const tz = tenant.settings?.timezone ?? undefined
   const message = wasTrial && b.trialEndsAt
-    ? `Su prueba sigue activa hasta el ${formatDate(b.trialEndsAt, tz, true)}. No se le cobrará nada. Después su cuenta pasará a Gratis.`
+    ? `${endSentence(`Su prueba sigue activa hasta el ${formatWhen(b.trialEndsAt, tenant)}`)} No se le cobrará nada. Después su cuenta pasará a Gratis.`
     : b.currentPeriodEnd
       ? `Su plan termina el ${formatDate(b.currentPeriodEnd, tz)}. Después su cuenta pasará a Gratis; sus datos se conservan.`
       : 'Su suscripción quedó cancelada.'
@@ -757,7 +756,7 @@ export async function runBillingJob(payload: Payload, now = new Date()): Promise
     const interval = t.billing?.interval === 'year' ? 'year' : 'month'
     const amount = isPaidPlan(plan) ? priceFor(plan, interval, t.billing?.quantity ?? 1) : 0
     await mailOwners(payload, tenantID, 'Su prueba de medira termina mañana', [
-      `Su prueba termina el ${formatDate(t.billing!.trialEndsAt!, t.settings?.timezone ?? undefined, true)}. Ese día PayPal cobrará US$${amount} por el plan ${planLabel(plan)} (${interval === 'year' ? 'anual' : 'mensual'}).`,
+      `${endSentence(`Su prueba termina el ${formatWhen(t.billing!.trialEndsAt!, t)}`)} Ese día PayPal cobrará US$${amount} por el plan ${planLabel(plan)} (${interval === 'year' ? 'anual' : 'mensual'}).`,
       'Si no desea continuar, cancele antes desde Mi plan y no se le cobrará nada.',
     ], { label: 'Ver mi plan', href: '/dashboard/plan' })
   }

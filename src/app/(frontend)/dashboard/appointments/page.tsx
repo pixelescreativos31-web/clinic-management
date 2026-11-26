@@ -1,3 +1,4 @@
+import { minutesLabel, regionalOf } from '@/lib/regional'
 // Agenda — design_handoff_medira «Agenda». Server side loads the
 // day's appointments with their consultation / invoice so each card can offer the
 // right next step; AgendaBoard renders the list, timeline and quick sheets.
@@ -124,7 +125,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
         doctorName: doc?.name ?? 'su médico',
         clinicName: tenant?.name ?? 'el consultorio',
         dateLabel: prettyDate,
-        timeLabel: `${Math.floor(startMin / 60) % 12 || 12}:${String(startMin % 60).padStart(2, '0')} ${startMin < 720 ? 'a. m.' : 'p. m.'}`,
+        timeLabel: minutesLabel(startMin, regionalOf(tenant).timeFormat),
       }),
       visitId,
       invoiceId: visitId ? invoiceByVisit.get(visitId) ?? null : null,

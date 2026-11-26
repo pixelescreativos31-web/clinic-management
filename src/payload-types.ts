@@ -201,6 +201,13 @@ export interface Tenant {
       | 'America/Costa_Rica'
       | 'America/Panama'
       | 'Europe/Madrid';
+    timeFormat?: ('12h' | '24h') | null;
+    weekStart?: ('sunday' | 'monday') | null;
+    /**
+     * El peso se guarda siempre en kg; se muestra en esta unidad con la otra al lado.
+     */
+    weightUnit?: ('lb' | 'kg') | null;
+    heightUnit?: ('cm' | 'in') | null;
     orgType?: ('consultorio' | 'estetica' | 'especialidades' | 'policlinica' | 'hospital') | null;
     /**
      * Define qué fichas e historias clínicas usa el consultorio.
@@ -1054,6 +1061,10 @@ export interface TenantsSelect<T extends boolean = true> {
         closeTime?: T;
         currency?: T;
         timezone?: T;
+        timeFormat?: T;
+        weekStart?: T;
+        weightUnit?: T;
+        heightUnit?: T;
         orgType?: T;
         consultTemplate?: T;
         programName?: T;

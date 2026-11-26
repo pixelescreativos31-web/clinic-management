@@ -173,11 +173,11 @@ export function ProgramControl({
         </div>
         <div>
           <p className="text-xs text-[#57534e]">vs. anterior{ctx.prev ? ` (S${ctx.prev.week})` : ''}</p>
-          <p className="tabular text-lg font-medium tracking-[-.02em]">{fmtDelta(deltaPrev)}</p>
+          <p className="tabular text-lg font-medium tracking-[-.02em]">{fmtDelta(deltaPrev, value.weightUnit)}</p>
         </div>
         <div>
           <p className="text-xs text-[#57534e]">vs. inicio</p>
-          <p className="tabular text-lg font-medium tracking-[-.02em]">{fmtDelta(deltaStart)}</p>
+          <p className="tabular text-lg font-medium tracking-[-.02em]">{fmtDelta(deltaStart, value.weightUnit)}</p>
         </div>
       </div>
 

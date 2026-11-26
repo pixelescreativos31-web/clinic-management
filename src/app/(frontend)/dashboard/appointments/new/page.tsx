@@ -1,4 +1,5 @@
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
+import { regionalOf, sortByWeek, type Regional } from '@/lib/regional'
 import { getTenantID } from '@/access'
 import { startOfDayInTz } from '@/lib/reports'
 import { windowOf, formatWindow } from '@/lib/availability'
@@ -9,7 +10,7 @@ import { AppHeader, AppContent } from '@/components/AppHeader'
 import type { User } from '@/payload-types'
 import { practitionerWhere } from '@/lib/practice'
 
-function noteFor(d: User): { tag: string; note: string } {
+function noteFor(d: User, r: Regional): { tag: string; note: string } {
   const type = (d.availabilityType as string) || 'regular'
   if (type === 'onCall') return { tag: 'onCall', note: 'De guardia' }
   if (type === 'byAppointment') return { tag: 'byAppointment', note: 'Previa cita' }
@@ -17,8 +18,8 @@ function noteFor(d: User): { tag: string; note: string } {
   const allDays = days.length === 0 || days.length === 7
   const dayLabel = allDays
     ? 'Todos los días'
-    : WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
-  return { tag: 'regular', note: `${dayLabel} · ${formatWindow(windowOf(d))}` }
+    : sortByWeek(WEEKDAYS, r.weekStart).filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
+  return { tag: 'regular', note: `${dayLabel} · ${formatWindow(windowOf(d), r.timeFormat)}` }
 }
 
 export default async function NewAppointmentPage({
@@ -40,7 +41,7 @@ export default async function NewAppointmentPage({
   })
 
   const doctors: DoctorOption[] = (doctorsRes.docs as User[]).map((d) => {
-    const { tag, note } = noteFor(d)
+    const { tag, note } = noteFor(d, regionalOf(tenant))
     return { id: String(d.id), name: d.name, tag, note }
   })
   // Optional prefill from a patient file — fetched with the user's access so a

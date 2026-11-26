@@ -1,3 +1,4 @@
+import { intlTime, regionalOf } from '@/lib/regional'
 import Link from 'next/link'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
@@ -68,7 +69,7 @@ export default async function ActivityPage({
   const fmt = (iso?: string | null) =>
     iso
       ? new Date(iso).toLocaleString('es-DO', {
-          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: tz,
+          day: 'numeric', month: 'short', ...intlTime(regionalOf(tenant).timeFormat), timeZone: tz,
         })
       : '—'
 

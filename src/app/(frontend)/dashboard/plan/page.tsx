@@ -8,6 +8,7 @@ import { getUsageSummary } from '@/lib/usage'
 import { getGateway } from '@/lib/billing/gateway'
 import { billingView, trialEligible } from '@/lib/billing/service'
 import { billingSummary } from '@/lib/billing/summary'
+import { regionalOf } from '@/lib/regional'
 
 export default async function PlanPage() {
   const session = await requireDashboardSession()
@@ -61,7 +62,7 @@ export default async function PlanPage() {
           billing={{
             online: Boolean(gateway),
             view,
-            summary: billingSummary(view),
+            summary: billingSummary(view, regionalOf(tenant).timeFormat),
             trial,
             manageUrl: gateway?.manageUrl() ?? null,
             receipts: receipts.docs.map((r) => ({

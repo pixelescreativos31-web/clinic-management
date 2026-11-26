@@ -12,6 +12,7 @@ import {
   PRACTICE_TYPES,
 } from '@/lib/constants'
 import { PLANS, planLabel } from '@/lib/plans'
+import { DEFAULT_REGIONAL, HEIGHT_UNITS, TIME_FORMATS, WEEK_STARTS, WEIGHT_UNITS } from '@/lib/regional'
 import { PROFILES } from '@/lib/profiles'
 import { ORG_TYPES } from '@/lib/specialties'
 
@@ -215,6 +216,37 @@ export const Tenants: CollectionConfig = {
           options: TIMEZONES.map((t) => ({ label: t.label, value: t.value })),
           label: 'Zona horaria',
           admin: { description: 'Todas las horas se muestran en esta zona horaria.' },
+        },
+        // Formato regional (src/lib/regional.ts). Optional with defaults, so clinics
+        // that never set them get 12 h, Sunday, lb and cm.
+        {
+          name: 'timeFormat',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.timeFormat,
+          options: TIME_FORMATS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Formato de hora',
+        },
+        {
+          name: 'weekStart',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.weekStart,
+          options: WEEK_STARTS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'La semana empieza el',
+        },
+        {
+          name: 'weightUnit',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.weightUnit,
+          options: WEIGHT_UNITS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Unidad de peso',
+          admin: { description: 'El peso se guarda siempre en kg; se muestra en esta unidad con la otra al lado.' },
+        },
+        {
+          name: 'heightUnit',
+          type: 'select',
+          defaultValue: DEFAULT_REGIONAL.heightUnit,
+          options: HEIGHT_UNITS.map((o) => ({ label: o.label, value: o.value })),
+          label: 'Unidad de talla',
         },
         {
           // Macro profile (src/lib/specialties.ts). Blank on older clinics: derived

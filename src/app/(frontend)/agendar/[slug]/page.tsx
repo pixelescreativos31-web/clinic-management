@@ -1,3 +1,4 @@
+import { hhmmLabel, type TimeFormat } from '@/lib/regional'
 // Public booking page — design handoff "Flujos · Reserva en línea" (390px column on sunken).
 // No login: the patient picks a service, a day and a free time, leaves name +
 // WhatsApp and gets a confirmed appointment.
@@ -27,14 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 const SHORT: Record<string, string> = { mon: 'Lun', tue: 'Mar', wed: 'Mié', thu: 'Jue', fri: 'Vie', sat: 'Sáb', sun: 'Dom' }
 
-/** "14:30" → "2:30 p. m." */
-function ampm(hhmm: string) {
-  const [h, m] = hhmm.split(':').map(Number)
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'a. m.' : 'p. m.'}`
-}
 
 /** "Lun a vie · 9:00 a. m. – 5:00 p. m." (consecutive days collapse to a range). */
-function hoursLabel(d: PublicDoctor) {
+function hoursLabel(d: PublicDoctor, fmt: TimeFormat) {
+  const ampm = (t: string) => hhmmLabel(t, fmt)
   const idx = d.days.map((x) => ORDER.indexOf(x)).filter((i) => i >= 0).sort((a, b) => a - b)
   const consecutive = idx.length > 2 && idx.every((v, i) => i === 0 || v === idx[i - 1] + 1)
   const days = consecutive
@@ -64,7 +61,7 @@ export default async function BookingPage({ params }: Props) {
       name: d.name,
       specialty: d.specialty,
       licenseNumber: d.licenseNumber,
-      hours: hoursLabel(d),
+      hours: hoursLabel(d, clinic.timeFormat),
       services: d.services,
       days,
     }
@@ -106,6 +103,7 @@ export default async function BookingPage({ params }: Props) {
               address: [clinic.address, clinic.city].filter(Boolean).join(', ') || null,
               currency: clinic.currency,
               requestsEnabled: clinic.requestsEnabled,
+              timeFormat: clinic.timeFormat,
             }}
             doctors={doctors}
           />

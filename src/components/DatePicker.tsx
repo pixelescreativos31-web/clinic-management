@@ -1,5 +1,7 @@
 'use client'
 
+import { useRegional } from './RegionalProvider'
+import { weekStartsOn } from '@/lib/regional'
 import { useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -28,6 +30,7 @@ export function DatePicker({
   className?: string
 }) {
   const [open, setOpen] = useState(false)
+  const { weekStart } = useRegional()
   const selected = toDate(value)
 
   return (
@@ -49,6 +52,7 @@ export function DatePicker({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
+          weekStartsOn={weekStartsOn(weekStart)}
           selected={selected}
           defaultMonth={selected}
           onSelect={(d) => {

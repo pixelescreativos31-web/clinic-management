@@ -11,9 +11,9 @@ type Row = Progress<ControlRow>
 const n1 = (v?: number | null) => (v == null ? '—' : String(Math.round(v * 10) / 10))
 const fmtDate = (iso: string) => iso.slice(0, 10).split('-').reverse().join('/')
 
-/** Weight (lb) by week — single series, so no legend; the table is its data view. */
-export function WeightChart({ rows }: { rows: Row[] }) {
-  const pts = rows.filter((r) => r.weightKg != null).map((r) => ({ week: r.week, lb: kgToLb(r.weightKg!), date: r.date }))
+/** Weight by week in the clinic's unit — single series, so no legend; the table is its data view. */
+export function WeightChart({ rows, unit = 'lb' }: { rows: Row[]; unit?: 'lb' | 'kg' }) {
+  const pts = rows.filter((r) => r.weightKg != null).map((r) => ({ week: r.week, lb: unit === 'lb' ? kgToLb(r.weightKg!) : Math.round(r.weightKg! * 10) / 10, date: r.date }))
   if (pts.length < 2) return null
   const W = 640
   const H = 200
@@ -30,7 +30,7 @@ export function WeightChart({ rows }: { rows: Row[] }) {
   const last = pts[pts.length - 1]
   return (
     <figure className="m-0">
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Peso de ${first.lb} lb a ${last.lb} lb entre ${weekLabel(first.week)} y ${weekLabel(last.week)}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Peso de ${first.lb} ${unit} a ${last.lb} ${unit} entre ${weekLabel(first.week)} y ${weekLabel(last.week)}`}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="#e7e5e4" strokeWidth={1} />
@@ -50,20 +50,20 @@ export function WeightChart({ rows }: { rows: Row[] }) {
             <circle cx={x(p.week)} cy={y(p.lb)} r={4} fill="#0f766e" stroke="#fff" strokeWidth={2} />
             {/* Larger invisible hit target carries the tooltip. */}
             <circle cx={x(p.week)} cy={y(p.lb)} r={12} fill="transparent">
-              <title>{`${weekLabel(p.week)} · ${fmtDate(p.date)} · ${p.lb} lb`}</title>
+              <title>{`${weekLabel(p.week)} · ${fmtDate(p.date)} · ${p.lb} ${unit}`}</title>
             </circle>
           </g>
         ))}
         <text x={x(last.week)} y={y(last.lb) - 10} textAnchor="end" fontSize={12} fontWeight={600} fill="#1c1917">
-          {last.lb} lb
+          {last.lb} {unit}
         </text>
       </svg>
-      <figcaption className="text-xs text-[#57534e]">Peso (lb) por semana</figcaption>
+      <figcaption className="text-xs text-[#57534e]">Peso ({unit}) por semana</figcaption>
     </figure>
   )
 }
 
-export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id: string) => string }) {
+export function ControlsTable({ rows, editHref, unit = 'lb' }: { rows: Row[]; editHref?: (id: string) => string; unit?: 'lb' | 'kg' }) {
   const comp = METRICS.filter((m) => m.group === 'composition')
   return (
     <div className="overflow-x-auto">
@@ -72,7 +72,7 @@ export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id:
           <tr className="border-b border-[#e7e5e4] text-left text-xs text-[#57534e]">
             <th className="py-2 pe-2 font-semibold">Semana</th>
             <th className="pe-2 font-semibold">Fecha</th>
-            <th className="pe-2 font-semibold">Peso lb (kg)</th>
+            <th className="pe-2 font-semibold">{unit === 'lb' ? 'Peso lb (kg)' : 'Peso kg (lb)'}</th>
             <th className="pe-2 font-semibold">vs. anterior</th>
             <th className="pe-2 font-semibold">vs. inicio</th>
             <th className="pe-2 font-semibold">IMC</th>
@@ -92,9 +92,9 @@ export function ControlsTable({ rows, editHref }: { rows: Row[]; editHref?: (id:
             <tr key={r.id} className="border-b border-[#f0eeec] align-top last:border-0">
               <td className="py-2.5 pe-2 font-semibold whitespace-nowrap">{weekLabel(r.week)}</td>
               <td className="tabular pe-2">{fmtDate(r.date)}</td>
-              <td className="tabular pe-2">{r.weightKg != null ? `${kgToLb(r.weightKg).toFixed(1)} (${r.weightKg.toFixed(1)})` : '—'}</td>
-              <td className="tabular pe-2">{fmtDelta(r.deltaPrev)}</td>
-              <td className="tabular pe-2">{fmtDelta(r.deltaStart)}</td>
+              <td className="tabular pe-2">{r.weightKg != null ? (unit === 'lb' ? `${kgToLb(r.weightKg).toFixed(1)} (${r.weightKg.toFixed(1)})` : `${r.weightKg.toFixed(1)} (${kgToLb(r.weightKg).toFixed(1)})`) : '—'}</td>
+              <td className="tabular pe-2">{fmtDelta(r.deltaPrev, unit)}</td>
+              <td className="tabular pe-2">{fmtDelta(r.deltaStart, unit)}</td>
               <td className="tabular pe-2" title={bmiLabel(r.bmi) ?? undefined}>
                 {r.bmi ?? '—'}
               </td>

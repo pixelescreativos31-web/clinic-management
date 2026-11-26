@@ -1,3 +1,4 @@
+import { heightIn, regionalOf, weightIn } from '@/lib/regional'
 import { notFound, redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
@@ -88,10 +89,10 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
     const body = (visit.body ?? {}) as Record<string, unknown>
     initial.program = {
       week: String(visit.programWeek ?? 0),
-      weight: v.weightKg ? String(kgToLb(v.weightKg)) : '',
-      weightUnit: 'lb',
-      height: str(v.heightCm),
-      heightUnit: 'cm',
+      weight: v.weightKg ? String(weightIn(v.weightKg, regionalOf(tenant).weightUnit)) : '',
+      weightUnit: regionalOf(tenant).weightUnit,
+      height: v.heightCm ? String(heightIn(v.heightCm, regionalOf(tenant).heightUnit)) : '',
+      heightUnit: regionalOf(tenant).heightUnit,
       body: Object.fromEntries(
         [...METRICS.filter((m) => m.group === 'composition' || m.group === 'measures').map((m) => m.key), 'muscleMassUnit'].map((k) => [k, str(body[k])]),
       ),

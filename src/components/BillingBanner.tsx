@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { BillingView } from '@/lib/billing/service'
+import { dateTimeLabel, endSentence, type TimeFormat } from '@/lib/regional'
 
 // Subscription notices on every dashboard page (spec §3). Day 0 of a failed charge
 // is the soft amber strip; from day 3 the strip turns solid amber. Red stays
@@ -11,17 +12,12 @@ const SOFT = 'border-b border-[#f3e3c3] bg-[#faf3e6] text-[#78350f]'
 const STRONG = 'border-b border-[#92400e] bg-[#b45309] text-white'
 const QUIET = 'border-b border-[#d7ebe7] bg-[#f0f7f6] text-[#134e4a]'
 
-const longDate = (iso: string, withTime = false) =>
-  new Date(iso).toLocaleString('es-DO', {
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'America/Santo_Domingo',
-    ...(withTime ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : {}),
-  })
+const longDate = (iso: string) => new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', timeZone: 'America/Santo_Domingo' })
 
 type Banner = { tone: string; text: string; cta?: { href: string; label: string; external?: boolean }; level: string }
 
-export function billingBanner(view: BillingView, role: string, manageUrl: string | null, now = new Date()): Banner | null {
+export function billingBanner(view: BillingView, role: string, manageUrl: string | null, fmt?: TimeFormat, now = new Date()): Banner | null {
+  const when = (iso: string) => dateTimeLabel(iso, 'America/Santo_Domingo', fmt, { year: false })
   const owner = role === 'owner'
   const pay = manageUrl ? { href: manageUrl, label: 'Actualizar en PayPal', external: true } : { href: '/dashboard/plan', label: 'Ver mi plan' }
   if (view.kind === 'past_due') {
@@ -47,7 +43,7 @@ export function billingBanner(view: BillingView, role: string, manageUrl: string
     return {
       tone: QUIET,
       level: 'trial',
-      text: `Prueba: quedan ${view.daysLeft} ${view.daysLeft === 1 ? 'día' : 'días'}. El primer cobro es el ${longDate(view.endsAt, true)}.`,
+      text: endSentence(`Prueba: quedan ${view.daysLeft} ${view.daysLeft === 1 ? 'día' : 'días'}. El primer cobro es el ${when(view.endsAt)}`),
       cta: { href: '/dashboard/plan', label: 'Ver mi plan' },
     }
   if (view.kind === 'cancelled' && view.endsAt)
@@ -55,7 +51,7 @@ export function billingBanner(view: BillingView, role: string, manageUrl: string
       tone: SOFT,
       level: 'cancelled',
       text: view.inTrial
-        ? `Su prueba sigue activa hasta el ${longDate(view.endsAt, true)}. No se le cobrará nada.`
+        ? `${endSentence(`Su prueba sigue activa hasta el ${when(view.endsAt)}`)} No se le cobrará nada.`
         : `Su plan termina el ${longDate(view.endsAt)}. Después su cuenta pasará a Gratis.`,
       cta: { href: '/dashboard/plan#planes', label: 'Seguir con mi plan' },
     }

@@ -1,3 +1,4 @@
+import { regionalOf, type TimeFormat, type WeekStart } from './regional'
 // Public online booking (/agendar/<slug>). Patients pick a free slot inside a
 // doctor's published schedule and the appointment is confirmed immediately; a
 // clinic may also accept "extra / emergency" requests that staff review.
@@ -46,6 +47,8 @@ export type PublicClinic = {
   city: string | null
   currency: string | null
   tz: string
+  timeFormat: TimeFormat
+  weekStart: WeekStart
   durationMins: number
   requestsEnabled: boolean
   doctors: PublicDoctor[]
@@ -115,6 +118,8 @@ export async function getPublicClinic(payload: Payload, slug: string): Promise<P
     city: tenant.city ?? null,
     currency: tenant.settings?.currency ?? null,
     tz: tenant.settings?.timezone || DEFAULT_TIMEZONE,
+    timeFormat: regionalOf(tenant).timeFormat,
+    weekStart: regionalOf(tenant).weekStart,
     durationMins: tenant.settings?.appointmentDurationMins || DEFAULT_APPOINTMENT_DURATION,
     requestsEnabled: tenant.settings?.onlineRequestsEnabled === true,
     doctors,

@@ -10,6 +10,7 @@ import {
   updateMyPractitionerProfile,
 } from '@/app/(frontend)/dashboard/settings/actions'
 import { CURRENCIES, TIMEZONES, PRACTICE_TYPES, WEEKDAYS } from '@/lib/constants'
+import { HEIGHT_UNITS, TIME_FORMATS, WEEK_STARTS, WEIGHT_UNITS, sortByWeek, type HeightUnit, type TimeFormat, type WeekStart, type WeightUnit } from '@/lib/regional'
 import { PROFILES, type PracticeProfile } from '@/lib/profiles'
 import {
   ORG_TYPES,
@@ -53,6 +54,10 @@ export type SettingsInitial = {
   closeTime: string
   currency: string
   timezone: string
+  timeFormat: TimeFormat
+  weekStart: WeekStart
+  weightUnit: WeightUnit
+  heightUnit: HeightUnit
   taxId: string
   practiceType: 'individual' | 'clinic'
   orgType: OrgType
@@ -220,6 +225,10 @@ export function SettingsForm({
         closeTime: form.closeTime,
         currency: form.currency,
         timezone: form.timezone,
+        timeFormat: form.timeFormat,
+        weekStart: form.weekStart,
+        weightUnit: form.weightUnit,
+        heightUnit: form.heightUnit,
       })
       if (!res.ok) return setError(res.message)
       const prof = await updateMyPractitionerProfile({
@@ -477,6 +486,27 @@ export function SettingsForm({
         </Section>
 
         <Section
+          id="regional"
+          title="Formato regional"
+          description="Cómo se muestran las horas, los días de la semana y las medidas en todo el consultorio. Los datos guardados no cambian."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Formato de hora">
+              <AppSelect value={form.timeFormat} onChange={(v) => set('timeFormat', v)} options={TIME_FORMATS.map((o) => ({ value: o.value, label: o.label }))} />
+            </Field>
+            <Field label="La semana empieza el">
+              <AppSelect value={form.weekStart} onChange={(v) => set('weekStart', v)} options={WEEK_STARTS.map((o) => ({ value: o.value, label: o.label }))} />
+            </Field>
+            <Field label="Unidad de peso" hint="Se muestra también la otra unidad al lado.">
+              <AppSelect value={form.weightUnit} onChange={(v) => set('weightUnit', v)} options={WEIGHT_UNITS.map((o) => ({ value: o.value, label: o.label }))} />
+            </Field>
+            <Field label="Unidad de talla">
+              <AppSelect value={form.heightUnit} onChange={(v) => set('heightUnit', v)} options={HEIGHT_UNITS.map((o) => ({ value: o.value, label: o.label }))} />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
           id="reservas"
           title="Reservas en línea"
           description="Comparta su enlace en Instagram, WhatsApp o Google. Los pacientes agendan solos dentro del horario de cada médico, hasta 30 días antes."
@@ -569,7 +599,7 @@ export function SettingsForm({
               <div className="sm:col-span-2 xl:col-span-3">
                 <Field label="Días de consulta">
                   <div className="flex flex-wrap gap-1.5">
-                    {WEEKDAYS.map((d) => {
+                    {sortByWeek(WEEKDAYS, form.weekStart).map((d) => {
                       const on = profile.availableDays.includes(d.value)
                       return (
                         <button

@@ -1,3 +1,4 @@
+import { compactClock, regionalOf, type TimeFormat } from '@/lib/regional'
 // Panel — design_handoff_medira «Panel»: greeting, four figures, the deep
 // «Siguiente paciente» card with one main action, today's agenda, quick actions
 // as text buttons, pending items (balances for the owner, online requests) and
@@ -24,10 +25,7 @@ function greetingFor(tz: string): string {
   return 'Buenas noches'
 }
 
-const time12 = (iso: string, tz: string) => {
-  const m = minutesInTz(new Date(iso), tz)
-  return `${Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')}`
-}
+const time12 = (iso: string, tz: string, fmt?: TimeFormat) => compactClock(minutesInTz(new Date(iso), tz), fmt)
 
 const CARD = 'overflow-hidden rounded-xl border border-[#e7e5e4] bg-white'
 const ROW = 'border-t border-[#f0eeec] px-4 py-2.5 text-sm text-[#1c1917] hover:bg-[#fafaf7] hover:text-[#1c1917]'
@@ -84,7 +82,7 @@ export default async function DashboardHome({ searchParams }: { searchParams?: P
         apptId: String(nextAppt.id),
         patientId: String(nextPatient?.id ?? nextAppt.patient),
         name: nextPatient?.name ?? 'Paciente',
-        time: time12(nextAppt.start, tz),
+        time: time12(nextAppt.start, tz, regionalOf(tenant).timeFormat),
         note: nextAppt.reason ?? '',
         status: nextAppt.status as 'scheduled' | 'checked-in',
         isWalkIn: Boolean(nextAppt.isWalkIn),
@@ -169,7 +167,7 @@ export default async function DashboardHome({ searchParams }: { searchParams?: P
                   const p = a.patient as Patient
                   return (
                     <Link key={a.id} href={`/dashboard/patients/${p?.id ?? a.patient}`} className={`grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-2.5 ${ROW}`}>
-                      <span className="tabular text-[#57534e]">{time12(a.start, tz)}</span>
+                      <span className="tabular text-[#57534e]">{time12(a.start, tz, regionalOf(tenant).timeFormat)}</span>
                       <span className="min-w-0">
                         <span className="block truncate font-medium">{p?.name ?? 'Paciente'}</span>
                         <span className="block truncate text-[13px] text-[#57534e]">{a.reason || (a.source === 'online' ? 'Reserva en línea' : ' ')}</span>

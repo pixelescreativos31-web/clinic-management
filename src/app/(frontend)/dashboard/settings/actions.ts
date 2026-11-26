@@ -6,6 +6,7 @@ import { asOrgType, asSpecialty } from '@/lib/specialties'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
 import { toActionError, type ActionResult } from '@/lib/errors'
+import { regionalOf } from '@/lib/regional'
 
 export type ClinicSettingsInput = {
   name: string
@@ -27,6 +28,10 @@ export type ClinicSettingsInput = {
   closeTime: string
   currency: string
   timezone: string
+  timeFormat?: string
+  weekStart?: string
+  weightUnit?: string
+  heightUnit?: string
 }
 
 const HHMM = /^\d{2}:\d{2}$/
@@ -72,6 +77,8 @@ export async function updateClinicSettings(
           closeTime: input.closeTime,
           currency: input.currency,
           timezone: input.timezone,
+          // Unknown values fall back to the defaults (12 h, Sunday, lb, cm).
+          ...regionalOf({ settings: { timeFormat: input.timeFormat, weekStart: input.weekStart, weightUnit: input.weightUnit, heightUnit: input.heightUnit } }),
           consultTemplate: asProfile(input.consultTemplate),
           ...(asOrgType(input.orgType) ? { orgType: asOrgType(input.orgType) } : {}),
           programName: input.programName?.trim().slice(0, 60) || null,

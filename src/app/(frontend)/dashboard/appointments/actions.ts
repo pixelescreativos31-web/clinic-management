@@ -1,5 +1,6 @@
 'use server'
 
+import { regionalOf } from '@/lib/regional'
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
@@ -71,7 +72,7 @@ export async function availableDoctorsAt(
       id: String(d.id),
       name: d.name,
       tag: a.tag,
-      note: a.tag === 'onCall' ? 'De guardia' : a.reason || formatWindow(windowOf(d)),
+      note: a.tag === 'onCall' ? 'De guardia' : a.reason || formatWindow(windowOf(d), regionalOf(tenant).timeFormat),
       free,
     })
   }

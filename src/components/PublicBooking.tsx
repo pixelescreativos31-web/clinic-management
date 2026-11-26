@@ -4,6 +4,7 @@
 // with a 4px progress bar and three steps (Fecha y hora → Sus datos → Cita
 // confirmada). Optional "extra / emergency" request form when the clinic enables it.
 
+import { hhmmLabel, type TimeFormat } from '@/lib/regional'
 import { useEffect, useState, useTransition } from 'react'
 import { Spinner } from './primitives'
 import { toWaDigits } from '@/lib/whatsapp'
@@ -20,18 +21,12 @@ export type BookingDoctor = {
   services: PublicService[]
   days: BookingDay[]
 }
-type Clinic = { name: string; phone: string | null; address: string | null; currency: string | null; requestsEnabled: boolean }
+type Clinic = { name: string; phone: string | null; address: string | null; currency: string | null; requestsEnabled: boolean; timeFormat?: TimeFormat }
 type Done = { code: string; start: string; durationMins: number; serviceName: string; patientName: string }
 
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const LONG_DOW: Record<string, string> = { Lun: 'Lunes', Mar: 'Martes', Mié: 'Miércoles', Jue: 'Jueves', Vie: 'Viernes', Sáb: 'Sábado', Dom: 'Domingo' }
 
-/** "14:30" → "2:30" */
-const short = (t: string) => {
-  const [h, m] = t.split(':').map(Number)
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')}`
-}
-const ampm = (t: string) => `${short(t)} ${Number(t.slice(0, 2)) < 12 ? 'a. m.' : 'p. m.'}`
 const dayLabel = (d: BookingDay) => `${d.dow} ${d.num} de ${MONTHS[Number(d.date.slice(5, 7)) - 1]}`
 
 function money(amount: number, currency: string | null) {
@@ -134,6 +129,7 @@ function Lines({ rows }: { rows: [string, string][] }) {
 }
 
 export function PublicBooking({ slug, clinic, doctors }: { slug: string; clinic: Clinic; doctors: BookingDoctor[] }) {
+  const ampm = (t: string) => hhmmLabel(t, clinic.timeFormat)
   const [doctorId, setDoctorId] = useState(doctors[0].id)
   const doctor = doctors.find((d) => d.id === doctorId)!
   const [step, setStep] = useState<1 | 2 | 3>(1)

@@ -1,3 +1,4 @@
+import { regionalOf } from '@/lib/regional'
 import { notFound, redirect } from 'next/navigation'
 import { requireDashboardSession, getPayloadClient } from '@/lib/auth'
 import { getTenantID } from '@/access'
@@ -105,21 +106,21 @@ export default async function ProgramPrintPage({ params }: { params: Promise<{ i
       )}
 
       <section className="mt-3 grid grid-cols-4 gap-2 rounded-lg border border-[#e7e5e4] p-2 text-[11px]">
-        <div><div className="text-muted-foreground">Peso inicial</div><b>{fmtWeight(start?.weightKg)}</b></div>
-        <div><div className="text-muted-foreground">Peso actual</div><b>{fmtWeight(last?.weightKg)}</b></div>
-        <div><div className="text-muted-foreground">Cambio total</div><b>{last && start && last !== start ? fmtDelta(last.deltaStart) : '—'}</b></div>
+        <div><div className="text-muted-foreground">Peso inicial</div><b>{fmtWeight(start?.weightKg, regionalOf(tenant).weightUnit)}</b></div>
+        <div><div className="text-muted-foreground">Peso actual</div><b>{fmtWeight(last?.weightKg, regionalOf(tenant).weightUnit)}</b></div>
+        <div><div className="text-muted-foreground">Cambio total</div><b>{last && start && last !== start ? fmtDelta(last.deltaStart, regionalOf(tenant).weightUnit) : '—'}</b></div>
         <div><div className="text-muted-foreground">IMC actual</div><b>{last?.bmi != null ? `${last.bmi} · ${bmiLabel(last.bmi)}` : '—'}</b></div>
       </section>
 
       {weighed.length >= 2 && (
         <section className="mt-3 break-inside-avoid">
-          <WeightChart rows={rows} />
+          <WeightChart rows={rows} unit={regionalOf(tenant).weightUnit} />
         </section>
       )}
 
       <section className="mt-3">
         <h2 className="text-[12px] font-semibold text-[#1c1917]">Controles</h2>
-        {rows.length ? <ControlsTable rows={rows} /> : <p className="text-muted-foreground">Sin controles registrados.</p>}
+        {rows.length ? <ControlsTable rows={rows} unit={regionalOf(tenant).weightUnit} /> : <p className="text-muted-foreground">Sin controles registrados.</p>}
       </section>
 
       <section className="mt-3 break-inside-avoid">

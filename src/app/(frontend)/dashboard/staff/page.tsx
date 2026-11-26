@@ -1,4 +1,5 @@
 import { requireDashboardSession, requireRole, getPayloadClient } from '@/lib/auth'
+import { regionalOf, sortByWeek, type Regional } from '@/lib/regional'
 import { getTenantID } from '@/access'
 import { StaffManager, type StaffRow } from '@/components/StaffManager'
 import { DEFAULT_CURRENCY, WEEKDAYS } from '@/lib/constants'
@@ -8,14 +9,14 @@ import { isIndividualPractice, isPractitioner } from '@/lib/practice'
 import { profileFormats } from '@/lib/profiles'
 import { orgTypeOf } from '@/lib/specialties'
 
-function availabilitySummary(u: User): string {
+function availabilitySummary(u: User, r: Regional): string {
   const type = (u.availabilityType as string) || 'regular'
   if (type === 'onCall') return 'De guardia'
   if (type === 'byAppointment') return 'Con cita previa'
   const days = (u.availableDays as string[] | undefined) || []
   const allDays = days.length === 0 || days.length === 7
-  const dayLabel = allDays ? 'Todos los días' : WEEKDAYS.filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
-  return `${dayLabel} · ${formatWindow(windowOf(u))}`
+  const dayLabel = allDays ? 'Todos los días' : sortByWeek(WEEKDAYS, r.weekStart).filter((w) => days.includes(w.value)).map((w) => w.label).join('/')
+  return `${dayLabel} · ${formatWindow(windowOf(u), r.timeFormat)}`
 }
 
 export default async function StaffPage() {
@@ -43,7 +44,7 @@ export default async function StaffPage() {
     specialtyKey: u.specialtyKey ?? '',
     consultationFee: u.consultationFee,
     active: u.active !== false,
-    availability: isPractitioner(u) ? availabilitySummary(u) : null,
+    availability: isPractitioner(u) ? availabilitySummary(u, regionalOf(session.tenant)) : null,
     availabilityType: (u.availabilityType as string) || 'regular',
     availableDays: (u.availableDays as string[] | undefined) || [],
     availableFrom: u.availableFrom || '09:00',

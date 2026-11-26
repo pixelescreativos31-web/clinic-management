@@ -7,7 +7,7 @@ import { APP_LOCALE } from './brand'
 
 type TenantLike =
   | {
-      settings?: { currency?: string | null; timezone?: string | null } | null
+      settings?: { currency?: string | null; timezone?: string | null; timeFormat?: string | null } | null
     }
   | null
   | undefined
@@ -31,13 +31,12 @@ export function formatMoney(amount: number, tenant: TenantLike): string {
 
 const toDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value))
 
-/** "5:30 p. m." in the tenant's timezone (lowercase, no leading zero). */
+/** "5:30 p. m." (or "17:30" when the clinic uses 24 h) in the tenant's timezone. */
 export function formatTime(value: Date | string, tenant: TenantLike): string {
+  const h24 = tenant?.settings?.timeFormat === '24h'
   return toDate(value)
     .toLocaleTimeString(APP_LOCALE, {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
+      ...(h24 ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : { hour: 'numeric', minute: '2-digit', hour12: true }),
       timeZone: timezoneOf(tenant),
     })
     .toLowerCase()

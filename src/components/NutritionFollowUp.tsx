@@ -1,3 +1,4 @@
+import { regionalOf, weightDeltaLabel, weightIn, weightLabel } from '@/lib/regional'
 // Hoja de seguimiento (nutrition template): one row per consultation plus a weight
 // trend, mirroring the paper "Seguimiento – Registro" sheet. Server component —
 // a hand-drawn SVG keeps it dependency-free and printable.
@@ -15,7 +16,7 @@ function bmi(weight?: number | null, heightCm?: number | null): string {
   return Number.isFinite(v) ? v.toFixed(1) : '—'
 }
 
-function WeightChart({ points }: { points: { label: string; kg: number }[] }) {
+function WeightChart({ points, unit }: { points: { label: string; kg: number }[]; unit: 'lb' | 'kg' }) {
   const W = 640
   const H = 160
   const pad = { l: 40, r: 16, t: 16, b: 28 }
@@ -26,7 +27,7 @@ function WeightChart({ points }: { points: { label: string; kg: number }[] }) {
   const y = (kg: number) => pad.t + ((hi - kg) * (H - pad.t - pad.b)) / (hi - lo || 1)
   const path = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ')
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-40 w-full" role="img" aria-label="Evolución del peso">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-40 w-full" role="img" aria-label={`Evolución del peso (${unit})`}>
       {[lo, (lo + hi) / 2, hi].map((t) => (
         <g key={t}>
           <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} className="stroke-border" strokeDasharray="3 3" />
@@ -55,6 +56,7 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
   const first = weighed[0]?.vitals?.weightKg
   const last = weighed[weighed.length - 1]?.vitals?.weightKg
   const goal = [...rows].reverse().find((v) => v.nutrition?.goal)?.nutrition?.goal
+  const unit = regionalOf(tenant).weightUnit
 
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
@@ -66,8 +68,7 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
             <span>
               Cambio total:{' '}
               <span className="font-medium text-ink">
-                {last - first > 0 ? '+' : ''}
-                {(last - first).toFixed(1)} kg
+                {weightDeltaLabel(last - first, unit)}
               </span>
             </span>
           )}
@@ -76,7 +77,7 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
 
       {weighed.length > 0 && (
         <div className="border-t border-[#f0eeec] px-3 pt-2">
-          <WeightChart points={weighed.map((v) => ({ label: formatDate(v.visitDate, tenant), kg: v.vitals!.weightKg! }))} />
+          <WeightChart points={weighed.map((v) => ({ label: formatDate(v.visitDate, tenant), kg: weightIn(v.vitals!.weightKg!, unit) }))} unit={unit} />
         </div>
       )}
 
@@ -98,9 +99,9 @@ export function NutritionFollowUp({ visits, tenant }: { visits: Visit[]; tenant:
                 <tr key={v.id} className="border-t border-[#f0eeec] align-top">
                   <td className="tabular px-3 py-2 text-muted-foreground">{i + 1}</td>
                   <td className="tabular whitespace-nowrap px-3 py-2">{formatDate(v.visitDate, tenant)}</td>
-                  <td className="tabular whitespace-nowrap px-3 py-2 font-medium">{w != null ? `${w} kg` : '—'}</td>
+                  <td className="tabular whitespace-nowrap px-3 py-2 font-medium">{w != null ? weightLabel(w, unit) : '—'}</td>
                   <td className={`tabular whitespace-nowrap px-3 py-2 ${delta != null && delta < 0 ? 'text-primary' : ''}`}>
-                    {delta == null ? '—' : `${delta > 0 ? '+' : ''}${delta.toFixed(1)} kg`}
+                    {delta == null ? '—' : weightDeltaLabel(delta, unit)}
                   </td>
                   <td className="tabular px-3 py-2">{bmi(w, v.vitals?.heightCm)}</td>
                   <td className="tabular whitespace-nowrap px-3 py-2">{show('waistCm', v.nutrition)}</td>

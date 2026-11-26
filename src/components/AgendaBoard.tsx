@@ -9,6 +9,8 @@
 // The timeline shows free slots («Libre · agendar») that open the quick-booking
 // sheet at that time.
 
+import { useRegional } from './RegionalProvider'
+import { compactClock } from '@/lib/regional'
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -42,9 +44,10 @@ export type AgendaDoctor = { id: string; name: string; fromMin: number | null; t
 export type AgendaDay = { date: string; dow: string; num: number; href: string; active: boolean }
 
 const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-const label12 = (m: number) => {
-  const h = Math.floor(m / 60)
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, '0')}`
+/** Clock in the clinic's format, compact ("2:30" / "14:30"). */
+function Clock({ m }: { m: number }) {
+  const { timeFormat } = useRegional()
+  return <>{compactClock(m, timeFormat)}</>
 }
 
 /** Appointment status chip (12/600, radius 6). Programada carries a grey border. */
@@ -104,7 +107,7 @@ function ApptCard({
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-[#e7e5e4] bg-white px-4 py-3.5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
-        <span className={`tabular w-[52px] flex-none text-[17px] font-medium tracking-[-.02em] ${closed ? 'text-[#57534e]' : ''}`}>{label12(a.startMin)}</span>
+        <span className={`tabular w-[52px] flex-none text-[17px] font-medium tracking-[-.02em] ${closed ? 'text-[#57534e]' : ''}`}><Clock m={a.startMin} /></span>
         <div className="min-w-0 flex-[1_1_200px]">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
             <Link
@@ -350,7 +353,7 @@ export function AgendaBoard({
                 className={`grid min-h-[52px] grid-cols-[56px_minmax(0,1fr)] border-t border-[#f0eeec] first:border-t-0 ${past && !r.items.length ? 'bg-[#fafaf7]' : 'bg-white'}`}
               >
                 <div className={`tabular relative pt-2.5 pl-4 text-[13px] ${now ? 'font-semibold text-[#0f766e]' : 'text-[#57534e]'}`}>
-                  {label12(r.m)}
+                  <Clock m={r.m} />
                   {now && <span className="sr-only"> (ahora)</span>}
                 </div>
                 <div className="flex flex-col gap-1.5 py-1.5 pr-3">
@@ -365,7 +368,7 @@ export function AgendaBoard({
                           style={{ background: st.bg, color: st.fg, borderColor: a.status === 'scheduled' ? '#d6d3d1' : st.bg }}
                         >
                           <span className="min-w-0 truncate font-medium">
-                            <span className="tabular mr-2 opacity-80">{label12(a.startMin)}</span>
+                            <span className="tabular mr-2 opacity-80"><Clock m={a.startMin} /></span>
                             {a.patientName}
                           </span>
                           <span className="flex-none text-xs font-semibold">{st.label}</span>

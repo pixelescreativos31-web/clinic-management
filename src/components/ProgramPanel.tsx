@@ -1,3 +1,4 @@
+import { regionalOf } from '@/lib/regional'
 // «Programa» tab of the patient record: enrolment, summary, weight chart, weekly
 // controls, measurement comparison and progress photos. Server component.
 
@@ -41,6 +42,7 @@ export async function ProgramPanel({
 }) {
   const actor = { payload, user }
   const programName = tenant?.settings?.programName?.trim() || DEFAULT_PROGRAM_NAME
+  const unit = regionalOf(tenant).weightUnit
   const today = new Date().toLocaleDateString('en-CA', { timeZone: tenant?.settings?.timezone || DEFAULT_TIMEZONE })
   const programs = await patientPrograms(actor, patientId)
   const active = programs.find((p) => p.status === 'active')
@@ -98,9 +100,9 @@ export async function ProgramPanel({
         <dl className="grid grid-cols-2 gap-px border-t border-[#f0eeec] bg-[#f0eeec] sm:grid-cols-4">
           {[
             { label: 'Controles', value: rows.length ? `${rows.length} · último ${weekLabel(rows[rows.length - 1].week).toLowerCase()}` : 'Sin controles' },
-            { label: 'Peso inicial', value: fmtWeight(start?.weightKg) },
-            { label: 'Peso actual', value: fmtWeight(last?.weightKg) },
-            { label: 'Cambio total', value: last && start && last !== start ? fmtDelta(last.deltaStart) : '—' },
+            { label: 'Peso inicial', value: fmtWeight(start?.weightKg, unit) },
+            { label: 'Peso actual', value: fmtWeight(last?.weightKg, unit) },
+            { label: 'Cambio total', value: last && start && last !== start ? fmtDelta(last.deltaStart, unit) : '—' },
           ].map((s) => (
             <div key={s.label} className="bg-white px-4 py-3 md:px-[18px]">
               <dt className="text-xs text-[#57534e]">{s.label}</dt>
@@ -133,12 +135,12 @@ export async function ProgramPanel({
           {weighed.length >= 2 && (
             <Card className="p-4 md:p-[18px]">
               <h3 className={`${CARD_TITLE} mb-2`}>Evolución del peso</h3>
-              <WeightChart rows={rows} />
+              <WeightChart rows={rows} unit={unit} />
             </Card>
           )}
           <Card className="p-4 md:p-[18px]">
             <h3 className={`${CARD_TITLE} mb-2`}>Controles</h3>
-            <ControlsTable rows={rows} editHref={(id) => `/dashboard/visits/${id}/edit`} />
+            <ControlsTable rows={rows} unit={unit} editHref={(id) => `/dashboard/visits/${id}/edit`} />
             {rows.some((r) => r.notes) && (
               <div className="mt-4 flex flex-col gap-3 border-t border-[#f0eeec] pt-3">
                 {rows
